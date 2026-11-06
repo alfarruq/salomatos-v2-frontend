@@ -18,7 +18,7 @@ export const DOSE_FORMS = [
 ] as const
 export type DoseForm = (typeof DOSE_FORMS)[number]
 
-export const FREQUENCIES = ['od', 'bid', 'tid', 'qid', 'q6h', 'q8h', 'q12h', 'prn'] as const
+export const FREQUENCIES = ['od', 'bid', 'tid', 'qid'] as const
 export type Frequency = (typeof FREQUENCIES)[number]
 
 export const MEAL_RELATIONS = ['before', 'after', 'with', 'none'] as const
@@ -34,8 +34,3 @@ function isOneOf<T extends string>(values: readonly T[], value: string | null): 
 export const isDoseForm = (value: string | null) => isOneOf(DOSE_FORMS, value)
 export const isFrequency = (value: string | null) => isOneOf(FREQUENCIES, value)
 export const isMealRelation = (value: string | null) => isOneOf(MEAL_RELATIONS, value)
-
-/** Only before/after carry a minute offset — "with food" or "regardless" have none. */
-export function mealTakesMinutes(meal: MealRelation): boolean {
-  return meal === 'before' || meal === 'after'
-}

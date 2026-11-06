@@ -1,81 +1,54 @@
 {
   "title": "Moliya",
-  "tabs": {
-    "overview": "Umumiy",
-    "expenses": "Xarajatlar",
-    "recurring": "Doimiy to'lovlar",
-    "payroll": "Shifokor ulushi"
-  },
-  "demo": {
-    "title": "Namuna ma'lumotlar",
-    "description": "Bu summalar faqat ko'rinishni ko'rsatish uchun o'ylab topilgan. Haqiqiy raqamlar server to'lovlar jurnalini yurita boshlaganda chiqadi."
-  },
-  "period": {
-    "label": "Davr",
-    "week": "Oxirgi 7 kun",
-    "month": "Oxirgi 30 kun",
-    "quarter": "Oxirgi 3 oy",
-    "year": "Oxirgi 12 oy"
-  },
-  "kpi": {
-    "collected": "Tushum",
-    "billed": "Bajarilgan ish",
-    "newDebt": "Yangi qarz",
-    "outstandingDebt": "Umumiy qarz",
-    "vsPrevious": "oldingi davrga nisbatan",
-    "debtors_one": "{{count}} ta qarzdor",
-    "debtors_other": "{{count}} ta qarzdor"
-  },
-  "charts": {
-    "revenue": {
-      "title": "Bajarilgan ish va tushum",
-      "description": "Narxi bo'yicha bajarilgan ish va qabul qilingan to'lovlar",
-      "billed": "Bajarilgan ish",
-      "collected": "Tushum"
-    },
-    "methods": {
-      "title": "To'lov usullari",
-      "description": "Tushumdagi ulushi"
-    },
-    "doctors": {
-      "title": "Shifokorlar bo'yicha tushum",
-      "description": "Har bir shifokor ishi uchun to'lovlar"
-    },
-    "services": {
-      "title": "Xizmatlar bo'yicha daromad",
-      "description": "Davr ichida bajarilgan ish summasi"
-    }
+  "payment": {
+    "record": "To'lov qabul qilish",
+    "title": "To'lovni kiritish",
+    "amount": "Summa",
+    "method": "Usul",
+    "notes": "Izoh",
+    "save": "To'lovni saqlash",
+    "failed": "To'lovni saqlab bo'lmadi. Qayta urinib ko'ring.",
+    "forbidden": "Sizning rolingiz to'lov kirita olmaydi."
   },
   "methods": {
     "cash": "Naqd",
     "card": "Karta",
-    "click": "Click",
-    "payme": "Payme",
-    "transfer": "Bank o'tkazmasi"
+    "transfer": "O'tkazma"
+  },
+  "void": {
+    "action": "Yaroqsiz deb belgilash",
+    "title": "To'lov yaroqsiz deb belgilansinmi?",
+    "description": "To'lov jurnalda chizilgan holda qoladi va balansga hisoblanmaydi.",
+    "reason": "Sabab",
+    "confirm": "Yaroqsiz deb belgilash",
+    "failed": "To'lovni yaroqsiz deb belgilab bo'lmadi. Qayta urinib ko'ring.",
+    "forbidden": "Sizning rolingiz to'lovni bekor qila olmaydi."
+  },
+  "balance": {
+    "title": "Balans",
+    "charged": "Hisoblangan",
+    "paid": "To'langan",
+    "debt": "Qarz",
+    "settled": "Qarz yo'q"
+  },
+  "ledger": {
+    "title": "To'lovlar",
+    "empty": "Hali to'lov yo'q.",
+    "date": "Sana",
+    "method": "Usul",
+    "amount": "Summa",
+    "receivedBy": "Qabul qildi",
+    "voided": "Yaroqsiz: {{reason}}"
   },
   "debtors": {
-    "title": "Eng katta qarzlar",
-    "description": "Eng ko'p qarzi bor bemorlar",
+    "title": "Qarzdorlar",
+    "description": "Hisoblangani to'langanidan ko'p bo'lgan bemorlar, eng katta qarz birinchi.",
     "patient": "Bemor",
-    "doctor": "Shifokor",
-    "lastPayment": "Oxirgi to'lov",
+    "phone": "Telefon",
+    "branch": "Filial",
+    "charged": "Hisoblangan",
+    "paid": "To'langan",
     "debt": "Qarz",
-    "never": "To'lamagan",
-    "empty": "Klinikadan hech kim qarzdor emas."
-  },
-  "empty": {
-    "title": "Bu davrda pul harakati yo'q",
-    "description": "Uzunroq davrni tanlang yoki to'lovlar kiritilgach qayta qarang."
-  },
-  "error": {
-    "title": "Moliya ma'lumotlarini yuklab bo'lmadi",
-    "description": "Internet aloqasini tekshirib, qayta urinib ko'ring."
-  },
-  "profit": {
-    "expenses": "Xarajat",
-    "profit": "Sof foyda",
-    "expensesNote": "Tushumning {{percent}}%",
-    "margin": "Foyda marjasi: {{percent}}%",
-    "error": "Xarajatlarni yuklab bo'lmadi, sof foyda hisoblanmadi."
+    "empty": "Qarzdor bemorlar yo'q."
   }
 }

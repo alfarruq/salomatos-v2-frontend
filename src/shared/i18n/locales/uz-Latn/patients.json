@@ -1,8 +1,7 @@
 {
   "status": {
-    "in_progress": "Davolanmoqda",
-    "completed": "Tugallangan",
-    "none": "Davolanish yo'q"
+    "active": "Faol",
+    "archived": "Arxivda"
   },
   "form": {
     "fullName": "F. I. Sh.",
@@ -12,7 +11,9 @@
     "birthDate": "Tug'ilgan sana",
     "birthDatePlaceholder": "kk/oo/yyyy",
     "address": "Manzil",
-    "office": "Ish joyi"
+    "gender": "Jinsi",
+    "genderPlaceholder": "Ko'rsatilmagan",
+    "notes": "Izoh"
   },
   "create": {
     "title": "Yangi bemor",
@@ -26,15 +27,6 @@
     "title": "Bemorni tahrirlash",
     "description": "O'zgarishlar darhol saqlanadi.",
     "failed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring."
-  },
-  "delete": {
-    "title": "Bemorni o'chirish",
-    "description": "\"{{name}}\" bemori butunlay o'chirilsinmi?",
-    "warning": "Bu amalni ortga qaytarib bo'lmaydi. Bemorning davolash, uchrashuv va to'lov tarixi bilan nima bo'lishi aniq emas — ular ham o'chishi yoki egasiz qolishi mumkin.",
-    "wait": "O'chirish ({{seconds}})",
-    "failed": "Bemorni o'chirib bo'lmadi. Qayta urinib ko'ring.",
-    "forbidden": "Bemorni o'chirishga ruxsatingiz yo'q.",
-    "failedWithCode": "Server bemorni o'chirmadi (xato kodi: {{status}}). Qayta urinib ko'ring, takrorlansa shu xabarni yuboring."
   },
   "search": {
     "label": "Bemorlarni qidirish",
@@ -58,7 +50,8 @@
     "total": "Jami bemorlar",
     "inProgress": "Davolanmoqda",
     "completed": "Tugallangan",
-    "debtors": "Qarzdorlar"
+    "debtors": "Qarzdorlar",
+    "archived": "Arxivda"
   },
   "table": {
     "noAppointment": "Qabul topilmadi"
@@ -71,7 +64,8 @@
     "treatmentType": "Muolaja",
     "doctor": "Shifokor",
     "lastAppointment": "Qabul",
-    "remaining": "Qoldiq"
+    "remaining": "Qoldiq",
+    "birthDate": "Tug'ilgan sana"
   },
   "empty": {
     "title": "Hozircha bemor yo'q",
@@ -131,5 +125,24 @@
       "treatment": "Muolaja",
       "prescription": "Retsept"
     }
+  },
+  "gender": {
+    "male": "Erkak",
+    "female": "Ayol"
+  },
+  "attachmentKind": {
+    "xray": "Rentgen",
+    "panorama": "Panorama rentgen",
+    "cbct": "KT (CBCT)",
+    "photo": "Surat",
+    "document": "Hujjat"
+  },
+  "archive": {
+    "title": "Bemorni arxivlash",
+    "description": "«{{name}}» ro'yxatlardan yashiriladi. Karta va butun tarix saqlanadi, qayta tiklash mumkin.",
+    "confirm": "Arxivlash",
+    "failed": "Bemorni arxivlab bo'lmadi. Qayta urinib ko'ring.",
+    "forbidden": "Bemorlarni arxivlashga ruxsatingiz yo'q.",
+    "done": "Bemor arxivlandi"
   }
 }

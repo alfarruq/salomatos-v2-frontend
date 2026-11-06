@@ -3,11 +3,11 @@ import { type TreatmentTypeId, treatmentTypeKeys } from '@/entities/treatment-ty
 import { httpClient } from '@/shared/api/httpClient'
 
 async function deleteTreatmentType(treatmentTypeId: TreatmentTypeId): Promise<void> {
-  await httpClient<void>(`v1/clinic/treatment-types/${treatmentTypeId}/`, { method: 'DELETE' })
+  await httpClient<void>(`v1/services/${treatmentTypeId}/`, { method: 'DELETE' })
 }
 
 /** ⛔ No optimistic update (§6.5): a refused delete should not vanish the row first. */
-export function useDeleteTreatmentType(clinicId: number) {
+export function useDeleteTreatmentType(clinicId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteTreatmentType,

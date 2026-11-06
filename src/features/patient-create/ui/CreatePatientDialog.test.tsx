@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
+import { errorEnvelope, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { toTypedDate } from '@/shared/lib/calendarDate'
 import { clinicNow } from '@/shared/lib/datetime'
@@ -15,7 +16,7 @@ import { CreatePatientDialog } from './CreatePatientDialog'
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
@@ -43,7 +44,7 @@ function renderDialog({ offerTreatment = false }: { offerTreatment?: boolean } =
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
           <CreatePatientDialog
-            clinicId={1}
+            clinicId="clinic:test"
             offerTreatment={offerTreatment}
             onCreated={onCreated}
             onOpenChange={onOpenChange}
@@ -58,7 +59,7 @@ function renderDialog({ offerTreatment = false }: { offerTreatment?: boolean } =
 }
 
 describe('CreatePatientDialog', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('admin'))
 
   it("opens with today's date as the birth date", async () => {
     renderDialog()
@@ -125,26 +126,35 @@ describe('CreatePatientDialog', () => {
 
     await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce())
     const [patient, followUp] = onCreated.mock.calls[0] ?? []
-    expect(patient).toMatchObject({ id: expect.any(Number) })
-    expect(followUp).toMatchObject({ addTreatment: true, doctorId: expect.any(Number) })
+    expect(patient).toMatchObject({ id: expect.any(String) })
+    expect(followUp).toMatchObject({ addTreatment: true, doctorId: mockId(4, 4) })
   })
 
   it('puts the server`s rejection on the field that caused it', async () => {
+    server.use(
+      http.post('/api/v1/patients/', () =>
+        HttpResponse.json(
+          errorEnvelope({
+            message: 'Validation error',
+            messageKey: 'validation_error',
+            errors: { phone_number: 'invalid' },
+          }),
+          { status: 400 },
+        ),
+      ),
+    )
     renderDialog()
 
-    await userEvent.type(await screen.findByLabelText('F. I. Sh.'), 'Vali Aliyev')
-    // Already registered at this clinic — `unique_phone_per_clinic`.
-    await userEvent.type(screen.getByLabelText('Telefon raqami'), '901234567')
-    await userEvent.click(await screen.findByRole('combobox', { name: 'Shifokor' }))
-    await userEvent.click(await screen.findByRole('option', { name: 'Sardor Usmonov' }))
+    await userEvent.type(await screen.findByLabelText('F. I. Sh.'), 'Yangi Bemor')
+    await userEvent.type(screen.getByLabelText('Telefon raqami'), '935550022')
     await userEvent.click(screen.getByRole('button', { name: "Bemor qo'shish" }))
 
     /*
      * §10, and the reason field errors are carried as codes: DRF answers
-     * `{"phone_number": "unique"}`, which becomes `validation.unique` and is
+     * `{"phone_number": "invalid"}`, which becomes `validation.invalid` and is
      * translated here — beside the input, not in a generic banner.
      */
-    expect(await screen.findByText('Bu qiymat allaqachon band')).toBeInTheDocument()
+    expect(await screen.findByText("Qiymat noto'g'ri")).toBeInTheDocument()
   })
 
   it('does not send an incomplete phone number to the server', async () => {

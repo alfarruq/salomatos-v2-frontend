@@ -7,7 +7,7 @@ import { DashboardToday } from '@/widgets/dashboard-today'
 
 /** An id only (§3): a doctor's id is not PHI, a name would be needless. */
 const dashboardSearchSchema = v.object({
-  doctor: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  doctor: v.optional(v.pipe(v.string(), v.uuid())),
 })
 
 type DashboardSearch = v.InferOutput<typeof dashboardSearchSchema>
@@ -24,11 +24,9 @@ export const Route = createFileRoute('/_auth/dashboard')({
 /**
  * "Today" — the staff's starting screen, not a report.
  *
- * A doctor sees only their own queue. That match is reliable here, not
- * guessed: a doctor is a `User` row, the session's `userId` is that row's id
- * (the token's `user_id`), and an appointment's `doctor_id` was confirmed live
- * to hold exactly the ids `/clinic/doctors/` lists. ⚠️ It is UX, not access
- * control — whether the server itself narrows a doctor's list is unknown.
+ * A doctor sees only their own queue: an appointment's `doctor` is a
+ * membership id, the same id the session carries as `membershipId`. The
+ * server narrows a doctor's appointments on its own; this is the UX half.
  */
 function DashboardPage() {
   const { t, i18n } = useTranslation('common')
@@ -57,7 +55,7 @@ function DashboardPage() {
       </div>
 
       {isDoctor ? (
-        <DashboardToday clinicId={clinicId} doctorId={session.userId} />
+        <DashboardToday clinicId={clinicId} doctorId={session.membershipId} />
       ) : (
         <DashboardToday
           clinicId={clinicId}

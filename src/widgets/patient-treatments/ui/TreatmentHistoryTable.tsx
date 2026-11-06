@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { MoreVertical } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Can } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { TreatmentStatusBadge, treatmentQueries } from '@/entities/treatment'
 import { formatFixedDate } from '@/shared/lib/calendarDate'
@@ -26,13 +27,10 @@ import {
 import { TreatmentDetailDialog } from './TreatmentDetailDialog'
 
 export interface TreatmentHistoryTableProps {
-  clinicId: number
-  patientId: number
+  clinicId: string
+  patientId: string
   onCreate: () => void
-  onEdit: (treatment: Treatment) => void
-  onComplete: (treatment: Treatment) => void
-  onDelete: (treatment: Treatment) => void
-  onTakePayment: (treatment: Treatment) => void
+  onVoid: (treatment: Treatment) => void
 }
 
 /** Shown when the server had nothing to send for a cell. */
@@ -41,18 +39,15 @@ const EMPTY = '—'
 /**
  * The patient's full treatment history, with the actions that manage it.
  *
- * A widget rather than an entity component (§3.1): the dropdown composes
- * features — editing, completing, deleting — none of which an entity may
- * import directly.
+ * A widget rather than an entity component (§3.1): the dropdown hands rows to
+ * a feature (voiding), which an entity may not import. Lines are never edited:
+ * money is append-only.
  */
 export function TreatmentHistoryTable({
   clinicId,
   patientId,
   onCreate,
-  onEdit,
-  onComplete,
-  onDelete,
-  onTakePayment,
+  onVoid,
 }: TreatmentHistoryTableProps) {
   const { t, i18n } = useTranslation(['treatments', 'patients', 'common'])
   const query = useQuery(treatmentQueries.list(clinicId, patientId))
@@ -65,9 +60,11 @@ export function TreatmentHistoryTable({
         empty={
           <EmptyState
             action={
-              <Button onClick={onCreate} variant="primary">
-                {t('treatments:table.emptyAction')}
-              </Button>
+              <Can permission="procedure:manage">
+                <Button onClick={onCreate} variant="primary">
+                  {t('treatments:table.emptyAction')}
+                </Button>
+              </Can>
             }
             description={t('treatments:table.emptyDescription')}
             title={t('treatments:table.empty')}
@@ -95,19 +92,17 @@ export function TreatmentHistoryTable({
                 <Badge tone="neutral">
                   {t('treatments:table.totalLabel')}: {treatments.length}
                 </Badge>
-                <Badge tone="accent">
-                  {t('treatments:table.inProgressLabel')}:{' '}
-                  {treatments.filter((t) => t.status === 'in_progress').length}
-                </Badge>
-                <Badge tone="success">
-                  {t('treatments:table.completedLabel')}:{' '}
-                  {treatments.filter((t) => t.status === 'completed').length}
+                <Badge tone="neutral">
+                  {t('treatments:table.voidedLabel')}:{' '}
+                  {treatments.filter((row) => row.status === 'voided').length}
                 </Badge>
               </div>
 
-              <Button onClick={onCreate} size="sm" variant="primary">
-                {t('patients:detail.newTreatment')}
-              </Button>
+              <Can permission="procedure:manage">
+                <Button onClick={onCreate} size="sm" variant="primary">
+                  {t('patients:detail.newTreatment')}
+                </Button>
+              </Can>
             </div>
 
             {isPhone ? (
@@ -120,17 +115,16 @@ export function TreatmentHistoryTable({
                   <TableHead>{t('treatments:table.columnTooth')}</TableHead>
                   <TableHead>{t('treatments:table.columnType')}</TableHead>
                   <TableHead>{t('treatments:table.columnDate')}</TableHead>
+                  <TableHead>{t('treatments:table.columnDoctor')}</TableHead>
                   <TableHead>{t('treatments:table.columnStatus')}</TableHead>
                   <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
-                  <TableHead align="right">{t('treatments:table.columnDebt')}</TableHead>
                   <TableHead align="right">{t('treatments:table.columnActions')}</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
                 {treatments.map((treatment) => {
-                  const debt = Math.max(treatment.remaining ?? 0, 0)
-
+                  const isVoided = treatment.status === 'voided'
                   return (
                     <TableRow key={treatment.id}>
                       <TableCell>
@@ -144,26 +138,18 @@ export function TreatmentHistoryTable({
                         </button>
                       </TableCell>
                       <TableCell>{treatment.treatmentTypeName ?? EMPTY}</TableCell>
-                      <TableCell>
-                        {treatment.startDate === null
-                          ? EMPTY
-                          : formatFixedDate(treatment.startDate)}
-                      </TableCell>
+                      <TableCell>{formatFixedDate(treatment.startDate)}</TableCell>
+                      <TableCell>{treatment.doctorName ?? EMPTY}</TableCell>
                       <TableCell>
                         <TreatmentStatusBadge status={treatment.status} />
                       </TableCell>
                       <TableCell align="right" isNumeric>
-                        {treatment.totalTreatmentCost === null
-                          ? EMPTY
-                          : formatSom(
-                              treatment.totalTreatmentCost,
-                              i18n.language,
-                              t('common:currency.som'),
-                            )}
-                      </TableCell>
-                      <TableCell align="right" isNumeric>
-                        <span className={debt > 0 ? 'font-semibold text-danger' : undefined}>
-                          {formatSom(debt, i18n.language, t('common:currency.som'))}
+                        <span className={isVoided ? 'text-text-tertiary line-through' : undefined}>
+                          {formatSom(
+                            treatment.totalTreatmentCost,
+                            i18n.language,
+                            t('common:currency.som'),
+                          )}
                         </span>
                       </TableCell>
                       <TableCell align="right">
@@ -172,10 +158,7 @@ export function TreatmentHistoryTable({
                             <Button
                               aria-label={t('treatments:table.actionsMenuLabel', {
                                 type: treatment.treatmentTypeName ?? EMPTY,
-                                date:
-                                  treatment.startDate === null
-                                    ? EMPTY
-                                    : formatFixedDate(treatment.startDate),
+                                date: formatFixedDate(treatment.startDate),
                               })}
                               size="sm"
                               variant="ghost"
@@ -187,17 +170,13 @@ export function TreatmentHistoryTable({
                           <DropdownMenuItem onSelect={() => setDetailTreatment(treatment)}>
                             {t('treatments:table.actionDetail')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => onEdit(treatment)}>
-                            {t('treatments:table.actionEdit')}
-                          </DropdownMenuItem>
-                          {treatment.status === 'completed' ? null : (
-                            <DropdownMenuItem onSelect={() => onComplete(treatment)}>
-                              {t('treatments:table.actionComplete')}
-                            </DropdownMenuItem>
+                          {isVoided ? null : (
+                            <Can permission="procedure:void">
+                              <DropdownMenuItem onSelect={() => onVoid(treatment)}>
+                                {t('treatments:void.confirm')}
+                              </DropdownMenuItem>
+                            </Can>
                           )}
-                          <DropdownMenuItem isDestructive onSelect={() => onDelete(treatment)}>
-                            {t('common:action.delete')}
-                          </DropdownMenuItem>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
@@ -211,23 +190,11 @@ export function TreatmentHistoryTable({
 
       {detailTreatment === null ? null : (
         <TreatmentDetailDialog
-          onComplete={() => {
-            onComplete(detailTreatment)
-            setDetailTreatment(null)
-          }}
-          onDelete={() => {
-            onDelete(detailTreatment)
-            setDetailTreatment(null)
-          }}
-          onEdit={() => {
-            onEdit(detailTreatment)
-            setDetailTreatment(null)
-          }}
           onOpenChange={(open) => {
             if (!open) setDetailTreatment(null)
           }}
-          onTakePayment={() => {
-            onTakePayment(detailTreatment)
+          onVoid={() => {
+            onVoid(detailTreatment)
             setDetailTreatment(null)
           }}
           open
@@ -240,7 +207,7 @@ export function TreatmentHistoryTable({
 
 /**
  * Phone layout of the table. A tap opens the detail dialog, which already
- * carries edit/complete/delete — a per-card menu would duplicate it.
+ * carries the void action — a per-card menu would duplicate it.
  */
 function TreatmentCards({
   treatments,
@@ -255,7 +222,7 @@ function TreatmentCards({
   return (
     <ul className="flex flex-col gap-2">
       {treatments.map((treatment) => {
-        const debt = Math.max(treatment.remaining ?? 0, 0)
+        const isVoided = treatment.status === 'voided'
         return (
           <li key={treatment.id}>
             <button
@@ -272,19 +239,15 @@ function TreatmentCards({
                     {treatment.treatmentTypeName ?? EMPTY}
                   </span>
                   <span className="text-caption text-text-secondary">
-                    {treatment.startDate === null ? EMPTY : formatFixedDate(treatment.startDate)}
+                    {formatFixedDate(treatment.startDate)}
                   </span>
                 </div>
                 <TreatmentStatusBadge status={treatment.status} />
               </div>
               <div className="flex w-full items-center justify-between border-t border-border pt-3 text-callout tabular-nums">
-                <span className="text-text-secondary">
-                  {treatment.totalTreatmentCost === null
-                    ? EMPTY
-                    : formatSom(treatment.totalTreatmentCost, i18n.language, currency)}
-                </span>
-                <span className={debt > 0 ? 'font-semibold text-danger' : 'text-text-tertiary'}>
-                  {t('treatments:table.columnDebt')}: {formatSom(debt, i18n.language, currency)}
+                <span className="text-text-secondary">{treatment.doctorName ?? EMPTY}</span>
+                <span className={isVoided ? 'text-text-tertiary line-through' : 'text-text'}>
+                  {formatSom(treatment.totalTreatmentCost, i18n.language, currency)}
                 </span>
               </div>
             </button>

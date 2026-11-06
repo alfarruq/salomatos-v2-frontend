@@ -13,7 +13,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useCreateDoctorType } from '../model/useCreateDoctorType'
 
 export interface CreateDoctorTypeDialogProps {
-  clinicId: number
+  clinicId: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }

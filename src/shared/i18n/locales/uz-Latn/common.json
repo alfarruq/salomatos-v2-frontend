@@ -31,7 +31,6 @@
     "patients": "Bemorlar",
     "treatments": "Muolajalar",
     "appointments": "Uchrashuvlar",
-    "statistics": "Statistika",
     "billing": "Moliya",
     "admin": "Boshqaruv"
   },
@@ -63,5 +62,12 @@
     "fri": "Juma",
     "sat": "Shanba",
     "sun": "Yakshanba"
+  },
+  "scope": {
+    "label": "Filial",
+    "change": "Filialni almashtirish",
+    "allBranches": "Barcha filiallar",
+    "allBranchesOf": "Barcha filiallar · {{name}}",
+    "readOnly": "Barcha filiallar rejimida faqat ko'rish mumkin. Yozuv qo'shish yoki o'zgartirish uchun filialni tanlang."
   }
 }

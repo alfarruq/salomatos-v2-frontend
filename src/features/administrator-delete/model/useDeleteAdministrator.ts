@@ -3,11 +3,11 @@ import { type AdministratorId, administratorKeys } from '@/entities/administrato
 import { httpClient } from '@/shared/api/httpClient'
 
 async function deleteAdministrator(administratorId: AdministratorId): Promise<void> {
-  await httpClient<void>(`v1/clinic/admins/${administratorId}/`, { method: 'DELETE' })
+  await httpClient<void>(`v1/staff/${administratorId}/`, { method: 'DELETE' })
 }
 
 /** ⛔ No optimistic update (§6.5): a refused delete should not vanish the record first. */
-export function useDeleteAdministrator(clinicId: number) {
+export function useDeleteAdministrator(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -12,49 +12,46 @@ import { delay, HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { permissionsForRole, type Role, useSessionStore } from '@/entities/session'
+import { fetchSession, useSessionStore } from '@/entities/session'
 import { defaultTreatmentListFilters, type TreatmentListFilters } from '@/entities/treatment'
-import { accessTokenFor, MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { MOCK_PROCEDURES, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
+import { PAGE_SIZE } from '@/shared/api/pagination'
 import { createI18n } from '@/shared/i18n'
 import { TreatmentTable } from './TreatmentTable'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
   useSessionStore.getState().clear()
 })
 afterAll(() => server.close())
 
-const ROW = {
-  id: 1,
-  patient_id: 101,
-  patient: 'Vali Aliyev',
-  doctor: 'Sardor Usmonov',
-  treatment_type: 'Implantatsiya',
-  total_treatment_cost: 4_000_000,
-  total_paid: 2_800_000,
-  remaining: '1200000',
-  visit_number: 3,
-  tooth_number: 36,
-  start_date: '2026-08-20',
-  notes: null,
-  status: 'in_progress',
+const ROW = MOCK_PROCEDURES[0]
+const AZIZA = mockId(7, 1)
+const PROCEDURES = '/api/v1/procedures/'
+
+const page = (results: unknown[], count = results.length, next: string | null = null) => ({
+  count,
+  next,
+  previous: null,
+  results,
+})
+
+/** `<Can>` and `useCan` read the store, so the session has to be in it. */
+async function signIn() {
+  signInAs('admin')
+  useSessionStore.getState().setSession(await fetchSession())
 }
 
-function signIn(role: Role) {
-  setAccessToken(accessTokenFor('clinic'))
-  useSessionStore.getState().setSession({
-    userId: MOCK_USERS.clinic.id,
-    clinicId: MOCK_USERS.clinic.id,
-    fullName: 'Test',
-    phoneNumber: null,
-    email: null,
-    role,
-    permissions: permissionsForRole(role),
+function captureUrls(): URL[] {
+  const seen: URL[] = []
+  server.events.on('request:start', ({ request }) => {
+    if (request.url.includes(PROCEDURES)) seen.push(new URL(request.url))
   })
+  return seen
 }
 
 function renderTable(overrides: Partial<TreatmentListFilters> = {}) {
@@ -67,11 +64,7 @@ function renderTable(overrides: Partial<TreatmentListFilters> = {}) {
     getParentRoute: () => rootRoute,
     path: '/',
     component: () => (
-      <TreatmentTable
-        clinicId={MOCK_USERS.clinic.id}
-        filters={filters}
-        onFiltersChange={onFiltersChange}
-      />
+      <TreatmentTable clinicId="clinic:test" filters={filters} onFiltersChange={onFiltersChange} />
     ),
   })
   const patientRoute = createRoute({
@@ -98,83 +91,75 @@ function renderTable(overrides: Partial<TreatmentListFilters> = {}) {
 }
 
 describe('TreatmentTable', () => {
-  beforeEach(() => signIn('superadmin'))
+  beforeEach(signIn)
 
-  it('lists every treatment in the clinic, with the patient and the money', async () => {
+  it('lists every procedure in the clinic, with the patient and the cost', async () => {
     renderTable()
 
-    expect(await screen.findAllByRole('link', { name: 'Vali Aliyev' })).toHaveLength(2)
-    expect(screen.getByText('20.08.2026')).toBeInTheDocument()
-    expect(screen.getByText('Implantatsiya')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Qarz' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Aziza Karimova' })).toBeInTheDocument()
+    expect(screen.getByText('10.08.2026')).toBeInTheDocument()
+    expect(screen.getByText('Plomba')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Davolash qiymati' })).toBeInTheDocument()
   })
 
-  it('shows money still owed in red, and a settled treatment plainly', async () => {
+  it('strikes through the cost of a voided procedure', async () => {
     server.use(
-      http.get('/api/v1/clinic/treatments/', () =>
-        HttpResponse.json({
-          count: 2,
-          next: null,
-          previous: null,
-          results: [
-            { ...ROW, id: 1, treatment_type: 'Qarzli', remaining: '1200000' },
-            { ...ROW, id: 2, treatment_type: 'Tolangan', remaining: '0' },
-          ],
-        }),
+      http.get(PROCEDURES, () =>
+        HttpResponse.json(
+          page([
+            { ...ROW, id: mockId(9, 1), service_name: 'Amalda' },
+            {
+              ...ROW,
+              id: mockId(9, 2),
+              service_name: 'Bekor',
+              voided_at: '2026-08-11T06:00:00Z',
+              void_reason: 'Xato',
+            },
+          ]),
+        ),
       ),
     )
     renderTable()
 
-    const owed = (await screen.findByText('Qarzli')).closest('tr') as HTMLElement
-    const settled = screen.getByText('Tolangan').closest('tr') as HTMLElement
-    expect(owed.querySelector('.text-danger')).not.toBeNull()
-    expect(settled.querySelector('.text-danger')).toBeNull()
+    const kept = (await screen.findByText('Amalda')).closest('tr') as HTMLElement
+    const voided = screen.getByText('Bekor').closest('tr') as HTMLElement
+    expect(voided.querySelector('.line-through')).not.toBeNull()
+    expect(kept.querySelector('.line-through')).toBeNull()
   })
 
   it('asks the server for the three pages of the screen it is on, with no patient filter', async () => {
-    const seen: URL[] = []
-    server.events.on('request:start', ({ request }) => {
-      if (request.url.includes('/clinic/treatments/')) seen.push(new URL(request.url))
-    })
+    const seen = captureUrls()
     renderTable({ page: 2 })
 
     await vi.waitFor(() => expect(seen).toHaveLength(3))
     expect(seen.map((url) => url.searchParams.get('page')).sort()).toEqual(['4', '5', '6'])
-    expect(seen.some((url) => url.searchParams.has('patient_id'))).toBe(false)
-  })
-
-  it('hides the money columns from a doctor', async () => {
-    signIn('doctor')
-    renderTable()
-
-    await screen.findAllByRole('link', { name: 'Vali Aliyev' })
-    expect(screen.queryByRole('columnheader', { name: 'Qarz' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('columnheader', { name: "To'langan" })).not.toBeInTheDocument()
+    expect(seen.some((url) => url.searchParams.has('patient'))).toBe(false)
   })
 
   it("opens the patient's page from a row", async () => {
     const { router } = renderTable()
 
-    await userEvent.click(await screen.findByText('Implantatsiya'))
+    await userEvent.click(await screen.findByText('Plomba'))
 
     expect(await screen.findByText('patient page')).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/patients/101')
+    expect(router.state.location.pathname).toBe(`/patients/${AZIZA}`)
   })
 
-  it('grows the first screen by ten rows per "next", then moves to the next screen of thirty', async () => {
+  it('grows the first screen one server page per "next", then moves to the next screen', async () => {
     server.use(
-      http.get('/api/v1/clinic/treatments/', ({ request }) => {
-        const page = Number(new URL(request.url).searchParams.get('page'))
-        return HttpResponse.json({
-          count: 70,
-          next: `https://salomatos.uz/api/v1/clinic/treatments/?page=${page + 1}`,
-          previous: null,
-          results: Array.from({ length: 10 }, (_, index) => ({
-            ...ROW,
-            id: page * 100 + index,
-            treatment_type: `Tur ${page}-${index}`,
-          })),
-        })
+      http.get(PROCEDURES, ({ request }) => {
+        const n = Number(new URL(request.url).searchParams.get('page'))
+        return HttpResponse.json(
+          page(
+            Array.from({ length: 10 }, (_, index) => ({
+              ...ROW,
+              id: mockId(9, n * 100 + index),
+              service_name: `Tur ${n}-${index}`,
+            })),
+            70,
+            `https://salomatos.uz${PROCEDURES}?page=${n + 1}`,
+          ),
+        )
       }),
     )
     const { onFiltersChange } = renderTable()
@@ -193,29 +178,35 @@ describe('TreatmentTable', () => {
     expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
   })
 
-  it('shows a later screen as thirty rows at once', async () => {
+  it('shows a later screen as three full server pages at once', async () => {
     server.use(
-      http.get('/api/v1/clinic/treatments/', ({ request }) => {
-        const page = Number(new URL(request.url).searchParams.get('page'))
-        return HttpResponse.json({
-          count: 70,
-          next: `https://salomatos.uz/api/v1/clinic/treatments/?page=${page + 1}`,
-          previous: null,
-          results: Array.from({ length: 10 }, (_, index) => ({ ...ROW, id: page * 100 + index })),
-        })
+      http.get(PROCEDURES, ({ request }) => {
+        const n = Number(new URL(request.url).searchParams.get('page'))
+        return HttpResponse.json(
+          page(
+            Array.from({ length: PAGE_SIZE }, (_, index) => ({
+              ...ROW,
+              id: mockId(9, n * 100 + index),
+            })),
+            200,
+            `https://salomatos.uz${PROCEDURES}?page=${n + 1}`,
+          ),
+        )
       }),
     )
     renderTable({ page: 2 })
 
-    expect(await screen.findByText('70 tadan 31–60')).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: 'Vali Aliyev' })).toHaveLength(30)
+    const from = 3 * PAGE_SIZE + 1
+    const to = 6 * PAGE_SIZE
+    expect(await screen.findByText(`200 tadan ${from}–${to}`)).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Aziza Karimova' })).toHaveLength(3 * PAGE_SIZE)
   })
 
   it('shows a skeleton while loading', async () => {
     server.use(
-      http.get('/api/v1/clinic/treatments/', async () => {
+      http.get(PROCEDURES, async () => {
         await delay('infinite')
-        return HttpResponse.json([])
+        return HttpResponse.json(page([]))
       }),
     )
     renderTable()
@@ -224,12 +215,8 @@ describe('TreatmentTable', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
-  it('says so when there are no treatments', async () => {
-    server.use(
-      http.get('/api/v1/clinic/treatments/', () =>
-        HttpResponse.json({ count: 0, next: null, previous: null, results: [] }),
-      ),
-    )
+  it('says so when there are no procedures', async () => {
+    server.use(http.get(PROCEDURES, () => HttpResponse.json(page([]))))
     renderTable()
 
     expect(
@@ -238,11 +225,7 @@ describe('TreatmentTable', () => {
   })
 
   it('offers a retry when the list cannot be loaded', async () => {
-    server.use(
-      http.get('/api/v1/clinic/treatments/', () =>
-        HttpResponse.json({ message: 'boom' }, { status: 500 }),
-      ),
-    )
+    server.use(http.get(PROCEDURES, () => HttpResponse.json({ message: 'boom' }, { status: 500 })))
     renderTable()
 
     expect(
@@ -251,62 +234,39 @@ describe('TreatmentTable', () => {
   })
 
   it('sends every active filter to the server as ids', async () => {
-    const seen: { url: URL | null } = { url: null }
-    server.events.on('request:start', ({ request }) => {
-      if (request.url.includes('/clinic/treatments/')) seen.url = new URL(request.url)
+    const seen = captureUrls()
+    renderTable({
+      patientId: AZIZA,
+      doctorId: mockId(4, 4),
+      treatmentTypeId: mockId(6, 1),
+      status: 'voided',
     })
-    renderTable({ patientId: 101, doctorId: 2, treatmentTypeId: 7, debt: 'with' })
 
-    await vi.waitFor(() => expect(seen.url).not.toBeNull())
-    const params = seen.url?.searchParams
-    expect(params?.get('patient_id')).toBe('101')
-    expect(params?.get('doctor_id')).toBe('2')
-    expect(params?.get('treatment_type_id')).toBe('7')
-    expect(params?.get('remaining')).toBe('true')
+    await vi.waitFor(() => expect(seen.length).toBeGreaterThan(0))
+    const params = seen[0]?.searchParams
+    expect(params?.get('patient')).toBe(AZIZA)
+    expect(params?.get('doctor')).toBe(mockId(4, 4))
+    expect(params?.get('service')).toBe(mockId(6, 1))
+    expect(params?.get('voided')).toBe('true')
   })
 
-  it('maps "no debt" to remaining=false', async () => {
-    const seen: { url: URL | null } = { url: null }
-    server.events.on('request:start', ({ request }) => {
-      if (request.url.includes('/clinic/treatments/')) seen.url = new URL(request.url)
-    })
-    renderTable({ debt: 'without' })
+  it('maps "done" to voided=false', async () => {
+    const seen = captureUrls()
+    renderTable({ status: 'done' })
 
-    await vi.waitFor(() => expect(seen.url).not.toBeNull())
-    expect(seen.url?.searchParams.get('remaining')).toBe('false')
+    await vi.waitFor(() => expect(seen.length).toBeGreaterThan(0))
+    expect(seen[0]?.searchParams.get('voided')).toBe('false')
   })
 
-  it('sends the status filter as status=', async () => {
-    const seen: { url: URL | null } = { url: null }
-    server.events.on('request:start', ({ request }) => {
-      if (request.url.includes('/clinic/treatments/')) seen.url = new URL(request.url)
-    })
-    renderTable({ status: 'in_progress' })
-
-    await vi.waitFor(() => expect(seen.url).not.toBeNull())
-    expect(seen.url?.searchParams.get('status')).toBe('in_progress')
-  })
-
-  it('filters by a status picked from the list', async () => {
+  it('filters by a status picked from the list, back on page 1', async () => {
     const { onFiltersChange } = renderTable({ page: 2 })
 
     await userEvent.click(await screen.findByRole('combobox', { name: "Holat bo'yicha filtr" }))
-    await userEvent.click(await screen.findByRole('option', { name: 'Tugallangan' }))
+    await userEvent.click(await screen.findByRole('option', { name: 'Yaroqsiz' }))
 
     expect(onFiltersChange).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'completed', page: 1 }),
+      expect.objectContaining({ status: 'voided', page: 1 }),
     )
-  })
-
-  it('goes back to page 1 when a filter changes', async () => {
-    const { onFiltersChange } = renderTable({ page: 3 })
-
-    await userEvent.click(
-      await screen.findByRole('combobox', { name: "Qarzdorlik bo'yicha filtr" }),
-    )
-    await userEvent.click(await screen.findByRole('option', { name: 'Qarzi bor' }))
-
-    expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ debt: 'with', page: 1 }))
   })
 
   it('filters by a doctor picked from the list, by id', async () => {
@@ -315,36 +275,34 @@ describe('TreatmentTable', () => {
     await userEvent.click(await screen.findByRole('combobox', { name: "Shifokor bo'yicha filtr" }))
     await userEvent.click(await screen.findByRole('option', { name: 'Sardor Usmonov' }))
 
-    expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ doctorId: 2 }))
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ doctorId: mockId(4, 4) }),
+    )
   })
 
   it('finds a patient by name and filters by their id', async () => {
     const { onFiltersChange } = renderTable()
 
-    await userEvent.type(await screen.findByRole('searchbox'), 'Vali')
-    await userEvent.click(await screen.findByRole('button', { name: /Vali Aliyev/ }))
+    await userEvent.type(await screen.findByRole('searchbox'), 'Aziza')
+    await userEvent.click(await screen.findByRole('button', { name: /Aziza Karimova/ }))
 
-    expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ patientId: 101 }))
+    expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ patientId: AZIZA }))
   })
 
   it('shows the picked patient by name, and clears them', async () => {
-    const { onFiltersChange } = renderTable({ patientId: 101 })
+    const { onFiltersChange } = renderTable({ patientId: AZIZA })
 
     // findByRole, not findByText: text matches even while Suspense still hides the tree.
     const clear = await screen.findByRole('button', { name: 'Bemor filtrini olib tashlash' })
-    expect(await screen.findByText('Vali Aliyev', { selector: 'span' })).toBeInTheDocument()
+    expect(await screen.findByText('Aziza Karimova', { selector: 'span' })).toBeInTheDocument()
     await userEvent.click(clear)
 
     expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ patientId: null }))
   })
 
   it('offers to clear the filters when nothing matches them', async () => {
-    server.use(
-      http.get('/api/v1/clinic/treatments/', () =>
-        HttpResponse.json({ count: 0, next: null, previous: null, results: [] }),
-      ),
-    )
-    const { onFiltersChange } = renderTable({ debt: 'with' })
+    server.use(http.get(PROCEDURES, () => HttpResponse.json(page([]))))
+    const { onFiltersChange } = renderTable({ status: 'voided' })
 
     expect(
       await screen.findByRole('heading', { name: 'Mos muolaja topilmadi' }),

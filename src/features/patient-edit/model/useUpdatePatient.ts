@@ -5,52 +5,28 @@ import {
   type PatientId,
   type PatientListItem,
   patientKeys,
-  patientListItemSchema,
+  patientSchema,
   toPatientListItem,
   toPatientPayload,
 } from '@/entities/patient'
 import { httpClient } from '@/shared/api/httpClient'
 
-/**
- * ⚠️ **This endpoint is broken on the server as of 2026-08-25.**
- *
- * `PatientService.update_patient` calls `self.db.get_patient(user_id=...)` while
- * `PatientRepository.get_patient(self, user_id, user)` requires two arguments,
- * so every PATCH raises `TypeError` before it reaches the serializer. With
- * `DEBUG = True` the client receives Django's HTML traceback rather than the
- * error envelope, which `normalizeDrfError` turns into a plain `server` kind.
- *
- * The client side is written correctly and is covered against the mock, which
- * reproduces the contract as intended rather than as currently broken. It will
- * work unchanged once the missing argument is passed — a one-line fix, and the
- * same line that restores the tenant check that call was supposed to perform.
- */
 async function updatePatient({
   patientId,
   input,
-  includeDoctorId,
 }: {
   patientId: PatientId
   input: PatientFormInput
-  /**
-   * `false` unless the dialog reports the field itself was changed this
-   * session (`formState.dirtyFields`) — same guard as `useUpdateAppointment`,
-   * since `toPatientForm` cannot resolve `doctorId` from the list/detail
-   * response's `doctorName` (§ formSchema.ts).
-   */
-  includeDoctorId: boolean
 }): Promise<PatientListItem> {
   const payload = toPatientPayload(input)
-  if (!includeDoctorId) delete payload['doctor']
 
-  const raw = await httpClient<unknown>(`v1/clinic/patients/${patientId}/`, {
+  const raw = await httpClient<unknown>(`v1/patients/${patientId}/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
 
-  // As with create, the response is the *list* serializer.
-  return toPatientListItem(v.parse(patientListItemSchema, raw))
+  return toPatientListItem(v.parse(patientSchema, raw))
 }
 
 /**
@@ -59,7 +35,7 @@ async function updatePatient({
  * right person — showing an edit that the server then refused would mean
  * looking at a record that says something nobody saved.
  */
-export function useUpdatePatient(clinicId: number) {
+export function useUpdatePatient(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

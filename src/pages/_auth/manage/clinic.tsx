@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ClinicSummaryCard, clinicQueries } from '@/entities/clinic'
-import { CreateClinicForm } from '@/features/clinic-create'
+import { Can } from '@/entities/session'
+import { EditClinicForm } from '@/features/clinic-edit'
 import { Card, ErrorState, QueryBoundary, Skeleton } from '@/shared/ui'
 
 export const Route = createFileRoute('/_auth/manage/clinic')({
@@ -35,13 +36,15 @@ function ClinicSection() {
       }
       query={query}
     >
-      {(clinic) =>
-        clinic === null ? (
-          <CreateClinicForm clinicId={clinicId} />
-        ) : (
+      {(clinic) => (
+        <div className="flex flex-col gap-6">
           <ClinicSummaryCard clinic={clinic} />
-        )
-      }
+          <Can permission="clinic:manage">
+            {/* Keyed by id so switching branch resets the form to that branch's profile. */}
+            <EditClinicForm clinic={clinic} clinicId={clinicId} key={clinic.id} />
+          </Can>
+        </div>
+      )}
     </QueryBoundary>
   )
 }

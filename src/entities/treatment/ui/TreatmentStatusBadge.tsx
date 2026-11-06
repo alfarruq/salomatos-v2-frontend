@@ -3,26 +3,16 @@ import { Badge, type BadgeTone } from '@/shared/ui'
 import type { TreatmentStatus } from '../model/types'
 
 export interface TreatmentStatusBadgeProps {
-  status: TreatmentStatus | null
+  status: TreatmentStatus
 }
 
-/**
- * Same values and same translation keys as `entities/patient`'s
- * `PatientStatusBadge` — `Treatment.Status` is the source both read — but
- * declared again rather than imported, since entities may not see one
- * another (§4).
- */
 const tones: Record<TreatmentStatus, BadgeTone> = {
-  in_progress: 'accent',
-  completed: 'success',
+  done: 'success',
+  voided: 'neutral',
 }
 
+/** Passive by design — voiding is a feature (§4). */
 export function TreatmentStatusBadge({ status }: TreatmentStatusBadgeProps) {
-  const { t } = useTranslation('patients')
-
-  if (status === null) {
-    return <Badge tone="neutral">{t('status.none')}</Badge>
-  }
-
+  const { t } = useTranslation('treatments')
   return <Badge tone={tones[status]}>{t(`status.${status}`)}</Badge>
 }

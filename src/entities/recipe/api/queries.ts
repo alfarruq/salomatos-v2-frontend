@@ -1,32 +1,30 @@
 import { queryOptions } from '@tanstack/react-query'
-import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
+import { fetchAllPages } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
-import { recipeListSchema, toRecipe } from '../model/schema'
+import { recipeSchema, toRecipe } from '../model/schema'
 import type { Recipe } from '../model/types'
 
-/**
- * §6.2: `clinicId` is inside every key even though the request is scoped by
- * `patient_id`, not by clinic — see `entities/treatment`'s identical key for
- * why the id still has to be here.
- */
+/** §6.2 — the tenant scope is inside every key, without exception. */
 export const recipeKeys = {
-  scope: (clinicId: number) => ['clinics', clinicId, 'recipes'] as const,
+  scope: (clinicId: string) => ['clinics', clinicId, 'recipes'] as const,
 
-  list: (clinicId: number, patientId: number) =>
+  list: (clinicId: string, patientId: string) =>
     [...recipeKeys.scope(clinicId), 'list', patientId] as const,
 }
 
-export async function fetchRecipes(patientId: number, signal?: AbortSignal): Promise<Recipe[]> {
-  const raw = await httpClient<unknown>(
-    `v1/core/recipes/?patient_id=${patientId}`,
-    signal === undefined ? {} : { signal },
+export async function fetchRecipes(patientId: string, signal?: AbortSignal): Promise<Recipe[]> {
+  const init = signal === undefined ? {} : { signal }
+  const rows = await fetchAllPages(
+    `v1/prescriptions/?patient=${patientId}&page_size=100`,
+    recipeSchema,
+    (path) => httpClient<unknown>(path, init),
   )
-  return v.parse(recipeListSchema, raw).map(toRecipe)
+  return rows.map(toRecipe)
 }
 
 export const recipeQueries = {
-  list: (clinicId: number, patientId: number) =>
+  list: (clinicId: string, patientId: string) =>
     queryOptions({
       queryKey: recipeKeys.list(clinicId, patientId),
       queryFn: ({ signal }) => fetchRecipes(patientId, signal),

@@ -31,7 +31,6 @@
     "patients": "Patients",
     "treatments": "Treatments",
     "appointments": "Appointments",
-    "statistics": "Statistics",
     "billing": "Finance",
     "admin": "Administration"
   },
@@ -63,5 +62,12 @@
     "fri": "Friday",
     "sat": "Saturday",
     "sun": "Sunday"
+  },
+  "scope": {
+    "label": "Branch",
+    "change": "Change branch",
+    "allBranches": "All branches",
+    "allBranchesOf": "All branches · {{name}}",
+    "readOnly": "All branches are read-only. Choose a branch to add or change records."
   }
 }

@@ -14,5 +14,8 @@
   "futureDate": "The date cannot be in the future",
   "tooLarge": "The amount is too large",
   "username": "Only Latin letters, digits and . @ + - _",
-  "passwordTooShort": "Password must be at least 8 characters"
+  "passwordTooShort": "Password must be at least 8 characters",
+  "patientRequired": "Choose a patient from the list.",
+  "duplicate": "This value is already taken",
+  "clinic_required": "Choose one branch for this action"
 }

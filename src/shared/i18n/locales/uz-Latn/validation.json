@@ -14,5 +14,8 @@
   "futureDate": "Kelajakdagi sana bo'lishi mumkin emas",
   "tooLarge": "Summa juda katta",
   "username": "Faqat lotin harflari, raqamlar va . @ + - _ belgilari",
-  "passwordTooShort": "Parol kamida 8 belgidan iborat bo'lsin"
+  "passwordTooShort": "Parol kamida 8 belgidan iborat bo'lsin",
+  "patientRequired": "Ro'yxatdan bemorni tanlang.",
+  "duplicate": "Bu qiymat allaqachon band",
+  "clinic_required": "Bu amal uchun bitta filialni tanlang"
 }

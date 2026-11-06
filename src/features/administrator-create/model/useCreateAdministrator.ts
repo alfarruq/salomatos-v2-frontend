@@ -11,7 +11,7 @@ import {
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createAdministrator(input: AdministratorFormInput): Promise<Administrator> {
-  const raw = await httpClient<unknown>('v1/clinic/admins/', {
+  const raw = await httpClient<unknown>('v1/staff/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toAdministratorPayload(input)),
@@ -22,7 +22,7 @@ async function createAdministrator(input: AdministratorFormInput): Promise<Admin
 }
 
 /** ⛔ No optimistic update (§6.5): the server assigns the id and enforces unique logins. */
-export function useCreateAdministrator(clinicId: number) {
+export function useCreateAdministrator(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -1,29 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import {
-  Activity,
-  Plus,
-  RotateCcw,
-  SlidersHorizontal,
-  Stethoscope,
-  UserPlus,
-  UserRound,
-} from 'lucide-react'
+import { Activity, Plus, RotateCcw, SlidersHorizontal, UserPlus, UserRound } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
-import type { PatientFilters, PatientId, PatientListItem, PatientStatus } from '@/entities/patient'
+import type { PatientFilters, PatientId, PatientListItem } from '@/entities/patient'
 import { PatientAvatar, PatientStatusBadge, patientQueries } from '@/entities/patient'
 import { Can, useCan } from '@/entities/session'
-import { treatmentTypeQueries } from '@/entities/treatment-type'
+import { ArchivePatientDialog } from '@/features/patient-archive'
 import { CreatePatientDialog } from '@/features/patient-create'
-import { DeletePatientDialog } from '@/features/patient-delete'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { PatientSearchInput, usePatientSearch } from '@/features/patient-search'
 import { TreatmentComposer } from '@/features/treatment-composer'
 import { PAGE_SIZE } from '@/shared/api/pagination'
 import { cn } from '@/shared/lib/cn'
-import { formatSom } from '@/shared/lib/money'
 import { PHONE_QUERY, useMediaQuery } from '@/shared/lib/useMediaQuery'
 import {
   Button,
@@ -48,19 +38,20 @@ import { PatientSummary } from './PatientSummary'
 
 interface NewPatientTreatment {
   patientId: PatientId
-  doctorId: number | null
+  doctorId: string | null
 }
 
 /*
  * Radix's `Select` hardcodes `""` to mean "nothing selected, show the
- * placeholder" — not available as a real, displayable option value (see
- * `TreatmentTypeTable`, which hit this first). "All" needs its own sentinel,
- * distinct from any real status or treatment-type id.
+ * placeholder" — not available as a real, displayable option value. "All"
+ * needs its own sentinel, distinct from any real doctor id.
  */
 const FILTER_ALL = 'all'
+const ACTIVE = 'active'
+const ARCHIVED = 'archived'
 
 export interface PatientTableProps {
-  clinicId: number
+  clinicId: string
   /**
    * The shareable half of the filter state, owned by the route's search params.
    * ⛔ `search` is not among them — see `usePatientSearch`.
@@ -90,18 +81,17 @@ export function PatientTable({
   const queryClient = useQueryClient()
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<PatientListItem | null>(null)
-  const [deleting, setDeleting] = useState<PatientListItem | null>(null)
+  const [archiving, setArchiving] = useState<PatientListItem | null>(null)
   const [isFiltersOpen, setFiltersOpen] = useState(false)
   // Set when "add a treatment" was ticked in the new-patient form (§4: the two
   // features meet here, not inside each other).
   const [treatmentFor, setTreatmentFor] = useState<NewPatientTreatment | null>(null)
-  const canAddTreatment = useCan('medical-record:write')
+  const canAddTreatment = useCan('procedure:manage')
 
   const search = usePatientSearch()
   const query = useQuery(
     patientQueries.list(clinicId, { ...filters, search: search.debouncedTerm }),
   )
-  const treatmentTypesQuery = useQuery(treatmentTypeQueries.list(clinicId))
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
 
   const handleSearchChange = (value: string) => {
@@ -112,62 +102,30 @@ export function PatientTable({
   }
 
   const handleStatusChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      status: value === FILTER_ALL ? null : (value as PatientStatus),
-      page: 1,
-    })
+    onFiltersChange({ ...filters, archived: value === ARCHIVED, page: 1 })
   }
 
-  const handleTreatmentTypeChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      treatmentTypeId: value === FILTER_ALL ? null : Number(value),
-      page: 1,
-    })
-  }
-
-  /*
-   * A staff name, not patient data (§3) — unlike `search`, this is allowed in
-   * the URL and the route already puts it there.
-   *
-   * The list endpoint's `?doctor=` filter matches on name (confirmed shape),
-   * not an id, so the select's value is the doctor's full name, not `doctor.id`
-   * — same string the URL already carries.
-   */
+  /** A staff UUID, not patient data (§3) — unlike `search`, this may sit in the URL. */
   const handleDoctorChange = (value: string) => {
-    onFiltersChange({ ...filters, doctor: value === FILTER_ALL ? '' : value, page: 1 })
+    onFiltersChange({ ...filters, doctorId: value === FILTER_ALL ? null : value, page: 1 })
   }
 
-  const hasActiveFilters =
-    search.term !== '' ||
-    filters.status !== null ||
-    filters.doctor !== '' ||
-    filters.treatmentTypeId !== null
+  const hasActiveFilters = search.term !== '' || filters.archived || filters.doctorId !== null
 
   const handleClearFilters = () => {
     search.clear()
-    onFiltersChange({ status: null, doctor: '', treatmentTypeId: null, page: 1 })
+    onFiltersChange({ archived: false, doctorId: null, page: 1 })
   }
 
   const statusOptions = [
-    { value: FILTER_ALL, label: t('patients:filters.statusAll') },
-    { value: 'in_progress', label: t('patients:status.in_progress') },
-    { value: 'completed', label: t('patients:status.completed') },
-  ]
-
-  const treatmentTypeOptions = [
-    { value: FILTER_ALL, label: t('patients:filters.treatmentTypeAll') },
-    ...(treatmentTypesQuery.data ?? []).map((treatmentType) => ({
-      value: String(treatmentType.id),
-      label: treatmentType.name,
-    })),
+    { value: ACTIVE, label: t('patients:status.active') },
+    { value: ARCHIVED, label: t('patients:status.archived') },
   ]
 
   const doctorOptions = [
     { value: FILTER_ALL, label: t('patients:filters.doctorAll') },
     ...(doctorsQuery.data ?? []).map((doctor) => ({
-      value: doctor.fullName,
+      value: doctor.id,
       label: doctor.fullName,
     })),
   ]
@@ -181,10 +139,9 @@ export function PatientTable({
     void queryClient.prefetchQuery(patientQueries.detail(clinicId, patientId))
   }
 
-  const columns = usePatientColumns({ onDelete: setDeleting, onEdit: setEditing })
+  const columns = usePatientColumns({ onArchive: setArchiving, onEdit: setEditing })
   const isPhone = useMediaQuery(PHONE_QUERY)
-  const extraFilterCount =
-    (filters.treatmentTypeId === null ? 0 : 1) + (filters.doctor === '' ? 0 : 1)
+  const extraFilterCount = filters.doctorId === null ? 0 : 1
 
   return (
     <div className="flex flex-col gap-4">
@@ -194,7 +151,7 @@ export function PatientTable({
         <div className="flex items-center justify-between gap-3">
           {heading}
           {/* UX only — Django decides what may actually be created (§9.1). */}
-          <Can permission="patient:write">
+          <Can permission="patient:manage">
             <Button
               iconLeft={<Plus aria-hidden="true" className="size-4" />}
               onClick={() => setCreateOpen(true)}
@@ -228,7 +185,7 @@ export function PatientTable({
             </FilterChip>
             {statusOptions.map((option) => (
               <FilterChip
-                isActive={(filters.status ?? FILTER_ALL) === option.value}
+                isActive={(filters.archived ? ARCHIVED : ACTIVE) === option.value}
                 key={option.value}
                 onClick={() => handleStatusChange(option.value)}
               >
@@ -249,21 +206,6 @@ export function PatientTable({
             <div className="flex flex-col gap-4">
               {/* Not shown — the select's own visible options already say what it
               filters. Kept for assistive tech, which still needs a name for it. */}
-              <label className="sr-only" htmlFor="patient-treatment-type-filter">
-                {t('patients:filters.treatmentTypeLabel')}
-              </label>
-              <Select
-                className="w-full"
-                icon={<Stethoscope className="size-4" />}
-                id="patient-treatment-type-filter"
-                onValueChange={handleTreatmentTypeChange}
-                options={treatmentTypeOptions}
-                size="sm"
-                value={
-                  filters.treatmentTypeId === null ? FILTER_ALL : String(filters.treatmentTypeId)
-                }
-              />
-
               <label className="sr-only" htmlFor="patient-doctor-filter">
                 {t('patients:filters.doctorLabel')}
               </label>
@@ -274,7 +216,7 @@ export function PatientTable({
                 onValueChange={handleDoctorChange}
                 options={doctorOptions}
                 size="sm"
-                value={filters.doctor === '' ? FILTER_ALL : filters.doctor}
+                value={filters.doctorId ?? FILTER_ALL}
               />
             </div>
           </Dialog>
@@ -300,26 +242,11 @@ export function PatientTable({
               onValueChange={handleStatusChange}
               options={statusOptions}
               size="sm"
-              value={filters.status ?? FILTER_ALL}
+              value={filters.archived ? ARCHIVED : ACTIVE}
             />
 
             {/* Not shown — the select's own visible options already say what it
               filters. Kept for assistive tech, which still needs a name for it. */}
-            <label className="sr-only" htmlFor="patient-treatment-type-filter">
-              {t('patients:filters.treatmentTypeLabel')}
-            </label>
-            <Select
-              className="w-auto shrink-0"
-              icon={<Stethoscope className="size-4" />}
-              id="patient-treatment-type-filter"
-              onValueChange={handleTreatmentTypeChange}
-              options={treatmentTypeOptions}
-              size="sm"
-              value={
-                filters.treatmentTypeId === null ? FILTER_ALL : String(filters.treatmentTypeId)
-              }
-            />
-
             <label className="sr-only" htmlFor="patient-doctor-filter">
               {t('patients:filters.doctorLabel')}
             </label>
@@ -330,7 +257,7 @@ export function PatientTable({
               onValueChange={handleDoctorChange}
               options={doctorOptions}
               size="sm"
-              value={filters.doctor === '' ? FILTER_ALL : filters.doctor}
+              value={filters.doctorId ?? FILTER_ALL}
             />
 
             {/* Only when there is something to clear: a reset button over an
@@ -350,7 +277,7 @@ export function PatientTable({
       )}
 
       {isPhone ? (
-        <Can permission="patient:write">
+        <Can permission="patient:manage">
           <Button
             iconLeft={<UserPlus aria-hidden="true" className="size-4" />}
             isFloatingOnPhone
@@ -375,7 +302,7 @@ export function PatientTable({
              */
             action={
               search.debouncedTerm === '' ? (
-                <Can permission="patient:write">
+                <Can permission="patient:manage">
                   <Button onClick={() => setCreateOpen(true)} variant="primary">
                     {t('patients:create.submit')}
                   </Button>
@@ -470,14 +397,12 @@ export function PatientTable({
       {treatmentFor === null ? null : (
         <TreatmentComposer
           clinicId={clinicId}
-          // A patient created a moment ago has no visits yet.
-          nextVisitNumber={1}
           onOpenChange={(open) => {
             if (!open) setTreatmentFor(null)
           }}
           open
           patientId={treatmentFor.patientId}
-          {...(treatmentFor.doctorId === null ? {} : { initialDoctorId: treatmentFor.doctorId })}
+          initialDoctorId={treatmentFor.doctorId}
         />
       )}
 
@@ -492,15 +417,15 @@ export function PatientTable({
         />
       )}
 
-      {deleting === null ? null : (
-        <DeletePatientDialog
+      {archiving === null ? null : (
+        <ArchivePatientDialog
           clinicId={clinicId}
-          onDeleted={() => setDeleting(null)}
-          onOpenChange={(open) => {
-            if (!open) setDeleting(null)
+          onArchived={() => setArchiving(null)}
+          onOpenChange={(open: boolean) => {
+            if (!open) setArchiving(null)
           }}
           open
-          patient={deleting}
+          patient={archiving}
         />
       )}
     </div>
@@ -523,7 +448,7 @@ function PatientRows({
    * focus ring and touch targets from §11.7 come for free.
    *
    * ⛔ Not virtualised, and the roadmap's "100+ rows → react-virtual" does not
-   * apply: the server paginates at ten (`PAGE_SIZE`), so a hundred rows never
+   * apply: the server paginates at `PAGE_SIZE`, so a hundred rows never
    * reach the DOM. Adding the dependency would cost bundle for a condition
    * that cannot occur until the page size is made configurable.
    */
@@ -566,8 +491,8 @@ function PatientRows({
 
 /**
  * The phone layout: one tappable row per patient carrying what the desk
- * scans for (name, phone, status, debt). Edit and delete stay on the card
- * page, a tap away, rather than behind a third control squeezed into the row.
+ * scans for (name, phone, status). Edit and archive stay on the card page, a
+ * tap away, rather than behind a third control squeezed into the row.
  */
 function PatientCards({
   rows,
@@ -576,7 +501,7 @@ function PatientCards({
   rows: PatientListItem[]
   onOpenPatient: (patientId: PatientId) => void
 }) {
-  const { t, i18n } = useTranslation(['patients', 'common'])
+  const { t } = useTranslation(['patients', 'common'])
 
   return (
     <ul aria-label={t('patients:title')} className="divide-y divide-border rounded-card bg-surface">
@@ -594,19 +519,15 @@ function PatientCards({
             <span className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="flex items-center justify-between gap-2">
                 <span className="truncate text-body font-medium text-text">{patient.fullName}</span>
-                {patient.status === null ? null : <PatientStatusBadge status={patient.status} />}
+                {patient.status === 'archived' ? (
+                  <PatientStatusBadge status={patient.status} />
+                ) : null}
               </span>
               {patient.phoneNumber === null ? null : (
                 <span className="text-callout text-text-secondary tabular-nums">
                   {`+998-${formatSubscriber(subscriberDigitsOf(patient.phoneNumber))}`}
                 </span>
               )}
-              {/* Its own line: beside the phone number it squeezed both. */}
-              {patient.totalRemaining > 0 ? (
-                <span className="text-caption font-semibold text-danger tabular-nums">
-                  {formatSom(patient.totalRemaining, i18n.language, t('common:currency.som'))}
-                </span>
-              ) : null}
             </span>
           </button>
         </li>

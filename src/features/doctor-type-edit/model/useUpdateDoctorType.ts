@@ -24,7 +24,7 @@ async function updateDoctorType({
   doctorTypeId: DoctorTypeId
   input: DoctorTypeFormInput
 }): Promise<DoctorType> {
-  const raw = await httpClient<unknown>(`v1/clinic/doctors/types/${doctorTypeId}/`, {
+  const raw = await httpClient<unknown>(`v1/specialties/${doctorTypeId}/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toDoctorTypePayload(input)),
@@ -34,7 +34,7 @@ async function updateDoctorType({
 }
 
 /** ⛔ No optimistic update (§6.5): a rejected rename would leave the wrong name on screen. */
-export function useUpdateDoctorType(clinicId: number) {
+export function useUpdateDoctorType(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

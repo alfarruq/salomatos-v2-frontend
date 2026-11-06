@@ -24,7 +24,7 @@ const loginResponseSchema = v.object({
 })
 
 async function unlockRequest(input: { username: string; password: string }): Promise<Session> {
-  const raw = await httpClient<unknown>('v1/authentication/login/', {
+  const raw = await httpClient<unknown>('v1/auth/login/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

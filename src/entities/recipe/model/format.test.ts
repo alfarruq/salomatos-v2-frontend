@@ -7,14 +7,15 @@ const t: Translate = (key, options) =>
   options === undefined ? key : `${key}${JSON.stringify(options)}`
 
 const coded: Medicine = {
-  id: 1,
+  id: 'item-1',
   name: 'Amoksiklav 625 mg',
   dose: 1,
   type: 'tablet',
   frequency: 'bid',
+  timesPerDay: 2,
   duration: 5,
   meal: 'after',
-  minutes: 30,
+  instructions: null,
 }
 
 describe('formatDosage', () => {
@@ -28,26 +29,12 @@ describe('formatDosage', () => {
 })
 
 describe('formatSchedule', () => {
-  it('joins frequency and the meal offset', () => {
-    expect(formatSchedule(coded, t)).toBe(
-      'recipes:frequency.bid · recipes:meal.afterMinutes{"minutes":30}',
-    )
-  })
-
-  it('drops the offset when it is zero', () => {
-    expect(formatSchedule({ ...coded, minutes: 0 }, t)).toBe(
-      'recipes:frequency.bid · recipes:meal.after',
-    )
+  it('joins frequency and the meal relation', () => {
+    expect(formatSchedule(coded, t)).toBe('recipes:frequency.bid · recipes:meal.after')
   })
 
   it('says nothing about food when the timing does not depend on it', () => {
     expect(formatSchedule({ ...coded, meal: 'none' }, t)).toBe('recipes:frequency.bid')
-  })
-
-  it('never puts minutes on "with meals", even if some were stored', () => {
-    expect(formatSchedule({ ...coded, meal: 'with', minutes: 30 }, t)).toBe(
-      'recipes:frequency.bid · recipes:meal.with',
-    )
   })
 
   it('passes free text through untouched', () => {

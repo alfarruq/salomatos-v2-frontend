@@ -16,7 +16,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useCreateTreatmentType } from '../model/useCreateTreatmentType'
 
 export interface CreateTreatmentTypeDialogProps {
-  clinicId: number
+  clinicId: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }

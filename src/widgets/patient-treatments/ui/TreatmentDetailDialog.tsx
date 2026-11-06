@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
+import { Can } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { TreatmentStatusBadge } from '@/entities/treatment'
-import type { CalendarDate } from '@/shared/lib/calendarDate'
+import { formatFixedDate } from '@/shared/lib/calendarDate'
 import { formatSom } from '@/shared/lib/money'
 import { Button, Card, Dialog } from '@/shared/ui'
 
@@ -9,63 +10,35 @@ export interface TreatmentDetailDialogProps {
   treatment: Treatment
   open: boolean
   onOpenChange: (open: boolean) => void
-  onEdit: () => void
-  onDelete: () => void
-  onComplete: () => void
-  onTakePayment: () => void
+  onVoid: () => void
 }
 
 /** Shown when the server had nothing to send for a field. */
 const EMPTY = '—'
 
-/** Fixed, not locale-dependent — see `TreatmentHistoryTable`'s identical helper. */
-function toFixedDate(value: CalendarDate): string {
-  const [year, month, day] = value.split('-')
-  return `${day}.${month}.${year}`
-}
-
-/** Read-only — "Batafsil" from the history table and from the double-clicked tooth badge. */
+/**
+ * Read-only: a recorded procedure is never edited. "Batafsil" from the history
+ * table and from a tooth on the chart.
+ */
 export function TreatmentDetailDialog({
   treatment,
   open,
   onOpenChange,
-  onEdit,
-  onDelete,
-  onComplete,
-  onTakePayment,
+  onVoid,
 }: TreatmentDetailDialogProps) {
   const { t, i18n } = useTranslation(['treatments', 'common'])
-  const currencyLabel = t('common:currency.som')
-  const debt = Math.max(treatment.remaining ?? 0, 0)
+  const money = (amount: number) => formatSom(amount, i18n.language, t('common:currency.som'))
 
   return (
     <Dialog
       footer={
-        <div className="flex w-full flex-wrap items-center justify-between gap-3">
-          <button
-            className="text-callout text-danger hover:underline"
-            onClick={onDelete}
-            type="button"
-          >
-            {t('treatments:detail.delete')}
-          </button>
-
-          <div className="flex flex-wrap gap-2">
-            {treatment.status === 'completed' ? null : (
-              <Button onClick={onComplete} variant="secondary">
-                {t('treatments:detail.complete')}
-              </Button>
-            )}
-            {debt === 0 ? null : (
-              <Button onClick={onTakePayment} variant="secondary">
-                {t('treatments:detail.takePayment')}
-              </Button>
-            )}
-            <Button onClick={onEdit} variant="primary">
-              {t('treatments:detail.edit')}
+        treatment.status === 'done' ? (
+          <Can permission="procedure:void">
+            <Button onClick={onVoid} variant="secondary">
+              {t('treatments:void.confirm')}
             </Button>
-          </div>
-        </div>
+          </Can>
+        ) : null
       }
       onOpenChange={onOpenChange}
       open={open}
@@ -83,9 +56,7 @@ export function TreatmentDetailDialog({
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-3">
             <p className="text-caption text-text-tertiary">{t('treatments:detail.dateLabel')}</p>
-            <p className="text-callout text-text">
-              {treatment.startDate === null ? EMPTY : toFixedDate(treatment.startDate)}
-            </p>
+            <p className="text-callout text-text">{formatFixedDate(treatment.startDate)}</p>
           </Card>
           <Card className="p-3">
             <p className="text-caption text-text-tertiary">{t('treatments:detail.doctorLabel')}</p>
@@ -95,40 +66,41 @@ export function TreatmentDetailDialog({
 
         <div className="grid grid-cols-3 gap-3">
           <Card className="p-3">
-            <p className="text-caption text-text-tertiary">
-              {t('treatments:detail.totalCostLabel')}
-            </p>
-            <p className="text-callout text-text">
-              {treatment.totalTreatmentCost === null
-                ? EMPTY
-                : formatSom(treatment.totalTreatmentCost, i18n.language, currencyLabel)}
-            </p>
+            <p className="text-caption text-text-tertiary">{t('treatments:detail.priceLabel')}</p>
+            <p className="text-callout text-text tabular-nums">{money(treatment.unitPrice)}</p>
           </Card>
           <Card className="p-3">
             <p className="text-caption text-text-tertiary">
-              {t('treatments:detail.totalPaidLabel')}
+              {t('treatments:detail.discountLabel')}
             </p>
-            <p className="text-callout text-success">
-              {treatment.totalPaid === null
-                ? EMPTY
-                : formatSom(treatment.totalPaid, i18n.language, currencyLabel)}
-            </p>
+            <p className="text-callout text-text tabular-nums">{treatment.discountPercent}%</p>
           </Card>
-          <Card className={debt > 0 ? 'bg-danger/10 p-3' : 'p-3'}>
+          <Card className="p-3">
             <p className="text-caption text-text-tertiary">
-              {t('treatments:detail.remainingLabel')}
+              {t('treatments:detail.totalCostLabel')}
             </p>
             <p
               className={
-                debt > 0 ? 'text-callout font-semibold text-danger' : 'text-callout text-text'
+                treatment.status === 'voided'
+                  ? 'text-callout text-text-tertiary line-through tabular-nums'
+                  : 'text-callout font-semibold text-text tabular-nums'
               }
             >
-              {formatSom(debt, i18n.language, currencyLabel)}
+              {money(treatment.totalTreatmentCost)}
             </p>
           </Card>
         </div>
 
-        {treatment.notes === null || treatment.notes === '' ? null : (
+        {treatment.voidReason === null ? null : (
+          <Card className="p-3">
+            <p className="text-caption text-text-tertiary">
+              {t('treatments:detail.voidReasonLabel')}
+            </p>
+            <p className="text-callout text-text">{treatment.voidReason}</p>
+          </Card>
+        )}
+
+        {treatment.notes === null ? null : (
           <Card className="p-3">
             <p className="text-caption text-text-tertiary">{t('treatments:detail.notesLabel')}</p>
             <p className="text-callout text-text">{treatment.notes}</p>

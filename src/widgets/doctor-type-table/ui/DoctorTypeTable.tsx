@@ -22,7 +22,7 @@ import {
 } from '@/shared/ui'
 
 export interface DoctorTypeTableProps {
-  clinicId: number
+  clinicId: string
 }
 
 /**

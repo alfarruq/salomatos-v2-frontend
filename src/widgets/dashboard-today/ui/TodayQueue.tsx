@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib/cn'
 
 export interface TodayQueueProps {
   queue: readonly Appointment[]
-  nextId: number | null
+  nextId: string | null
 }
 
 /** time | patient (+ doctor on a phone) | doctor | status */

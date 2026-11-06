@@ -11,7 +11,7 @@ import {
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createDoctor(input: DoctorFormInput): Promise<Doctor> {
-  const raw = await httpClient<unknown>('v1/clinic/doctors/', {
+  const raw = await httpClient<unknown>('v1/staff/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toDoctorPayload(input)),
@@ -27,7 +27,7 @@ async function createDoctor(input: DoctorFormInput): Promise<Doctor> {
  * the server both assigns the id and enforces `unique_phone_per_clinic` — a
  * doctor can appear in the list and then be refused.
  */
-export function useCreateDoctor(clinicId: number) {
+export function useCreateDoctor(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

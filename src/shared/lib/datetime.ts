@@ -96,3 +96,52 @@ export function clinicNow(
   }).format(now)
   return { date: clinicDayOf(now.toISOString(), timeZone), time }
 }
+
+/** Milliseconds the zone's wall clock is ahead of UTC at `instant`. */
+function zoneOffsetMs(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).formatToParts(new Date(instant))
+  const part = (type: string) => Number(parts.find((candidate) => candidate.type === type)?.value)
+  const wall = Date.UTC(
+    part('year'),
+    part('month') - 1,
+    part('day'),
+    part('hour'),
+    part('minute'),
+    part('second'),
+  )
+  return wall - Math.floor(instant / 1000) * 1000
+}
+
+/**
+ * The UTC instant of a wall-clock time in the clinic, as ISO-8601 — the inverse
+ * of `clinicDayOf` + `clinicTimeOf`. The backend stores instants; staff type a
+ * day and an hour on the clinic's clock, not the browser's.
+ */
+export function clinicInstantOf(date: string, time: string, timeZone: string = CLINIC_TZ): string {
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const wall = Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1, hour ?? 0, minute ?? 0)
+  // Twice, so a wall time near a DST change settles on the offset in force then.
+  let instant = wall - zoneOffsetMs(wall, timeZone)
+  instant = wall - zoneOffsetMs(instant, timeZone)
+  return new Date(instant).toISOString()
+}
+
+/** The clinic's wall-clock `HH:mm` for an instant. */
+export function clinicTimeOf(utcIso: string, timeZone: string = CLINIC_TZ): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).format(parseInstant(utcIso))
+}

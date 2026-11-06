@@ -7,7 +7,7 @@ import { toast } from '@/shared/ui'
 import { useUploadGalleryImage } from '../model/useUploadGalleryImage'
 
 export interface GalleryDropzoneProps {
-  clinicId: number
+  clinicId: string
   patientId: PatientId
 }
 

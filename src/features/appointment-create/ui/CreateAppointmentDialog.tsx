@@ -13,9 +13,8 @@ import {
   emptyAppointmentForm,
 } from '@/entities/appointment'
 import { doctorQueries } from '@/entities/doctor'
-import { isDentalDoctorType } from '@/entities/doctor-type'
 import { defaultPatientFilters, patientQueries } from '@/entities/patient'
-import { treatmentTypeQueries } from '@/entities/treatment-type'
+import { servicesForSpecialty, treatmentTypeQueries } from '@/entities/treatment-type'
 import { ApiError } from '@/shared/api/errors'
 import type { CalendarDate } from '@/shared/lib/calendarDate'
 import { useDebounce } from '@/shared/lib/useDebounce'
@@ -24,7 +23,7 @@ import { isDoctorBusyError } from '../model/isDoctorBusyError'
 import { useCreateAppointment } from '../model/useCreateAppointment'
 
 export interface CreateAppointmentDialogProps {
-  clinicId: number
+  clinicId: string
   /** The day currently open in the calendar — where a new appointment starts. */
   defaultDate: CalendarDate
   open: boolean
@@ -50,9 +49,8 @@ function initialFormValues(
     ...(initialPatient === undefined
       ? {}
       : {
-          patientId: String(initialPatient.id),
+          patientId: initialPatient.id,
           fullName: initialPatient.fullName,
-          phoneNumber: initialPatient.phoneNumber ?? '',
         }),
   }
 }
@@ -89,38 +87,32 @@ export function CreateAppointmentDialog({
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: String(doctor.id),
+    value: doctor.id,
     label: doctor.fullName,
   }))
 
   /*
-   * Same rule as `features/treatment-composer`: the doctor's specialty picks
-   * which treatment types are offered and whether a tooth is asked for.
-   * Matched by name — both list serializers send the doctor type's
-   * `__str__`, never its id.
+   * Same rule as `features/treatment-composer`: the doctor's specialty narrows
+   * the price list to its own services plus the ones filed under none.
    */
   const treatmentTypesQuery = useQuery(treatmentTypeQueries.list(clinicId))
   const doctorId = useWatch({ control: form.control, name: 'doctorId' })
   const specialty =
-    doctorsQuery.data?.find((doctor) => String(doctor.id) === doctorId)?.doctorTypeName ?? null
-  const specialtyTypeOptions =
-    specialty === null
-      ? []
-      : (treatmentTypesQuery.data ?? [])
-          .filter((type) => type.doctorTypeName === specialty)
-          // The write field takes the name, not the id — see `formSchema.ts`.
-          .map((type) => ({ value: type.name, label: type.name }))
+    doctorsQuery.data?.find((doctor) => doctor.id === doctorId)?.doctorTypeId ?? null
+  const services = servicesForSpecialty(treatmentTypesQuery.data ?? [], specialty)
   const treatmentType: AppointmentTreatmentTypeProps = {
-    options: specialtyTypeOptions,
+    options: services.map((type) => ({ value: type.id, label: type.name })),
     emptyHint:
       doctorId === ''
         ? t('appointments:form.chooseDoctorFirst')
-        : specialty === null
-          ? t('appointments:form.doctorHasNoType')
-          : specialtyTypeOptions.length === 0 && treatmentTypesQuery.isSuccess
-            ? t('appointments:form.noTypesForSpecialty', { specialty })
-            : null,
-    showToothNumber: isDentalDoctorType(specialty),
+        : services.length === 0 && treatmentTypesQuery.isSuccess
+          ? t('appointments:form.noServices')
+          : null,
+    // A service's length is the sensible default for the visit; staff can still change it.
+    onPick: (serviceId) => {
+      const picked = services.find((type) => type.id === serviceId)
+      if (picked !== undefined) form.setValue('durationMinutes', String(picked.durationMinutes))
+    },
   }
 
   /*
@@ -147,9 +139,8 @@ export function CreateAppointmentDialog({
   const handleSelectPatient = (patient: AppointmentPatientResult) => {
     setLinkedPatient(patient)
     setPatientTerm('')
-    form.setValue('patientId', String(patient.id), { shouldDirty: true })
+    form.setValue('patientId', patient.id, { shouldDirty: true })
     form.setValue('fullName', patient.fullName, { shouldDirty: true })
-    form.setValue('phoneNumber', patient.phoneNumber ?? '', { shouldDirty: true })
   }
 
   const handleUnlinkPatient = () => {

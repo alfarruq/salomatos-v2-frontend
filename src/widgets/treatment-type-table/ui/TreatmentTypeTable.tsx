@@ -25,7 +25,7 @@ import {
 } from '@/shared/ui'
 
 export interface TreatmentTypeTableProps {
-  clinicId: number
+  clinicId: string
 }
 
 /** Shown when the server had nothing to send for a cell. */
@@ -61,10 +61,14 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
   const query = useQuery(treatmentTypeQueries.list(clinicId))
 
   const doctorTypesQuery = useQuery(doctorTypeQueries.list(clinicId))
+  // The price list sends only the specialty's id; the name comes from the specialty list.
+  const doctorTypeNames = new Map(
+    (doctorTypesQuery.data ?? []).map((doctorType) => [doctorType.id, doctorType.name]),
+  )
   const doctorTypeFilterOptions = [
     { value: FILTER_ALL, label: t('admin:service.filterAll') },
     ...(doctorTypesQuery.data ?? []).map((doctorType) => ({
-      value: doctorType.name,
+      value: doctorType.id,
       label: doctorType.name,
     })),
     { value: FILTER_UNASSIGNED, label: t('admin:service.filterUnassigned') },
@@ -125,8 +129,8 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
             doctorTypeFilter === FILTER_ALL
               ? allServices
               : doctorTypeFilter === FILTER_UNASSIGNED
-                ? allServices.filter((service) => service.doctorTypeName === null)
-                : allServices.filter((service) => service.doctorTypeName === doctorTypeFilter)
+                ? allServices.filter((service) => service.doctorTypeId === null)
+                : allServices.filter((service) => service.doctorTypeId === doctorTypeFilter)
 
           if (services.length === 0) {
             return (
@@ -151,7 +155,11 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
                 {services.map((service) => (
                   <TableRow key={service.id}>
                     <TableCell>{service.name}</TableCell>
-                    <TableCell>{service.doctorTypeName ?? EMPTY}</TableCell>
+                    <TableCell>
+                      {(service.doctorTypeId === null
+                        ? null
+                        : doctorTypeNames.get(service.doctorTypeId)) ?? EMPTY}
+                    </TableCell>
                     <TableCell align="right">
                       {/* No price is a real state, not a zero — some work is
                           quoted per case. */}

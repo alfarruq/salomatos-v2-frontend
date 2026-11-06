@@ -11,11 +11,11 @@
  * blocks.
  */
 export interface Clinic {
+  id: string
   name: string
   phoneNumber: string
   address: string
-  /** Absolute media URL. Never set through this client — see the form schema. */
-  logoUrl: string | null
+  timezone: string
   workingHours: WorkingHours
 }
 

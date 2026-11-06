@@ -12,7 +12,6 @@ import { doctorQueries } from '@/entities/doctor'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
 import { DeleteAppointmentDialog } from '@/features/appointment-delete'
 import { EditAppointmentDialog } from '@/features/appointment-edit'
-import { CreatePatientDialog } from '@/features/patient-create'
 import { PAGE_SIZE, type Page } from '@/shared/api/pagination'
 import { formatCalendarDate, parseCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
@@ -20,14 +19,12 @@ import { useDebounce } from '@/shared/lib/useDebounce'
 import { PHONE_QUERY, useMediaQuery } from '@/shared/lib/useMediaQuery'
 import {
   Button,
-  Dialog,
   EmptyState,
   ErrorState,
   Input,
   Pagination,
   QueryBoundary,
   Select,
-  subscriberDigitsOf,
   Table,
   TableBody,
   TableCell,
@@ -46,19 +43,19 @@ import {
 
 const SEARCH_DEBOUNCE_MS = 300
 
-/** The select's "no doctor filter" option; real options are numeric ids. */
+/** The select's "no doctor filter" option; real options are UUIDs. */
 const ALL_DOCTORS = 'all'
 
 export interface AppointmentCalendarProps {
-  clinicId: number
+  clinicId: string
   /** The shareable half of the view state, owned by the route's search params. */
   filters: AppointmentFilters
   onFiltersChange: (next: AppointmentFilters) => void
   /** Server page for the all view; day and week always read every page. */
   page: number
   onPageChange: (page: number) => void
-  /** A registered patient's card; walk-ins are offered registration instead. */
-  onOpenPatient: (patientId: number) => void
+  /** Every appointment belongs to a registered patient, so a row always opens a card. */
+  onOpenPatient: (patientId: string) => void
   /** The page heading — shares the date picker's row on a phone, sits above the toolbar otherwise. */
   title: ReactNode
 }
@@ -86,13 +83,8 @@ export function AppointmentCalendar({
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Appointment | null>(null)
   const [deleting, setDeleting] = useState<Appointment | null>(null)
-  const [unregistered, setUnregistered] = useState<Appointment | null>(null)
-  const [patientDraft, setPatientDraft] = useState<PatientDraft | null>(null)
 
-  const openAppointment = (appointment: Appointment) => {
-    if (appointment.patientId === null) setUnregistered(appointment)
-    else onOpenPatient(appointment.patientId)
-  }
+  const openAppointment = (appointment: Appointment) => onOpenPatient(appointment.patientId)
 
   // PHI (§3): a name/phone search term never reaches the URL, unlike `filters`.
   const [searchTerm, setSearchTerm] = useState('')
@@ -142,12 +134,12 @@ export function AppointmentCalendar({
       className={cn(!isPhone && 'w-48')}
       onValueChange={(value) => {
         const { doctorId: _current, ...rest } = routeFilters
-        onFiltersChange(value === ALL_DOCTORS ? rest : { ...rest, doctorId: Number(value) })
+        onFiltersChange(value === ALL_DOCTORS ? rest : { ...rest, doctorId: value })
       }}
       options={[
         { value: ALL_DOCTORS, label: t('appointments:filter.allDoctors') },
         ...(doctorsQuery.data ?? []).map((doctor) => ({
-          value: String(doctor.id),
+          value: doctor.id,
           label: doctor.fullName,
         })),
       ]}
@@ -490,44 +482,6 @@ export function AppointmentCalendar({
         />
       )}
 
-      {unregistered === null ? null : (
-        <Dialog
-          description={t('appointments:unregistered.description', {
-            name: unregistered.fullName,
-          })}
-          footer={
-            <>
-              <Button onClick={() => setUnregistered(null)} variant="secondary">
-                {t('appointments:unregistered.cancel')}
-              </Button>
-              <Button
-                onClick={() => {
-                  setPatientDraft(patientDraftOf(unregistered))
-                  setUnregistered(null)
-                }}
-                variant="primary"
-              >
-                {t('appointments:unregistered.confirm')}
-              </Button>
-            </>
-          }
-          onOpenChange={(open) => {
-            if (!open) setUnregistered(null)
-          }}
-          open
-          title={t('appointments:unregistered.title')}
-        />
-      )}
-
-      <CreatePatientDialog
-        clinicId={clinicId}
-        onOpenChange={(open) => {
-          if (!open) setPatientDraft(null)
-        }}
-        open={patientDraft !== null}
-        {...(patientDraft === null ? {} : { initialValues: patientDraft })}
-      />
-
       {deleting === null ? null : (
         <DeleteAppointmentDialog
           appointment={deleting}
@@ -540,20 +494,6 @@ export function AppointmentCalendar({
       )}
     </div>
   )
-}
-
-interface PatientDraft {
-  fullName: string
-  phoneNumber: string
-}
-
-/** The appointment's own name and phone, in the shape the patient form expects. */
-function patientDraftOf(appointment: Appointment): PatientDraft {
-  const digits = appointment.phoneNumber === null ? '' : subscriberDigitsOf(appointment.phoneNumber)
-  return {
-    fullName: appointment.fullName,
-    phoneNumber: digits === '' ? '' : `+998${digits}`,
-  }
 }
 
 /**

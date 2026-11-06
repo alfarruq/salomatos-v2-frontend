@@ -1,28 +1,26 @@
-/** One line of a prescription — `MedicineList` (drf-yasg). */
+/** One line of a prescription (`PrescriptionItemSerializer`). */
 export interface Medicine {
-  id: number
+  id: string
   name: string | null
-  /** Integer on the server: how many of `type` per intake. */
+  /** How many units per intake, when the dose is a plain count. */
   dose: number | null
-  /** Dose form — a `DoseForm` code when this client wrote it, free text otherwise. */
+  /** A `DoseForm` code, or an older row's own words. */
   type: string | null
-  /** A `Frequency` code, or free text from older rows. */
+  /** A `Frequency` code derived from times per day, or null when it has none. */
   frequency: string | null
-  /** Integer on the server, in days — it has no unit field. */
+  timesPerDay: number | null
+  /** Days. */
   duration: number | null
-  /** A `MealRelation` code, or free text from older rows. */
+  /** A `MealRelation` code. */
   meal: string | null
-  /** Minutes before/after `meal`; 0 when the timing does not apply. */
-  minutes: number | null
+  instructions: string | null
 }
 
-/** A prescription — `RecipeList`, from `/api/v1/core/recipes/`. */
 export interface Recipe {
-  id: number
+  id: string
   doctorName: string | null
   notes: string | null
   clinicName: string | null
-  /** UTC ISO-8601 instant; format at display time (§12.4). */
   createdAt: string | null
   medicines: readonly Medicine[]
 }

@@ -1,36 +1,37 @@
 {
   "title": "Appointments",
   "status": {
-    "in_progress": "In progress",
-    "completed": "Completed"
+    "completed": "Completed",
+    "scheduled": "Scheduled",
+    "confirmed": "Confirmed",
+    "arrived": "Arrived",
+    "in_chair": "In the chair",
+    "no_show": "No-show",
+    "cancelled": "Cancelled"
   },
   "form": {
     "patient": "Patient",
     "patientSearchPlaceholder": "Type a name or search patients",
     "unlinkPatient": "Unlink patient",
-    "fullName": "Full name",
     "fullNameLinkedHint": "A patient is linked — the name shown always comes from their own record.",
-    "phoneNumber": "Phone number",
     "doctor": "Doctor",
     "doctorPlaceholder": "Not assigned",
-    "treatmentType": "Treatment type",
+    "treatmentType": "Service",
     "treatmentTypePlaceholder": "Not chosen",
-    "toothNumber": "Tooth number",
-    "toothNumberPlaceholder": "Choose a tooth",
-    "chooseDoctorFirst": "Choose a doctor first — the treatments offered depend on their specialty.",
-    "doctorHasNoType": "This doctor has no specialty (doctor type) set. Assign one to see treatments.",
-    "noTypesForSpecialty": "No treatments have been added for “{{specialty}}” yet.",
     "date": "Date",
     "datePlaceholder": "dd.mm.yyyy",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "time": "Time",
     "status": "Status",
-    "notes": "Notes"
+    "notes": "Notes",
+    "duration": "Length, minutes",
+    "chooseDoctorFirst": "Choose a doctor first",
+    "noServices": "This doctor has no services in the price list yet."
   },
   "create": {
     "title": "New appointment",
-    "description": "Pick an existing patient, or enter a walk-in's name and phone number.",
+    "description": "Pick a registered patient. A new patient is added on the Patients page first.",
     "submit": "Add appointment",
     "failed": "Could not add the appointment. Please try again.",
     "added": "Appointment added",
@@ -85,11 +86,5 @@
   },
   "pagination": {
     "summary": "{{from}}–{{to}} of {{count}}"
-  },
-  "unregistered": {
-    "title": "Patient not registered",
-    "description": "{{name}} is not in the patient list. Add them as a patient?",
-    "confirm": "Yes, add",
-    "cancel": "No"
   }
 }

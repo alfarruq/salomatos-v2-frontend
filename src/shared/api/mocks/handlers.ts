@@ -1,35 +1,44 @@
 import { HttpResponse, http } from 'msw'
 import { PAGE_SIZE } from '@/shared/api/pagination'
-import { clinicNow } from '@/shared/lib/datetime'
 import { readJwtPayload } from '@/shared/lib/jwt'
 import {
   accessTokenFor,
   errorEnvelope,
-  MOCK_ADMINISTRATORS,
   MOCK_APPOINTMENTS,
-  MOCK_DOCTOR_TYPES,
-  MOCK_DOCTORS,
+  MOCK_CLINICS,
   MOCK_PASSWORD,
-  MOCK_PATIENT_DETAILS,
   MOCK_PATIENTS,
-  MOCK_RECIPES,
-  MOCK_TREATMENT_TYPES,
-  MOCK_TREATMENTS,
+  MOCK_PAYMENTS,
+  MOCK_PRESCRIPTIONS,
+  MOCK_PROCEDURES,
+  MOCK_SERVICES,
+  MOCK_SPECIALTIES,
+  MOCK_STAFF,
   MOCK_USERS,
   type MockUserKey,
 } from './fixtures'
 
 /**
- * Stands in for the Django backend in tests and in `VITE_USE_MOCKS` runs.
+ * Stands in for the Django v2 backend in tests and in `VITE_USE_MOCKS` runs.
  *
- * These handlers reproduce the contract as it actually is: bearer tokens in the
- * `Authorization` header, tokens returned in the login *body*, the shared error
- * envelope, and no logout or refresh route — because the server has neither.
- *
- * ⛔ No `X-Request-Id` header, deliberately: the backend does not send one, and
- * a mock that supplied it would let code depend on something absent in
- * production.
+ * It enforces what the server enforces, because a kinder mock lets code pass
+ * here and fail in production: a bearer token, a branch picked by `X-Clinic-Id`
+ * the caller is a member of (or `X-Organization-Id` for an owner's read-only
+ * "all branches" view), a permission per action, and 404 for rows of another
+ * branch.
  */
+
+type Row = Record<string, unknown> & { id: string }
+type Body = Record<string, unknown>
+
+interface Scope {
+  user: MockUserKey
+  /** Branches the request may read. */
+  clinicIds: string[]
+  /** The branch writes land in; null in all-branches mode. */
+  clinicId: string | null
+  permissions: readonly string[]
+}
 
 function authenticate(request: Request): MockUserKey | null {
   const header = request.headers.get('Authorization')
@@ -55,64 +64,304 @@ const unauthorized = () =>
     { status: 401 },
   )
 
-/**
- * `DoctorCreateUpdateSerializer.doctor_type` writes an id (`PrimaryKeyRelated
- * Field`, since it is a plain `ModelSerializer` field); `DoctorListSerializer.
- * doctor_type` reads back a name (`CharField()` with no `source`, so it
- * serialises the FK's own `__str__`). A mock that echoed the id it was given
- * would look like it worked and then show a number where a name belongs.
- */
-function doctorTypeNameFor(rawId: unknown): string | null {
-  const id = Number(rawId)
-  if (rawId === null || rawId === undefined || Number.isNaN(id)) return null
-  return MOCK_DOCTOR_TYPES.find((doctorType) => doctorType.id === id)?.name ?? null
+const notFound = () =>
+  HttpResponse.json(
+    errorEnvelope({ message: 'Not found.', messageKey: 'not_found', exceptionClass: 'NotFound' }),
+    { status: 404 },
+  )
+
+const forbidden = () =>
+  HttpResponse.json(
+    errorEnvelope({
+      message: 'You do not have permission to perform this action.',
+      messageKey: 'permission_denied',
+      exceptionClass: 'PermissionDenied',
+    }),
+    { status: 403 },
+  )
+
+/** Field errors as DRF codes, the way `APIExceptionFormatter` flattens them. */
+function validation(errors: Record<string, string>) {
+  return HttpResponse.json(
+    errorEnvelope({
+      message: 'Validation error',
+      messageKey: 'validation_error',
+      errors,
+      exceptionClass: 'ValidationError',
+    }),
+    { status: 400 },
+  )
 }
 
-/** Same id-in, name-out pair confirmed for `doctor`/`doctor_id` on `/calendars/appointments/`. */
-function doctorNameFor(rawId: unknown): string | null {
-  const id = Number(rawId)
-  if (rawId === null || rawId === undefined || Number.isNaN(id)) return null
-  return MOCK_DOCTORS.find((doctor) => doctor.id === id)?.full_name ?? null
+const ALL_CLINICS = [MOCK_CLINICS.main, MOCK_CLINICS.second]
+
+/** `apps/tenancy/context.py`: header in, membership out, 404 for anything foreign. */
+function resolveScope(request: Request, readAction: boolean): Scope | Response {
+  const user = authenticate(request)
+  if (user === null) return unauthorized()
+  const account = MOCK_USERS[user]
+
+  const organizationId = request.headers.get('X-Organization-Id')
+  if (organizationId !== null) {
+    const owns = account.organizations.some((organization) => organization.id === organizationId)
+    if (!owns) return notFound()
+    if (!readAction) {
+      return validation({ clinic: 'clinic_required' })
+    }
+    const memberships: readonly { role: string; permissions: readonly string[] }[] =
+      account.memberships
+    const ownerMembership = memberships.find((membership) => membership.role === 'owner')
+    return {
+      user,
+      clinicIds: ALL_CLINICS.map((clinic) => clinic.id),
+      clinicId: null,
+      permissions: ownerMembership?.permissions ?? [],
+    }
+  }
+
+  const clinicId = request.headers.get('X-Clinic-Id')
+  if (clinicId === null) return validation({ clinic: 'clinic_required' })
+  const memberships: readonly { clinic: { id: string }; permissions: readonly string[] }[] =
+    account.memberships
+  const membership = memberships.find((candidate) => candidate.clinic.id === clinicId)
+  if (membership === undefined) return notFound()
+  return { user, clinicIds: [clinicId], clinicId, permissions: membership.permissions }
 }
 
-/** Same pair as `doctorNameFor`, for `patient`/`patient_id`. */
-function patientNameFor(rawId: unknown): string | null {
-  const id = Number(rawId)
-  if (rawId === null || rawId === undefined || Number.isNaN(id)) return null
-  return MOCK_PATIENTS.find((patient) => patient.id === id)?.full_name ?? null
+function guard(request: Request, permission: string, readAction = false): Scope | Response {
+  const scope = resolveScope(request, readAction)
+  if (scope instanceof Response) return scope
+  return scope.permissions.includes(permission) ? scope : forbidden()
 }
 
-function idOf(rawId: unknown): number | null {
-  const id = Number(rawId)
-  return rawId === null || rawId === undefined || Number.isNaN(id) ? null : id
+function membershipOf(user: MockUserKey): string | null {
+  const memberships: readonly { id: string }[] = MOCK_USERS[user].memberships
+  return memberships[0]?.id ?? null
 }
 
-/** DRF's `TimeField` always answers with seconds, even when the client sent none. */
-function withSeconds(rawTime: unknown): string {
-  const time = typeof rawTime === 'string' ? rawTime : ''
-  return time.length === 5 ? `${time}:00` : time
+function clinicNameOf(clinicId: string | null): string {
+  return ALL_CLINICS.find((clinic) => clinic.id === clinicId)?.name ?? ''
+}
+
+/** In-memory tables, reset by `resetMockDatabase()` between tests. */
+const db: Record<string, Row[]> = {}
+
+function seed(): void {
+  db.specialties = structuredClone(MOCK_SPECIALTIES)
+  db.staff = structuredClone(MOCK_STAFF)
+  db.services = structuredClone(MOCK_SERVICES)
+  db.patients = structuredClone(MOCK_PATIENTS)
+  db.appointments = structuredClone(MOCK_APPOINTMENTS)
+  db.procedures = structuredClone(MOCK_PROCEDURES)
+  db.payments = structuredClone(MOCK_PAYMENTS)
+  db.prescriptions = structuredClone(MOCK_PRESCRIPTIONS)
+  db.attachments = []
+  db.clinics = structuredClone(ALL_CLINICS) as unknown as Row[]
+}
+seed()
+
+export function resetMockDatabase(): void {
+  seed()
+}
+
+function table(name: string): Row[] {
+  const rows = db[name]
+  if (rows === undefined) throw new Error(`Unknown mock table ${name}`)
+  return rows
+}
+
+function staffNameOf(id: unknown): string | null {
+  const name = table('staff').find((member) => member.id === id)?.full_name
+  return typeof name === 'string' ? name : null
+}
+
+function patientNameOf(id: unknown): string {
+  const name = table('patients').find((patient) => patient.id === id)?.full_name
+  return typeof name === 'string' ? name : ''
+}
+
+function serviceOf(id: unknown): Row | undefined {
+  return table('services').find((service) => service.id === id)
+}
+
+let sequence = 1000
+function newId(): string {
+  sequence += 1
+  return `00000000-0000-4000-9000-${String(sequence).padStart(12, '0')}`
+}
+
+function inScope(row: Row, scope: Scope): boolean {
+  // Rows without a clinic column (staff, services, specialties) belong to the main branch.
+  const clinic = typeof row.clinic === 'string' ? row.clinic : MOCK_CLINICS.main.id
+  return scope.clinicIds.includes(clinic)
+}
+
+function paginate(request: Request, rows: Row[]) {
+  const url = new URL(request.url)
+  const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'))
+  const start = (page - 1) * PAGE_SIZE
+  const next = new URL(url)
+  next.searchParams.set('page', String(page + 1))
+  const previous = new URL(url)
+  previous.searchParams.set('page', String(page - 1))
+  return HttpResponse.json({
+    count: rows.length,
+    next: start + PAGE_SIZE < rows.length ? next.pathname + next.search : null,
+    previous: page > 1 ? previous.pathname + previous.search : null,
+    results: rows.slice(start, start + PAGE_SIZE),
+  })
+}
+
+async function bodyOf(request: Request): Promise<Body> {
+  const parsed: unknown = await request.json().catch(() => ({}))
+  return typeof parsed === 'object' && parsed !== null ? (parsed as Body) : {}
+}
+
+function findRow(name: string, id: unknown, scope: Scope): Row | null {
+  const row = table(name).find((candidate) => candidate.id === id)
+  return row !== undefined && inScope(row, scope) ? row : null
+}
+
+function required(body: Body, fields: string[]): Response | null {
+  const errors: Record<string, string> = {}
+  for (const field of fields) {
+    const value = body[field]
+    if (value === undefined || value === null || value === '') {
+      errors[field] = 'required'
+    }
+  }
+  return Object.keys(errors).length > 0 ? validation(errors) : null
+}
+
+interface ResourceOptions {
+  filter?: (row: Row, params: URLSearchParams) => boolean
+  create?: (body: Body, scope: Scope) => Row | Response
+  /** Omit to make the resource read-only after creation (money rows). */
+  patch?: ((row: Row, body: Body) => void) | null
+  /** Omit to keep the default hard delete; null to refuse DELETE entirely. */
+  remove?: ((row: Row) => void) | null
+}
+
+/** List/retrieve/create/patch/delete for a clinic-scoped table. */
+function resource(
+  path: string,
+  name: string,
+  perms: { view: string; manage: string },
+  options: ResourceOptions = {},
+) {
+  const base = `/api/v1/${path}/`
+  const handlers = [
+    http.get(base, ({ request }) => {
+      const scope = guard(request, perms.view, true)
+      if (scope instanceof Response) return scope
+      const params = new URL(request.url).searchParams
+      const rows = table(name).filter(
+        (row) => inScope(row, scope) && (options.filter?.(row, params) ?? true),
+      )
+      return paginate(request, rows)
+    }),
+    http.get(`${base}:id/`, ({ request, params }) => {
+      const scope = guard(request, perms.view, true)
+      if (scope instanceof Response) return scope
+      const row = findRow(name, params.id, scope)
+      return row === null ? notFound() : HttpResponse.json(row)
+    }),
+    http.post(base, async ({ request }) => {
+      const scope = guard(request, perms.manage)
+      if (scope instanceof Response) return scope
+      const body = await bodyOf(request)
+      const created = options.create?.(body, scope) ?? {
+        ...body,
+        id: newId(),
+        clinic: scope.clinicId,
+      }
+      if (created instanceof Response) return created
+      table(name).unshift(created)
+      return HttpResponse.json(created, { status: 201 })
+    }),
+  ]
+
+  const patch = options.patch
+  if (patch !== null) {
+    handlers.push(
+      http.patch(`${base}:id/`, async ({ request, params }) => {
+        const scope = guard(request, perms.manage)
+        if (scope instanceof Response) return scope
+        const row = findRow(name, params.id, scope)
+        if (row === null) return notFound()
+        const body = await bodyOf(request)
+        if (patch === undefined) Object.assign(row, body, { id: row.id })
+        else patch(row, body)
+        return HttpResponse.json(row)
+      }),
+    )
+  }
+
+  const remove = options.remove
+  if (remove !== null) {
+    handlers.push(
+      http.delete(`${base}:id/`, ({ request, params }) => {
+        const scope = guard(request, perms.manage)
+        if (scope instanceof Response) return scope
+        const row = findRow(name, params.id, scope)
+        if (row === null) return notFound()
+        if (remove === undefined)
+          db[name] = table(name).filter((candidate) => candidate.id !== row.id)
+        else remove(row)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+  }
+
+  return handlers
+}
+
+/** `POST …/:id/void/` — money is never edited or deleted, only voided with a reason. */
+function voidAction(path: string, name: string, permission: string) {
+  return http.post(`/api/v1/${path}/:id/void/`, async ({ request, params }) => {
+    const scope = guard(request, permission)
+    if (scope instanceof Response) return scope
+    const row = findRow(name, params.id, scope)
+    if (row === null) return notFound()
+    const body = await bodyOf(request)
+    const missing = required(body, ['reason'])
+    if (missing !== null) return missing
+    Object.assign(row, { voided_at: new Date().toISOString(), void_reason: body.reason })
+    return HttpResponse.json(row)
+  })
+}
+
+/** Mirrors `PatientBalanceViewSet`: charged minus paid, voided lines left out. */
+function balanceRows(scope: Scope): Row[] {
+  const sum = (name: string, field: string, patientId: string) =>
+    table(name)
+      .filter((row) => row.patient === patientId && row.voided_at === null)
+      .reduce((total, row) => total + Number(row[field]), 0)
+  return table('patients')
+    .filter((patient) => inScope(patient, scope))
+    .map((patient) => {
+      const charged = sum('procedures', 'total', patient.id)
+      const paid = sum('payments', 'amount', patient.id)
+      return {
+        id: patient.id,
+        clinic: patient.clinic,
+        clinic_name: patient.clinic_name,
+        full_name: patient.full_name,
+        phone_number: patient.phone_number,
+        charged: charged.toFixed(2),
+        paid: paid.toFixed(2),
+        debt: (charged - paid).toFixed(2),
+      }
+    })
+}
+
+function byParam(row: Row, params: URLSearchParams, ...fields: string[]): boolean {
+  return fields.every((field) => !params.has(field) || row[field] === params.get(field))
 }
 
 export const handlers = [
-  /**
-   * §9 — the only thing that says who the user is. Note what it does *not*
-   * return: no id, no clinic, no permissions. That absence is the reason the
-   * tenant id is read from the token instead.
-   */
-  http.get('/api/v1/authentication/me/', ({ request }) => {
-    const user = authenticate(request)
-    if (user === null) return unauthorized()
-
-    const { id: _id, username: _username, ...serialized } = MOCK_USERS[user]
-    return HttpResponse.json(serialized)
-  }),
-
-  http.post('/api/v1/authentication/login/', async ({ request }) => {
-    const body = (await request.json().catch(() => ({}))) as {
-      username?: string
-      password?: string
-    }
-
+  http.post('/api/v1/auth/login/', async ({ request }) => {
+    const body = await bodyOf(request)
     const match = (Object.keys(MOCK_USERS) as MockUserKey[]).find(
       (key) => MOCK_USERS[key].username === body.username,
     )
@@ -128,602 +377,399 @@ export const handlers = [
       )
     }
 
-    // `UserService.login` wraps the tokens in the default response serializer.
     return HttpResponse.json({
       message: 'Ok',
-      result: {
-        access_token: accessTokenFor(match),
-        refresh_token: `refresh-${match}`,
-      },
+      result: { access_token: accessTokenFor(match), refresh_token: `refresh-${match}` },
     })
   }),
 
-  /**
-   * `PatientService.get_patients` — filtered, then paginated.
-   *
-   * The `search` filter is `full_name__icontains`, which is why it arrives as a
-   * query parameter and why nginx must not log query strings (§13.4). Repeated
-   * here rather than simplified, so a test that checks searching is checking
-   * the thing the server actually does.
-   */
-  http.get('/api/v1/clinic/patients/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
+  http.post('/api/v1/auth/logout/', () => new HttpResponse(null, { status: 205 })),
 
-    const url = new URL(request.url)
-    const search = url.searchParams.get('search')?.toLowerCase() ?? ''
-    const status = url.searchParams.get('status')
-    const doctor = url.searchParams.get('doctor')?.toLowerCase() ?? ''
-    const hasDebt = url.searchParams.get('has_debt') === 'true'
-    const page = Number(url.searchParams.get('page') ?? '1')
-
-    const matched = MOCK_PATIENTS.filter((patient) => {
-      if (hasDebt && !((patient.total_remaining ?? 0) > 0)) return false
-      if (search !== '' && !patient.full_name.toLowerCase().includes(search)) return false
-      if (status !== null && patient.status !== status) return false
-      if (doctor !== '' && !(patient.doctor?.toLowerCase().includes(doctor) ?? false)) return false
-      return true
-    })
-
-    const start = (page - 1) * PAGE_SIZE
-    const results = matched.slice(start, start + PAGE_SIZE)
-
-    return HttpResponse.json({
-      count: matched.length,
-      next: start + PAGE_SIZE < matched.length ? `/api/v1/clinic/patients/?page=${page + 1}` : null,
-      previous: page > 1 ? `/api/v1/clinic/patients/?page=${page - 1}` : null,
-      results,
-    })
+  http.get('/api/v1/auth/me/', ({ request }) => {
+    const user = authenticate(request)
+    if (user === null) return unauthorized()
+    return HttpResponse.json(MOCK_USERS[user])
   }),
 
-  /**
-   * `PatientService.create_patient` — answers with the *list* serializer.
-   *
-   * The rejection reproduced here is `unique_phone_per_clinic`, the constraint
-   * a receptionist actually hits: registering someone who is already on file.
-   * DRF reports it as the code `unique`, not as a sentence.
-   */
-  http.post('/api/v1/clinic/patients/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const phone = typeof body['phone_number'] === 'string' ? body['phone_number'] : ''
-
-    if (MOCK_PATIENTS.some((patient) => patient.phone_number === phone)) {
-      return HttpResponse.json(
-        errorEnvelope({
-          message: 'Validation error',
-          messageKey: 'validation_error',
-          errors: { phone_number: 'unique' },
-          exceptionClass: 'ValidationError',
-        }),
-        { status: 400 },
-      )
-    }
-
-    return HttpResponse.json({
-      id: 999,
-      full_name: body['full_name'] ?? '',
-      phone_number: phone,
-      appointment_date: null,
-      treatment_type: null,
-      status: null,
-      // Written as an id (`doctor`), read back as a name — same list-serializer
-      // shape confirmed on `/clinic/doctors/` and `/clinic/treatment-types/`.
-      doctor: doctorNameFor(body['doctor']),
-      remaining: null,
-      total_remaining: 0,
-      birth_date: body['birth_date'] ?? null,
-      address: body['address'] ?? null,
-      office: body['office'] ?? null,
-    })
-  }),
-
-  /**
-   * `PatientService.update_patient`, **as it is meant to work**.
-   *
-   * ⚠️ The real endpoint raises `TypeError` on every call — `get_patient` is
-   * invoked without its `user` argument. Reproducing that bug here would mean
-   * writing client code against a defect instead of a contract; the mismatch is
-   * documented on `useUpdatePatient` instead.
-   */
-  http.patch('/api/v1/clinic/patients/:patientId/', async ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['patientId'])
-    const existing = MOCK_PATIENTS.find((patient) => patient.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const updated: Record<string, unknown> = { ...existing, ...body }
-    if ('doctor' in body) updated['doctor'] = doctorNameFor(body['doctor'])
-
-    return HttpResponse.json(updated)
-  }),
-
-  http.delete('/api/v1/clinic/patients/:patientId/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['patientId'])
-    const existing = MOCK_PATIENTS.find((patient) => patient.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    return new HttpResponse(null, { status: 204 })
-  }),
-
-  /** `DoctorService.get_doctor_types` — a plain array, not a page. */
-  http.get('/api/v1/clinic/doctors/types/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-    return HttpResponse.json(MOCK_DOCTOR_TYPES)
-  }),
-
-  http.post('/api/v1/clinic/doctors/types/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    return HttpResponse.json({ id: 700, name: body['name'] ?? 'Stomatolog' })
-  }),
-
-  http.patch('/api/v1/clinic/doctors/types/:id/', async ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['id'])
-    const existing = MOCK_DOCTOR_TYPES.find((doctorType) => doctorType.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    return HttpResponse.json({ ...existing, ...body })
-  }),
-
-  http.delete('/api/v1/clinic/doctors/types/:id/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['id'])
-    const existing = MOCK_DOCTOR_TYPES.find((doctorType) => doctorType.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    return new HttpResponse(null, { status: 204 })
-  }),
-
-  /** `TreatmentTypeService.get_treatment_types` — paginated, like patients. */
-  http.get('/api/v1/clinic/treatment-types/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-    return HttpResponse.json({
-      count: MOCK_TREATMENT_TYPES.length,
-      next: null,
-      previous: null,
-      results: MOCK_TREATMENT_TYPES,
-    })
-  }),
-
-  http.post('/api/v1/clinic/treatment-types/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    // The id the client sent, translated to a name — create/update answer with
-    // the list serializer, same as `doctor_type` on `/clinic/doctors/`.
-    const doctorType = MOCK_DOCTOR_TYPES.find((type) => type.id === body['doctor_type'])
-    return HttpResponse.json({
-      id: 800,
-      name: body['name'] ?? '',
-      price: body['price'] ?? null,
-      doctor_type: doctorType?.name ?? null,
-    })
-  }),
-
-  http.patch('/api/v1/clinic/treatment-types/:id/', async ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['id'])
-    const existing = MOCK_TREATMENT_TYPES.find((service) => service.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const patch: Record<string, unknown> = { ...body }
-    if ('doctor_type' in patch) {
-      const doctorType = MOCK_DOCTOR_TYPES.find((type) => type.id === patch['doctor_type'])
-      patch['doctor_type'] = doctorType?.name ?? null
-    }
-    return HttpResponse.json({ ...existing, ...patch })
-  }),
-
-  http.delete('/api/v1/clinic/treatment-types/:id/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['id'])
-    const existing = MOCK_TREATMENT_TYPES.find((service) => service.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    return new HttpResponse(null, { status: 204 })
-  }),
-
-  /** `UserService.update` — the clinic's own record. */
-  http.patch('/api/v1/authentication/update/:userId/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    return HttpResponse.json(body)
-  }),
-
-  /**
-   * `ClinicService.get_clinics` — a plain array filtered to the caller's own
-   * clinic, and, like every list here, `many=True` behind a schema that shows
-   * a single object. Empty by default: the account has not set one up yet,
-   * the more useful default state to develop the "first-time setup" screen
-   * against.
-   */
   http.get('/api/v1/clinic/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-    return HttpResponse.json([])
+    const scope = guard(request, 'clinic:view')
+    if (scope instanceof Response) return scope
+    return HttpResponse.json(table('clinics').find((clinic) => clinic.id === scope.clinicId))
   }),
 
-  http.post('/api/v1/clinic/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    // `ClinicListSerializer` — note what it does not have: an id. Neither does
-    // this response, on purpose; see `entities/clinic/model/schema.ts`.
-    return HttpResponse.json({
-      name: body['name'] ?? '',
-      phone_number: body['phone_number'] ?? '',
-      address: body['address'] ?? '',
-      logo: null,
-      working_hours: body['working_hours'] ?? null,
-    })
+  http.patch('/api/v1/clinic/', async ({ request }) => {
+    const scope = guard(request, 'clinic:manage')
+    if (scope instanceof Response) return scope
+    const clinic = table('clinics').find((candidate) => candidate.id === scope.clinicId)
+    if (clinic === undefined) return notFound()
+    Object.assign(clinic, await bodyOf(request), { id: clinic.id })
+    return HttpResponse.json(clinic)
   }),
 
-  /** `DoctorService.get_doctors` — a plain array, not a page. */
-  http.get('/api/v1/clinic/doctors/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-    return HttpResponse.json(MOCK_DOCTORS)
+  ...resource(
+    'specialties',
+    'specialties',
+    { view: 'staff:view', manage: 'specialty:manage' },
+    {
+      create: (body, scope) =>
+        required(body, ['name']) ?? { id: newId(), clinic: scope.clinicId, name: body.name },
+    },
+  ),
+
+  http.post('/api/v1/staff/:id/reactivate/', ({ request, params }) => {
+    const scope = guard(request, 'staff:manage')
+    if (scope instanceof Response) return scope
+    const row = findRow('staff', params.id, scope)
+    if (row === null) return notFound()
+    row.is_active = true
+    return HttpResponse.json(row)
   }),
 
-  http.post('/api/v1/clinic/doctors/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
+  ...resource(
+    'staff',
+    'staff',
+    { view: 'staff:view', manage: 'staff:manage' },
+    {
+      filter: (row, params) =>
+        byParam(row, params, 'role', 'specialty') &&
+        (!params.has('is_active') || String(row.is_active) === params.get('is_active')),
+      create: (body, scope) => {
+        const missing = required(body, ['username', 'full_name', 'password', 'role'])
+        if (missing !== null) return missing
+        if (table('staff').some((member) => member.username === body.username)) {
+          return validation({ username: 'duplicate' })
+        }
+        const { password: _password, ...rest } = body
+        return {
+          phone_number: '',
+          email: '',
+          specialty: null,
+          experience_years: null,
+          biography: '',
+          ...rest,
+          id: newId(),
+          clinic: scope.clinicId,
+          is_active: true,
+          specialty_name:
+            table('specialties').find((specialty) => specialty.id === body.specialty)?.name ?? null,
+        }
+      },
+      patch: (row, body) => {
+        const { password: _password, ...rest } = body
+        Object.assign(row, rest, { id: row.id })
+        if ('specialty' in body) {
+          row.specialty_name =
+            table('specialties').find((specialty) => specialty.id === body.specialty)?.name ?? null
+        }
+      },
+      // Staff are deactivated, not deleted: their name stays on past visits.
+      remove: (row) => {
+        row.is_active = false
+      },
+    },
+  ),
 
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const phone = typeof body['phone_number'] === 'string' ? body['phone_number'] : ''
+  ...resource(
+    'services',
+    'services',
+    { view: 'service:view', manage: 'service:manage' },
+    {
+      filter: (row, params) =>
+        byParam(row, params, 'specialty', 'category') &&
+        (!params.has('is_active') || String(row.is_active) === params.get('is_active')),
+      create: (body, scope) =>
+        required(body, ['name', 'price']) ?? {
+          code: '',
+          category: null,
+          specialty: null,
+          duration_minutes: 30,
+          is_active: true,
+          ...body,
+          id: newId(),
+          clinic: scope.clinicId,
+        },
+    },
+  ),
 
-    if (MOCK_DOCTORS.some((doctor) => doctor.phone_number === phone)) {
-      return HttpResponse.json(
-        errorEnvelope({
-          message: 'Validation error',
-          messageKey: 'validation_error',
-          errors: { phone_number: 'unique' },
-          exceptionClass: 'ValidationError',
-        }),
-        { status: 400 },
-      )
+  // Text search lives in a POST body so names never reach a URL or an access log.
+  http.post('/api/v1/patients/search/', async ({ request }) => {
+    const scope = guard(request, 'patient:view', true)
+    if (scope instanceof Response) return scope
+    const body = await bodyOf(request)
+    const query = typeof body.query === 'string' ? body.query.trim().toLowerCase() : ''
+    if (query.length < 2) {
+      return validation({ query: 'min_length' })
     }
-
-    // The server assigns role and clinic itself.
-    return HttpResponse.json({
-      id: 900,
-      username: body['username'] ?? null,
-      full_name: body['full_name'] ?? '',
-      phone_number: phone,
-      email: body['email'] ?? null,
-      // Written as an id (`doctor_type`), read back as a name — the list
-      // serializer has no `source` and reports the FK's own `__str__`.
-      doctor_type: doctorTypeNameFor(body['doctor_type']),
-    })
-  }),
-
-  http.patch('/api/v1/clinic/doctors/:doctorId/', async ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['doctorId'])
-    const existing = MOCK_DOCTORS.find((doctor) => doctor.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const updated: Record<string, unknown> = { ...existing, ...body }
-    // `password` is write-only on the server; the list serializer never echoes it.
-    delete updated['password']
-    // Same id-in, name-out translation as create — otherwise a saved
-    // assignment would echo back as the raw id instead of what the server
-    // actually returns.
-    if ('doctor_type' in body) updated['doctor_type'] = doctorTypeNameFor(body['doctor_type'])
-
-    return HttpResponse.json(updated)
-  }),
-
-  http.delete('/api/v1/clinic/doctors/:doctorId/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['doctorId'])
-    const existing = MOCK_DOCTORS.find((doctor) => doctor.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    return new HttpResponse(null, { status: 204 })
-  }),
-
-  /** `AdminService.get_admins` — a plain array, not a page. */
-  http.get('/api/v1/clinic/admins/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-    return HttpResponse.json(MOCK_ADMINISTRATORS)
-  }),
-
-  http.post('/api/v1/clinic/admins/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-
-    if (MOCK_ADMINISTRATORS.some((administrator) => administrator.username === body['username'])) {
-      return HttpResponse.json(
-        errorEnvelope({
-          message: 'Validation error',
-          messageKey: 'validation_error',
-          errors: { username: 'unique' },
-          exceptionClass: 'ValidationError',
-        }),
-        { status: 400 },
-      )
-    }
-
-    // The server assigns role and clinic itself, and never echoes the password.
-    return HttpResponse.json({
-      id: 950,
-      username: body['username'] ?? null,
-      full_name: body['full_name'] ?? '',
-      phone_number: body['phone_number'] ?? null,
-      email: body['email'] ?? null,
-    })
-  }),
-
-  http.delete('/api/v1/clinic/admins/:administratorId/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['administratorId'])
-    const existing = MOCK_ADMINISTRATORS.find((administrator) => administrator.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    return new HttpResponse(null, { status: 204 })
-  }),
-
-  http.get('/api/v1/clinic/patients/:patientId/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const detail = MOCK_PATIENT_DETAILS[Number(params['patientId'])]
-    if (detail === undefined) {
-      // `drf_exception_handler` answers Http404 with no body at all.
-      return new HttpResponse(null, { status: 404 })
-    }
-
-    return HttpResponse.json(detail)
-  }),
-
-  /**
-   * `GalleryCreateUpdate` — confirmed against the real backend (see
-   * `features/patient-gallery-upload`): `user` is the patient's own id
-   * despite the name, and the file itself is the only other field. The one
-   * handler in this file reading `request.formData()` instead of
-   * `request.json()`, since the real endpoint only parses multipart.
-   *
-   * Stateless like every other create handler here (`/clinic/patients/`,
-   * `/clinic/doctors/`): it does not push onto `MOCK_PATIENT_DETAILS`, whose
-   * entries are shared across every test in the run.
-   */
-  http.post('/api/v1/clinic/galleries/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const form = await request.formData()
-    const userId = Number(form.get('user'))
-
-    if (!Number.isInteger(userId) || MOCK_PATIENT_DETAILS[userId] === undefined) {
-      return HttpResponse.json(
-        errorEnvelope({
-          message: 'Invalid input.',
-          messageKey: 'invalid',
-          exceptionClass: 'ValidationError',
-          errors: { user: 'does_not_exist' },
-        }),
-        { status: 400 },
-      )
-    }
-
-    const file = form.get('image')
-    return HttpResponse.json({
-      id: 999,
-      image: file instanceof File ? `/media/gallery/${file.name}` : null,
-      created_at: new Date().toISOString(),
-    })
-  }),
-
-  /**
-   * `TreatmentList`, filtered by `patient_id` — in DRF's page envelope, as the
-   * live endpoint answered on 2026-10-07. One page: no fixture has ten rows.
-   */
-  http.get('/api/v1/clinic/treatments/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const params = new URL(request.url).searchParams
-    const rawPatientId = params.get('patient_id')
-
-    // The patient's own tab: every row at once, as before.
-    if (rawPatientId !== null && !params.has('page')) {
-      const results = MOCK_TREATMENTS[Number(rawPatientId)] ?? []
-      return HttpResponse.json({ count: results.length, next: null, previous: null, results })
-    }
-
-    /*
-     * The clinic-wide table: filtered, then paged — confirmed live 2026-10-14.
-     * Fixture rows carry names, so the id filters resolve to a name first.
-     */
-    type Row = {
-      patient_id?: number
-      doctor?: string
-      treatment_type?: string
-      remaining?: unknown
-      status?: string
-    }
-    const doctorName = params.has('doctor_id') ? doctorNameFor(params.get('doctor_id')) : undefined
-    const typeName = params.has('treatment_type_id')
-      ? MOCK_TREATMENT_TYPES.find((type) => type.id === Number(params.get('treatment_type_id')))
-          ?.name
-      : undefined
-    const remaining = params.get('remaining')
-    const status = params.get('status')
-    const all = (Object.values(MOCK_TREATMENTS).flat() as Row[]).filter(
+    const rows = table('patients').filter(
       (row) =>
-        (rawPatientId === null || row.patient_id === Number(rawPatientId)) &&
-        (!params.has('doctor_id') || row.doctor === doctorName) &&
-        (!params.has('treatment_type_id') || row.treatment_type === typeName) &&
-        (remaining === null || Number(row.remaining ?? 0) > 0 === (remaining === 'true')) &&
-        (status === null || row.status === status),
+        inScope(row, scope) &&
+        (body.include_archived === true || row.archived_at === null) &&
+        (String(row.full_name).toLowerCase().includes(query) ||
+          String(row.phone_number).includes(query)),
     )
-    const page = Number(params.get('page') ?? '1')
-    const start = (page - 1) * PAGE_SIZE
-    const url = (n: number) => `http://localhost/api/v1/clinic/treatments/?page=${n}`
-    return HttpResponse.json({
-      count: all.length,
-      next: start + PAGE_SIZE < all.length ? url(page + 1) : null,
-      previous: page > 1 ? url(page - 1) : null,
-      results: all.slice(start, start + PAGE_SIZE),
-    })
+    return paginate(request, rows)
   }),
 
-  /** 204 with no body, confirmed live. Stateless, like every other write here. */
-  http.delete('/api/v1/clinic/treatments/:treatmentId/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['treatmentId'])
-    const exists = Object.values(MOCK_TREATMENTS).some((rows) =>
-      rows.some((row) => (row as { id: number }).id === id),
-    )
-    return exists
-      ? new HttpResponse(null, { status: 204 })
-      : new HttpResponse(null, { status: 404 })
+  http.post('/api/v1/patients/:id/archive/', ({ request, params }) => {
+    const scope = guard(request, 'patient:archive')
+    if (scope instanceof Response) return scope
+    const row = findRow('patients', params.id, scope)
+    if (row === null) return notFound()
+    row.archived_at = new Date().toISOString()
+    return HttpResponse.json(row)
   }),
 
-  /** `RecipeList` — a plain array, filtered by the `patient_id` query param. */
-  http.get('/api/v1/core/recipes/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const patientId = Number(new URL(request.url).searchParams.get('patient_id'))
-    return HttpResponse.json(MOCK_RECIPES[patientId] ?? [])
+  http.post('/api/v1/patients/:id/restore/', ({ request, params }) => {
+    const scope = guard(request, 'patient:archive')
+    if (scope instanceof Response) return scope
+    const row = findRow('patients', params.id, scope)
+    if (row === null) return notFound()
+    row.archived_at = null
+    return HttpResponse.json(row)
   }),
 
-  /**
-   * One object in, one object out — confirmed live on 2026-10-07, names in
-   * place of the `patient`/`doctor` ids. Stateless, like every other write here.
-   */
-  http.post('/api/v1/core/recipes/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
+  ...resource(
+    'patients',
+    'patients',
+    { view: 'patient:view', manage: 'patient:manage' },
+    {
+      filter: (row, params) =>
+        (params.get('archived') === 'true' ? row.archived_at !== null : row.archived_at === null) &&
+        byParam(row, params, 'primary_doctor', 'gender'),
+      create: (body, scope) =>
+        required(body, ['full_name']) ?? {
+          phone_number: '',
+          birth_date: null,
+          gender: '',
+          address: '',
+          notes: '',
+          primary_doctor: null,
+          ...body,
+          id: newId(),
+          clinic: scope.clinicId,
+          clinic_name: clinicNameOf(scope.clinicId),
+          primary_doctor_name: staffNameOf(body.primary_doctor),
+          archived_at: null,
+          created_at: new Date().toISOString(),
+        },
+      patch: (row, body) => {
+        Object.assign(row, body, { id: row.id })
+        if ('primary_doctor' in body) row.primary_doctor_name = staffNameOf(body.primary_doctor)
+      },
+      // Patients are never deleted, only archived.
+      remove: null,
+    },
+  ),
 
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const medicines = Array.isArray(body['medicines']) ? (body['medicines'] as unknown[]) : []
-    if (medicines.length === 0) {
-      return HttpResponse.json(
-        { message: 'Validation error', errors: { medicines: ['This field is required.'] } },
-        { status: 400 },
-      )
-    }
-    return HttpResponse.json({
-      id: 900,
-      patient: patientNameFor(body['patient']),
-      doctor: doctorNameFor(body['doctor']),
-      notes: body['notes'] ?? '',
-      clinic: null,
-      created_at: '2026-10-07T09:00:00Z',
-      medicines: medicines.map((medicine, index) => ({
-        id: 900 + index,
-        ...(medicine as Record<string, unknown>),
-      })),
-    })
-  }),
+  ...resource(
+    'appointments',
+    'appointments',
+    { view: 'appointment:view', manage: 'appointment:manage' },
+    {
+      filter: (row, params) => {
+        const start = String(row.start_at)
+        const from = params.get('start_from')
+        const to = params.get('start_to')
+        const statuses = params.getAll('status')
+        return (
+          (from === null || start >= from) &&
+          (to === null || start < to) &&
+          byParam(row, params, 'doctor', 'patient', 'chair') &&
+          (statuses.length === 0 || statuses.includes(String(row.status)))
+        )
+      },
+      create: (body, scope) => {
+        const missing = required(body, ['patient', 'doctor', 'start_at'])
+        if (missing !== null) return missing
+        const start = new Date(String(body.start_at))
+        const minutes = Number(serviceOf(body.service)?.duration_minutes ?? 30)
+        return {
+          chair: null,
+          service: null,
+          status: 'scheduled',
+          notes: '',
+          end_at: new Date(start.getTime() + minutes * 60_000).toISOString(),
+          ...body,
+          id: newId(),
+          clinic: scope.clinicId,
+          clinic_name: clinicNameOf(scope.clinicId),
+          patient_name: patientNameOf(body.patient),
+          doctor_name: staffNameOf(body.doctor),
+        }
+      },
+      patch: (row, body) => {
+        Object.assign(row, body, { id: row.id })
+        if ('patient' in body) row.patient_name = patientNameOf(body.patient)
+        if ('doctor' in body) row.doctor_name = staffNameOf(body.doctor)
+      },
+    },
+  ),
 
-  /**
-   * `CalendarService.get_appointments` — confirmed shape, see
-   * `entities/appointment/model/schema.ts`. Mocked as a plain array: the
-   * endpoint answers for one day or one week at a time, which is a bounded
-   * slice rather than the kind of catalog `/clinic/treatment-types/` turned
-   * out to paginate (still unconfirmed either way).
-   */
-  http.get('/api/v1/calendars/appointments/', ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
+  voidAction('procedures', 'procedures', 'procedure:void'),
 
+  ...resource(
+    'procedures',
+    'procedures',
+    { view: 'procedure:view', manage: 'procedure:manage' },
+    {
+      filter: (row, params) =>
+        byParam(row, params, 'patient', 'doctor', 'service') &&
+        (!params.has('voided') || (params.get('voided') === 'true') === (row.voided_at !== null)),
+      create: (body, scope) => {
+        const missing = required(body, ['patient', 'service'])
+        if (missing !== null) return missing
+        const service = serviceOf(body.service)
+        const quantity = Number(body.quantity ?? 1)
+        const unitPrice = Number(body.unit_price ?? service?.price ?? 0)
+        const discount = Number(body.discount_percent ?? 0)
+        const doctor = body.doctor ?? membershipOf(scope.user)
+        return {
+          plan_item: null,
+          appointment: null,
+          tooth: null,
+          surfaces: [],
+          notes: '',
+          ...body,
+          doctor,
+          doctor_name: staffNameOf(doctor),
+          quantity,
+          unit_price: unitPrice.toFixed(2),
+          discount_percent: discount.toFixed(2),
+          total: (quantity * unitPrice * (1 - discount / 100)).toFixed(2),
+          id: newId(),
+          clinic: scope.clinicId,
+          clinic_name: clinicNameOf(scope.clinicId),
+          service_name: service?.name ?? '',
+          patient_name: patientNameOf(body.patient),
+          performed_at: body.performed_at ?? new Date().toISOString(),
+          voided_at: null,
+          void_reason: '',
+        }
+      },
+      // Money is append-only: only the notes change after the fact.
+      patch: (row, body) => {
+        if (typeof body.notes === 'string') row.notes = body.notes
+      },
+      remove: null,
+    },
+  ),
+
+  voidAction('payments', 'payments', 'payment:void'),
+
+  ...resource(
+    'payments',
+    'payments',
+    { view: 'payment:view', manage: 'payment:manage' },
+    {
+      filter: (row, params) => byParam(row, params, 'patient', 'method'),
+      create: (body, scope) => {
+        const missing = required(body, ['patient', 'amount', 'method'])
+        if (missing !== null) return missing
+        return {
+          notes: '',
+          ...body,
+          amount: Number(body.amount).toFixed(2),
+          id: newId(),
+          clinic: scope.clinicId,
+          clinic_name: clinicNameOf(scope.clinicId),
+          patient_name: patientNameOf(body.patient),
+          paid_at: body.paid_at ?? new Date().toISOString(),
+          received_by: membershipOf(scope.user),
+          received_by_name: MOCK_USERS[scope.user].full_name,
+          voided_at: null,
+          void_reason: '',
+        }
+      },
+      patch: null,
+      remove: null,
+    },
+  ),
+
+  http.get('/api/v1/balances/', ({ request }) => {
+    const scope = guard(request, 'payment:view', true)
+    if (scope instanceof Response) return scope
     const params = new URL(request.url).searchParams
-    const raw = params.get('date')
-    // `day` is the server's own "today", confirmed live.
-    const date = raw === 'day' ? clinicNow().date : raw
-    const doctorId = params.get('doctor_id')
-    const matched = (
-      date === 'week' || date === null
-        ? MOCK_APPOINTMENTS
-        : MOCK_APPOINTMENTS.filter((appointment) => appointment.date === date)
-    ).filter((appointment) => doctorId === null || String(appointment.doctor_id) === doctorId)
-
-    return HttpResponse.json(matched)
+    const rows = balanceRows(scope)
+      .filter((row) => params.get('has_debt') !== 'true' || Number(row.debt) > 0)
+      .sort((a, b) => Number(b.debt) - Number(a.debt))
+    return paginate(request, rows)
   }),
 
-  http.post('/api/v1/calendars/appointments/', async ({ request }) => {
-    if (authenticate(request) === null) return unauthorized()
+  http.get('/api/v1/balances/:id/', ({ request, params }) => {
+    const scope = guard(request, 'payment:view', true)
+    if (scope instanceof Response) return scope
+    const row = balanceRows(scope).find((balance) => balance.id === params.id)
+    return row === undefined ? notFound() : HttpResponse.json(row)
+  }),
 
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+  ...resource(
+    'prescriptions',
+    'prescriptions',
+    { view: 'prescription:view', manage: 'prescription:manage' },
+    {
+      filter: (row, params) => byParam(row, params, 'patient', 'doctor'),
+      create: (body, scope) => {
+        const missing = required(body, ['patient'])
+        if (missing !== null) return missing
+        const items = Array.isArray(body.items) ? (body.items as Body[]) : []
+        if (items.length === 0) return validation({ items: 'required' })
+        const doctor = body.doctor ?? membershipOf(scope.user)
+        return {
+          notes: '',
+          ...body,
+          doctor,
+          doctor_name: staffNameOf(doctor),
+          items: items.map((item) => ({ ...item, id: newId() })),
+          id: newId(),
+          clinic: scope.clinicId,
+          clinic_name: clinicNameOf(scope.clinicId),
+          created_at: new Date().toISOString(),
+        }
+      },
+    },
+  ),
 
-    // Confirmed against a real 400: unlike `patient`, `doctor` is required.
-    if (body['doctor'] === null || body['doctor'] === undefined) {
-      return HttpResponse.json(
-        errorEnvelope({
-          message: 'Invalid input.',
-          messageKey: 'invalid',
-          errors: { doctor: 'null' },
-          exceptionClass: 'ValidationError',
-        }),
-        { status: 400 },
-      )
+  // Multipart, unlike every other write.
+  http.post('/api/v1/attachments/', async ({ request }) => {
+    const scope = guard(request, 'attachment:manage')
+    if (scope instanceof Response) return scope
+    const form = await request.formData()
+    const file = form.get('file')
+    if (!(file instanceof File)) return validation({ file: 'required' })
+    const tooth = form.get('tooth')
+    const row: Row = {
+      id: newId(),
+      clinic: scope.clinicId,
+      clinic_name: clinicNameOf(scope.clinicId),
+      patient: form.get('patient'),
+      kind: form.get('kind') ?? 'photo',
+      tooth: tooth === null || tooth === '' ? null : Number(tooth),
+      content_type: file.type,
+      size_bytes: file.size,
+      taken_at: null,
+      notes: '',
+      created_at: new Date().toISOString(),
     }
+    table('attachments').unshift(row)
+    return HttpResponse.json(row, { status: 201 })
+  }),
 
-    const patientId = idOf(body['patient'])
-    return HttpResponse.json({
-      id: 900,
-      patient_id: patientId,
-      // No `full_name` on read: a linked patient's own name wins, and an
-      // unlinked walk-in falls back to what was typed — confirmed shape.
-      patient: patientNameFor(patientId) ?? body['full_name'] ?? null,
-      phone_number: body['phone_number'] ?? null,
-      doctor_id: idOf(body['doctor']),
-      doctor: doctorNameFor(body['doctor']),
-      // Confirmed against a real response: sent back even though the form
-      // never submits it.
-      treatment_type: null,
-      date: body['date'] ?? '',
-      time: withSeconds(body['time']),
-      notes: body['notes'] ?? null,
-      status: body['status'] ?? 'in_progress',
+  http.get('/api/v1/attachments/:id/download/', ({ request, params }) => {
+    const scope = guard(request, 'attachment:view', true)
+    if (scope instanceof Response) return scope
+    const row = findRow('attachments', params.id, scope)
+    if (row === null) return notFound()
+    return new HttpResponse(new Blob(['mock'], { type: String(row.content_type) }), {
+      headers: { 'Content-Type': String(row.content_type) },
     })
   }),
 
-  http.patch('/api/v1/calendars/appointments/:id/', async ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['id'])
-    const existing = MOCK_APPOINTMENTS.find((appointment) => appointment.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const updated: Record<string, unknown> = { ...existing, ...body }
-    if ('patient' in body) {
-      const patientId = idOf(body['patient'])
-      updated['patient_id'] = patientId
-      updated['patient'] = patientNameFor(patientId) ?? body['full_name'] ?? existing.patient
-    }
-    if ('doctor' in body) {
-      updated['doctor_id'] = idOf(body['doctor'])
-      updated['doctor'] = doctorNameFor(body['doctor'])
-    }
-    if ('time' in body) updated['time'] = withSeconds(body['time'])
-
-    return HttpResponse.json(updated)
-  }),
-
-  http.delete('/api/v1/calendars/appointments/:id/', ({ request, params }) => {
-    if (authenticate(request) === null) return unauthorized()
-
-    const id = Number(params['id'])
-    const existing = MOCK_APPOINTMENTS.find((appointment) => appointment.id === id)
-    if (existing === undefined) return new HttpResponse(null, { status: 404 })
-
-    return new HttpResponse(null, { status: 204 })
-  }),
+  ...resource(
+    'attachments',
+    'attachments',
+    { view: 'attachment:view', manage: 'attachment:manage' },
+    {
+      filter: (row, params) => byParam(row, params, 'patient', 'kind'),
+    },
+  ),
 ]

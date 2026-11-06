@@ -30,5 +30,8 @@ const UNASSIGNED: DoctorColor = { dot: 'bg-border-strong' }
  */
 export function doctorColorOf(doctorId: DoctorId | null): DoctorColor {
   if (doctorId === null) return UNASSIGNED
-  return PALETTE[Math.abs(doctorId) % PALETTE.length] ?? UNASSIGNED
+  // A small, stable hash of the UUID; any spread is fine, it only has to be deterministic.
+  let hash = 0
+  for (const char of doctorId) hash = (hash * 31 + char.charCodeAt(0)) | 0
+  return PALETTE[Math.abs(hash) % PALETTE.length] ?? UNASSIGNED
 }

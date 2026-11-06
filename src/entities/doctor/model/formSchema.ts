@@ -3,16 +3,16 @@ import { optionalPasswordSchema, passwordSchema, usernameSchema } from '@/shared
 import type { Doctor } from './types'
 
 /**
- * The writable shape of a doctor — what `DoctorCreateUpdateSerializer` accepts.
+ * The writable shape of a doctor — what `StaffSerializer` accepts with `role='doctor'`.
  *
  * Lives in the entity for the same reason the patient one does: `doctor-create`
  * and `doctor-edit` are two slices in the same layer and §4 forbids one from
  * importing the other, so the definition of what a doctor *is* stays here and
  * each feature owns only its mutation.
  *
- * `role` and `clinic` are absent because the server sets them itself
- * (`create_doctor`), which is the right place for them: a client that could
- * name the clinic could name someone else's.
+ * `clinic` is absent because the server takes it from `X-Clinic-Id` and the
+ * caller's membership: a client that could name the clinic could name someone
+ * else's. `role` is fixed by `toDoctorPayload`.
  */
 
 /** The national format, matching what `PhoneInput` emits. */
@@ -22,8 +22,7 @@ export const doctorFormSchema = v.object({
   username: usernameSchema,
   /*
    * Optional here because this is the edit shape: empty keeps the current
-   * password (`DoctorCreateUpdateSerializer.update` only sets one it is
-   * given). `doctorCreateFormSchema` makes it required.
+   * password (`StaffSerializer.update` only sets one it is given). `doctorCreateFormSchema` makes it required.
    */
   password: optionalPasswordSchema,
   fullName: v.pipe(v.string(), v.trim(), v.minLength(2, 'validation.tooShort')),
@@ -39,13 +38,7 @@ export const doctorFormSchema = v.object({
       'validation.email',
     ),
   ),
-  /**
-   * The id of an `entities/doctor-type` row, as a string because that is what
-   * a `Select` holds — `''` means unassigned. Kept a plain string here rather
-   * than a number so this schema stays free of any dependency on the
-   * doctor-type entity's types; the feature that renders the select is what
-   * knows the id space.
-   */
+  /** A specialty id (`entities/doctor-type`), `''` for unassigned. */
   doctorTypeId: v.string(),
 })
 
@@ -66,12 +59,6 @@ export const emptyDoctorForm: DoctorFormInput = {
   doctorTypeId: '',
 }
 
-/**
- * ⚠️ `doctorTypeId` always comes back `''` here, whatever the doctor's actual
- * type is. `DoctorListSerializer` does not return `doctor_type` — only
- * `DoctorCreateUpdateSerializer` accepts it — so there is nothing to read it
- * from. The edit dialog has to account for this: see `useUpdateDoctor`.
- */
 export function toDoctorForm(doctor: Doctor): DoctorFormInput {
   return {
     username: doctor.username ?? '',
@@ -80,20 +67,19 @@ export function toDoctorForm(doctor: Doctor): DoctorFormInput {
     fullName: doctor.fullName,
     phoneNumber: doctor.phoneNumber ?? '',
     email: doctor.email ?? '',
-    doctorTypeId: '',
+    doctorTypeId: doctor.doctorTypeId ?? '',
   }
 }
 
-/** Maps to the snake_case body the serializer reads. Empty means null, not "". */
-export function toDoctorPayload(input: DoctorFormInput): Record<string, string | number | null> {
-  const orNull = (value: string): string | null => (value === '' ? null : value)
-
-  const payload: Record<string, string | number | null> = {
+/** Maps to the snake_case body `StaffSerializer` reads. Blank text is "", a missing FK null. */
+export function toDoctorPayload(input: DoctorFormInput): Record<string, string | null> {
+  const payload: Record<string, string | null> = {
+    role: 'doctor',
     username: input.username,
     full_name: input.fullName,
     phone_number: input.phoneNumber,
-    email: orNull(input.email),
-    doctor_type: input.doctorTypeId === '' ? null : Number(input.doctorTypeId),
+    email: input.email,
+    specialty: input.doctorTypeId === '' ? null : input.doctorTypeId,
   }
   // Sending "" would not clear it, the server would reject it as blank.
   if (input.password !== '') payload['password'] = input.password
@@ -106,7 +92,7 @@ const SERVER_FIELD_NAMES: Record<string, keyof DoctorFormInput> = {
   full_name: 'fullName',
   phone_number: 'phoneNumber',
   email: 'email',
-  doctor_type: 'doctorTypeId',
+  specialty: 'doctorTypeId',
 }
 
 /** The inverse, for putting a server error back on the input that caused it (§10). */

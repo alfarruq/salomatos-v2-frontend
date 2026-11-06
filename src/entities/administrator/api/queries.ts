@@ -1,8 +1,8 @@
 import { queryOptions } from '@tanstack/react-query'
-import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
+import { fetchAllPages } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
-import { administratorListSchema, toAdministrator } from '../model/schema'
+import { administratorSchema, toAdministrator } from '../model/schema'
 import type { Administrator } from '../model/types'
 
 /**
@@ -11,17 +11,22 @@ import type { Administrator } from '../model/types'
  * from being served to another out of memory.
  */
 export const administratorKeys = {
-  scope: (clinicId: number) => ['clinics', clinicId, 'administrators'] as const,
-  list: (clinicId: number) => [...administratorKeys.scope(clinicId), 'list'] as const,
+  scope: (clinicId: string) => ['clinics', clinicId, 'administrators'] as const,
+  list: (clinicId: string) => [...administratorKeys.scope(clinicId), 'list'] as const,
 }
 
 export async function fetchAdministrators(signal?: AbortSignal): Promise<Administrator[]> {
-  const raw = await httpClient<unknown>('v1/clinic/admins/', signal === undefined ? {} : { signal })
-  return v.parse(administratorListSchema, raw).map(toAdministrator)
+  const init = signal === undefined ? {} : { signal }
+  const rows = await fetchAllPages(
+    'v1/staff/?role=admin&page_size=100',
+    administratorSchema,
+    (path) => httpClient<unknown>(path, init),
+  )
+  return rows.map(toAdministrator)
 }
 
 export const administratorQueries = {
-  list: (clinicId: number) =>
+  list: (clinicId: string) =>
     queryOptions({
       queryKey: administratorKeys.list(clinicId),
       queryFn: ({ signal }) => fetchAdministrators(signal),

@@ -28,19 +28,13 @@
     "od": "1 mahal/kun",
     "bid": "2 mahal/kun",
     "tid": "3 mahal/kun",
-    "qid": "4 mahal/kun",
-    "q6h": "Har 6 soatda",
-    "q8h": "Har 8 soatda",
-    "q12h": "Har 12 soatda",
-    "prn": "Kerak bo'lganda"
+    "qid": "4 mahal/kun"
   },
   "meal": {
     "before": "Ovqatdan oldin",
     "after": "Ovqatdan keyin",
     "with": "Ovqat bilan",
-    "none": "Ovqatga bog'liq emas",
-    "beforeMinutes": "Ovqatdan {{minutes}} daq oldin",
-    "afterMinutes": "Ovqatdan {{minutes}} daq keyin"
+    "none": "Ovqatga bog'liq emas"
   },
   "duration": {
     "days_one": "{{count}} kun",
@@ -85,7 +79,6 @@
     "formLabel": "Shakli",
     "frequencyLabel": "Qabul",
     "mealLabel": "Ovqat",
-    "minutesLabel": "Daqiqa",
     "durationLabel": "Muddat",
     "unitLabel": "Birlik",
     "removeMedicine": "Dorini olib tashlash",

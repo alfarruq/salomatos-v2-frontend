@@ -17,12 +17,12 @@ export interface TodayCounts {
  */
 export function todaysQueue(
   appointments: readonly Appointment[],
-  { date, doctorId }: { date: string; doctorId: number | null },
+  { date, doctorId }: { date: string; doctorId: string | null },
 ): Appointment[] {
   return appointments
     .filter((appointment) => appointment.date === date)
     .filter((appointment) => doctorId === null || appointment.doctorId === doctorId)
-    .sort((a, b) => a.time.localeCompare(b.time) || a.id - b.id)
+    .sort((a, b) => a.time.localeCompare(b.time) || a.id.localeCompare(b.id))
 }
 
 export function countToday(queue: readonly Appointment[]): TodayCounts {

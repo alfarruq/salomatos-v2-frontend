@@ -12,8 +12,8 @@ import type { TreatmentType } from '../model/types'
 
 /** §6.2 — `clinicId` is inside every key, without exception. */
 export const treatmentTypeKeys = {
-  scope: (clinicId: number) => ['clinics', clinicId, 'treatment-types'] as const,
-  list: (clinicId: number) => [...treatmentTypeKeys.scope(clinicId), 'list'] as const,
+  scope: (clinicId: string) => ['clinics', clinicId, 'treatment-types'] as const,
+  list: (clinicId: string) => [...treatmentTypeKeys.scope(clinicId), 'list'] as const,
 }
 
 /**
@@ -25,7 +25,7 @@ export const treatmentTypeKeys = {
  */
 export async function fetchTreatmentTypes(signal?: AbortSignal): Promise<TreatmentType[]> {
   const responses: TreatmentTypeResponse[] = []
-  let path: string | null = 'v1/clinic/treatment-types/'
+  let path: string | null = 'v1/services/?page_size=100'
 
   while (path !== null) {
     const raw: unknown = await httpClient(path, signal === undefined ? {} : { signal })
@@ -41,7 +41,7 @@ export async function fetchTreatmentTypes(signal?: AbortSignal): Promise<Treatme
 }
 
 export const treatmentTypeQueries = {
-  list: (clinicId: number) =>
+  list: (clinicId: string) =>
     queryOptions({
       queryKey: treatmentTypeKeys.list(clinicId),
       queryFn: ({ signal }) => fetchTreatmentTypes(signal),

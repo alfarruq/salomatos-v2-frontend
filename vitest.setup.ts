@@ -1,9 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+import { resetMockDatabase } from '@/shared/api/mocks/handlers'
+import { setTenantScope } from '@/shared/api/tenantScope'
 
 afterEach(() => {
   cleanup()
+  // Module state outlives a test: a branch or a mock row left behind would leak into the next one.
+  setTenantScope(null)
+  resetMockDatabase()
 })
 
 /*

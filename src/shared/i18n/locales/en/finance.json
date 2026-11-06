@@ -1,81 +1,54 @@
 {
   "title": "Finance",
-  "tabs": {
-    "overview": "Overview",
-    "expenses": "Expenses",
-    "recurring": "Recurring",
-    "payroll": "Doctor pay"
-  },
-  "demo": {
-    "title": "Sample data",
-    "description": "These amounts are made up to show the layout. Real figures appear once the server keeps a payment ledger."
-  },
-  "period": {
-    "label": "Period",
-    "week": "Last 7 days",
-    "month": "Last 30 days",
-    "quarter": "Last 3 months",
-    "year": "Last 12 months"
-  },
-  "kpi": {
-    "collected": "Collected",
-    "billed": "Work billed",
-    "newDebt": "New debt",
-    "outstandingDebt": "Outstanding debt",
-    "vsPrevious": "vs previous period",
-    "debtors_one": "{{count}} debtor",
-    "debtors_other": "{{count}} debtors"
-  },
-  "charts": {
-    "revenue": {
-      "title": "Billed and collected",
-      "description": "Work done at its price, and the payments received",
-      "billed": "Billed",
-      "collected": "Collected"
-    },
-    "methods": {
-      "title": "Payment methods",
-      "description": "Share of the money collected"
-    },
-    "doctors": {
-      "title": "Collected by doctor",
-      "description": "Payments for each doctor's work"
-    },
-    "services": {
-      "title": "Revenue by service",
-      "description": "Billed in the period"
-    }
+  "payment": {
+    "record": "Record payment",
+    "title": "Record a payment",
+    "amount": "Amount",
+    "method": "Method",
+    "notes": "Note",
+    "save": "Save payment",
+    "failed": "The payment could not be saved. Try again.",
+    "forbidden": "Your role cannot record payments."
   },
   "methods": {
     "cash": "Cash",
     "card": "Card",
-    "click": "Click",
-    "payme": "Payme",
     "transfer": "Bank transfer"
   },
+  "void": {
+    "action": "Void",
+    "title": "Void this payment?",
+    "description": "The payment stays in the ledger, crossed out, and no longer counts toward the balance.",
+    "reason": "Reason",
+    "confirm": "Void payment",
+    "failed": "The payment could not be voided. Try again.",
+    "forbidden": "Your role cannot void payments."
+  },
+  "balance": {
+    "title": "Balance",
+    "charged": "Work billed",
+    "paid": "Paid",
+    "debt": "Owes",
+    "settled": "Settled"
+  },
+  "ledger": {
+    "title": "Payments",
+    "empty": "No payments yet.",
+    "date": "Date",
+    "method": "Method",
+    "amount": "Amount",
+    "receivedBy": "Received by",
+    "voided": "Voided: {{reason}}"
+  },
   "debtors": {
-    "title": "Largest debts",
-    "description": "Patients who owe the most",
+    "title": "Debtors",
+    "description": "Patients whose billed work exceeds what they have paid, largest debt first.",
     "patient": "Patient",
-    "doctor": "Doctor",
-    "lastPayment": "Last payment",
+    "phone": "Phone",
+    "branch": "Branch",
+    "charged": "Billed",
+    "paid": "Paid",
     "debt": "Debt",
-    "never": "Never paid",
     "empty": "Nobody owes the clinic anything."
-  },
-  "empty": {
-    "title": "No money moved in this period",
-    "description": "Pick a longer period or check back once payments are recorded."
-  },
-  "error": {
-    "title": "Finance could not be loaded",
-    "description": "Check your connection and try again."
-  },
-  "profit": {
-    "expenses": "Expenses",
-    "profit": "Net profit",
-    "expensesNote": "{{percent}}% of collected",
-    "margin": "Margin: {{percent}}%",
-    "error": "Could not load expenses, so profit is not shown."
   }
 }

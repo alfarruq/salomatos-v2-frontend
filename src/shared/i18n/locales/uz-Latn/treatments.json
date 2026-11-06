@@ -1,23 +1,20 @@
 {
   "table": {
     "totalLabel": "Jami",
-    "inProgressLabel": "Jarayonda",
-    "completedLabel": "Tugallangan",
     "columnTooth": "Tish",
     "columnType": "Davolash turi",
     "columnDate": "Sana",
     "columnStatus": "Holat",
     "columnCost": "Davolash qiymati",
-    "columnDebt": "Qarz",
     "columnActions": "Amallar",
     "toothCellHint": "Batafsil ko'rish uchun ikki marta bosing",
     "actionsMenuLabel": "Amallar — {{type}}, {{date}}",
     "actionDetail": "Batafsil",
-    "actionEdit": "Tahrirlash",
-    "actionComplete": "Muolajani yakunlash",
     "empty": "Muolajalar yo'q",
     "emptyDescription": "Bu bemor uchun hali hech narsa qo'shilmagan.",
-    "emptyAction": "Birinchi muolajani qo'shing"
+    "emptyAction": "Birinchi muolajani qo'shing",
+    "voidedLabel": "Yaroqsiz",
+    "columnDoctor": "Shifokor"
   },
   "detail": {
     "title": "Muolaja ma'lumotlari",
@@ -25,37 +22,22 @@
     "dateLabel": "Sana",
     "doctorLabel": "Shifokor",
     "totalCostLabel": "Jami muolaja qiymati",
-    "totalPaidLabel": "Jami to'langan",
-    "remainingLabel": "Qoldiq",
     "notesLabel": "Izoh",
-    "delete": "Muolajani o'chirish",
-    "edit": "Tahrirlash",
-    "takePayment": "To'lov olish",
-    "complete": "Muolajani yakunlash"
-  },
-  "delete": {
-    "title": "Muolajani o'chirish",
-    "description": "{{type}} ({{tooth}}-tish) muolajasi butunlay o'chirilsinmi?",
-    "warning": "Muolajaning qiymati va to'lovlari ham u bilan birga o'chadi. Bu amalni ortga qaytarib bo'lmaydi.",
-    "wait": "O'chirish ({{seconds}})",
-    "failed": "Muolajani o'chirib bo'lmadi. Qayta urinib ko'ring."
+    "priceLabel": "Narx",
+    "discountLabel": "Chegirma",
+    "voidReasonLabel": "Yaroqsiz deb belgilash sababi"
   },
   "composer": {
     "title": "Yangi muolaja",
-    "editTitle": "Muolajani tahrirlash",
     "doctorLabel": "Shifokor",
     "doctorPlaceholder": "Shifokorni tanlang",
-    "statusLabel": "Holat",
     "notesLabel": "Izohlar",
     "toothHint": "Tish tanlash uchun xaritaga bosing",
     "treatmentTypePlaceholder": "Davolash turi",
     "chooseDoctorFirst": "Avval shifokorni tanlang — davolash turlari uning mutaxassisligiga qarab chiqadi.",
-    "doctorHasNoType": "Bu shifokorga mutaxassislik (shifokor turi) biriktirilmagan. Davolash turlarini ko'rish uchun avval unga tur belgilang.",
-    "noTypesForSpecialty": "\"{{specialty}}\" mutaxassisligi uchun hali davolash turi qo'shilmagan.",
     "addTreatmentLabel": "Davolash turini qo'shish",
     "rowType": "Davolash turi",
-    "rowCost": "Jami qiymat",
-    "rowPaid": "Jami to'langan",
+    "rowCost": "Narx",
     "rowsTitle": "Kiritilgan muolajalar ({{total}})",
     "rowsEmpty": "Muolaja qo'shish uchun yuqoridan tish yoki davolash turini tanlang.",
     "totalsLabel": "Jami",
@@ -73,18 +55,18 @@
     "patientLabel": "Bemor",
     "patientPlaceholder": "Bemor ismini yozing",
     "patientClear": "Bemorni olib tashlash",
-    "patientNoResults": "Bunday bemor topilmadi"
+    "patientNoResults": "Bunday bemor topilmadi",
+    "rowDiscount": "Chegirma, %",
+    "rowTotal": "Jami",
+    "noServices": "Narxlar ro'yxatida bu shifokor uchun hali xizmat yo'q. Ularni «Boshqaruv → Xizmatlar» bo'limida qo'shing."
   },
   "chart": {
-    "completed": "Tugallangan",
-    "inProgress": "Jarayonda"
+    "treated": "Davolangan"
   },
   "list": {
     "title": "Muolajalar",
     "columnPatient": "Bemor",
     "columnDoctor": "Shifokor",
-    "columnVisit": "Tashrif",
-    "columnPaid": "To'langan",
     "empty": "Hozircha muolaja yo'q",
     "emptyDescription": "Muolajalar bemor sahifasida qo'shiladi.",
     "summary": "{{count}} tadan {{from}}–{{to}}",
@@ -92,7 +74,6 @@
   },
   "filters": {
     "patientResults": "Topilgan bemorlar",
-    "patientById": "Bemor #{{id}}",
     "patientClear": "Bemor filtrini olib tashlash",
     "searching": "Qidirilmoqda…",
     "searchFailed": "Qidirib bo'lmadi. Qaytadan urinib ko'ring.",
@@ -101,16 +82,23 @@
     "doctorAll": "Barcha shifokorlar",
     "typeLabel": "Davolash turi bo'yicha filtr",
     "typeAll": "Barcha davolash turlari",
-    "debtLabel": "Qarzdorlik bo'yicha filtr",
-    "debtAll": "Qarzdorlik: hammasi",
-    "debtWith": "Qarzi bor",
-    "debtWithout": "Qarzi yo'q",
     "statusLabel": "Holat bo'yicha filtr",
     "statusAll": "Holat: hammasi",
-    "statusInProgress": "Jarayonda",
-    "statusCompleted": "Tugallangan",
     "noMatch": "Mos muolaja topilmadi",
     "noMatchDescription": "Filtrlarni o'zgartirib ko'ring.",
-    "clear": "Filtrlarni tozalash"
+    "clear": "Filtrlarni tozalash",
+    "patientLoading": "Bemor"
+  },
+  "status": {
+    "done": "Bajarildi",
+    "voided": "Yaroqsiz"
+  },
+  "void": {
+    "title": "Muolajani yaroqsiz deb belgilash",
+    "description": "«{{type}}», {{tooth}}-tish. Yozuv tarixda belgilangan holda qoladi va hisobga kirmaydi.",
+    "reason": "Sabab",
+    "confirm": "Yaroqsiz deb belgilash",
+    "failed": "Muolajani yaroqsiz deb belgilab bo'lmadi. Qayta urinib ko'ring.",
+    "forbidden": "Muolajani yaroqsiz deb belgilashga ruxsatingiz yo'q."
   }
 }

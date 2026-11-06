@@ -1,10 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { permissionsForRole } from './permissions'
+import { readOnly } from './permissions'
+import type { Permission } from './types'
 
-describe('permissionsForRole', () => {
-  it("keeps doctors' pay to the clinic account alone", () => {
-    expect(permissionsForRole('superadmin').has('payroll:manage')).toBe(true)
-    expect(permissionsForRole('admin').has('payroll:manage')).toBe(false)
-    expect(permissionsForRole('doctor').has('payroll:manage')).toBe(false)
+describe('readOnly', () => {
+  it('keeps what an all-branches view can do and drops every write', () => {
+    const all = new Set<Permission>([
+      'patient:view',
+      'patient:view_all',
+      'patient:manage',
+      'payment:view',
+      'payment:manage',
+      'report:view',
+    ])
+
+    expect([...readOnly(all)].sort()).toEqual([
+      'patient:view',
+      'patient:view_all',
+      'payment:view',
+      'report:view',
+    ])
   })
 })

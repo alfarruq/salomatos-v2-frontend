@@ -21,8 +21,6 @@ export interface CatalogMedicine {
   durationAmount: number
   durationUnit: DurationUnit
   meal: MealRelation
-  /** Ignored unless `meal` is before/after. */
-  minutes: number
 }
 
 type Defaults = Omit<CatalogMedicine, 'name' | 'category'>
@@ -36,135 +34,69 @@ const weeks = (durationAmount: number) => ({ durationAmount, durationUnit: 'week
 
 export const MEDICATION_CATALOG: readonly CatalogMedicine[] = [
   ...entries('antibiotic', [
-    [
-      'Amoksiklav 625 mg',
-      { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'after', minutes: 30 },
-    ],
+    ['Amoksiklav 625 mg', { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'after' }],
     [
       'Amoksitsillin 500 mg',
-      { form: 'capsule', dose: 1, frequency: 'tid', ...days(7), meal: 'after', minutes: 0 },
+      { form: 'capsule', dose: 1, frequency: 'tid', ...days(7), meal: 'after' },
     ],
     [
       'Azitromitsin 500 mg',
-      { form: 'tablet', dose: 1, frequency: 'od', ...days(3), meal: 'before', minutes: 60 },
+      { form: 'tablet', dose: 1, frequency: 'od', ...days(3), meal: 'before' },
     ],
     [
       'Metronidazol 250 mg',
-      { form: 'tablet', dose: 1, frequency: 'tid', ...days(7), meal: 'after', minutes: 0 },
+      { form: 'tablet', dose: 1, frequency: 'tid', ...days(7), meal: 'after' },
     ],
     [
       'Tsiprofloksatsin 500 mg',
-      { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'none', minutes: 0 },
+      { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'none' },
     ],
     [
       'Doksitsiklin 100 mg',
-      { form: 'capsule', dose: 1, frequency: 'bid', ...days(7), meal: 'after', minutes: 0 },
+      { form: 'capsule', dose: 1, frequency: 'bid', ...days(7), meal: 'after' },
     ],
     [
       'Linkomitsin 250 mg',
-      { form: 'capsule', dose: 2, frequency: 'tid', ...days(7), meal: 'before', minutes: 60 },
+      { form: 'capsule', dose: 2, frequency: 'tid', ...days(7), meal: 'before' },
     ],
   ]),
   ...entries('analgesic', [
-    [
-      'Nimesil 100 mg',
-      { form: 'sachet', dose: 1, frequency: 'bid', ...days(5), meal: 'after', minutes: 0 },
-    ],
-    [
-      'Ibuprofen 400 mg',
-      { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'after', minutes: 0 },
-    ],
-    [
-      'Ketorol 10 mg',
-      { form: 'tablet', dose: 1, frequency: 'prn', ...days(3), meal: 'after', minutes: 0 },
-    ],
-    [
-      'Deksalgin 25 mg',
-      { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'before', minutes: 30 },
-    ],
-    [
-      'Ketonal 100 mg',
-      { form: 'capsule', dose: 1, frequency: 'bid', ...days(3), meal: 'after', minutes: 0 },
-    ],
+    ['Nimesil 100 mg', { form: 'sachet', dose: 1, frequency: 'bid', ...days(5), meal: 'after' }],
+    ['Ibuprofen 400 mg', { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'after' }],
+    ['Ketorol 10 mg', { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'after' }],
+    ['Deksalgin 25 mg', { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'before' }],
+    ['Ketonal 100 mg', { form: 'capsule', dose: 1, frequency: 'bid', ...days(3), meal: 'after' }],
     [
       'Paratsetamol 500 mg',
-      { form: 'tablet', dose: 1, frequency: 'prn', ...days(3), meal: 'after', minutes: 0 },
+      { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'after' },
     ],
-    [
-      'Diklofenak 50 mg',
-      { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'after', minutes: 0 },
-    ],
-    [
-      'Analgin 500 mg',
-      { form: 'tablet', dose: 1, frequency: 'prn', ...days(3), meal: 'after', minutes: 0 },
-    ],
+    ['Diklofenak 50 mg', { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'after' }],
+    ['Analgin 500 mg', { form: 'tablet', dose: 1, frequency: 'tid', ...days(3), meal: 'after' }],
   ]),
   ...entries('topical', [
-    [
-      'Xlorgeksidin 0,05%',
-      { form: 'rinse', dose: 1, frequency: 'tid', ...days(7), meal: 'after', minutes: 30 },
-    ],
-    [
-      'Miramistin 0,01%',
-      { form: 'rinse', dose: 1, frequency: 'tid', ...days(7), meal: 'after', minutes: 30 },
-    ],
-    [
-      'Xolisal gel',
-      { form: 'gel', dose: 1, frequency: 'tid', ...days(7), meal: 'none', minutes: 0 },
-    ],
-    [
-      'Metrogil Denta',
-      { form: 'gel', dose: 1, frequency: 'bid', ...days(7), meal: 'after', minutes: 0 },
-    ],
-    [
-      'Kamistad gel',
-      { form: 'gel', dose: 1, frequency: 'tid', ...days(7), meal: 'none', minutes: 0 },
-    ],
+    ['Xlorgeksidin 0,05%', { form: 'rinse', dose: 1, frequency: 'tid', ...days(7), meal: 'after' }],
+    ['Miramistin 0,01%', { form: 'rinse', dose: 1, frequency: 'tid', ...days(7), meal: 'after' }],
+    ['Xolisal gel', { form: 'gel', dose: 1, frequency: 'tid', ...days(7), meal: 'none' }],
+    ['Metrogil Denta', { form: 'gel', dose: 1, frequency: 'bid', ...days(7), meal: 'after' }],
+    ['Kamistad gel', { form: 'gel', dose: 1, frequency: 'tid', ...days(7), meal: 'none' }],
     [
       'Solkoseril dental pasta',
-      { form: 'gel', dose: 1, frequency: 'tid', ...days(7), meal: 'none', minutes: 0 },
+      { form: 'gel', dose: 1, frequency: 'tid', ...days(7), meal: 'none' },
     ],
-    [
-      'Tantum Verde',
-      { form: 'spray', dose: 4, frequency: 'tid', ...days(7), meal: 'none', minutes: 0 },
-    ],
-    [
-      'Stomatidin',
-      { form: 'rinse', dose: 1, frequency: 'bid', ...days(5), meal: 'after', minutes: 30 },
-    ],
-    [
-      'Furatsilin',
-      { form: 'rinse', dose: 1, frequency: 'tid', ...days(5), meal: 'after', minutes: 30 },
-    ],
-    [
-      'Rotokan',
-      { form: 'rinse', dose: 1, frequency: 'tid', ...days(7), meal: 'after', minutes: 30 },
-    ],
+    ['Tantum Verde', { form: 'spray', dose: 4, frequency: 'tid', ...days(7), meal: 'none' }],
+    ['Stomatidin', { form: 'rinse', dose: 1, frequency: 'bid', ...days(5), meal: 'after' }],
+    ['Furatsilin', { form: 'rinse', dose: 1, frequency: 'tid', ...days(5), meal: 'after' }],
+    ['Rotokan', { form: 'rinse', dose: 1, frequency: 'tid', ...days(7), meal: 'after' }],
   ]),
   ...entries('other', [
-    [
-      'Suprastin 25 mg',
-      { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'with', minutes: 0 },
-    ],
-    [
-      'Loratadin 10 mg',
-      { form: 'tablet', dose: 1, frequency: 'od', ...days(5), meal: 'none', minutes: 0 },
-    ],
-    [
-      'Setirizin 10 mg',
-      { form: 'tablet', dose: 1, frequency: 'od', ...days(5), meal: 'none', minutes: 0 },
-    ],
+    ['Suprastin 25 mg', { form: 'tablet', dose: 1, frequency: 'bid', ...days(5), meal: 'with' }],
+    ['Loratadin 10 mg', { form: 'tablet', dose: 1, frequency: 'od', ...days(5), meal: 'none' }],
+    ['Setirizin 10 mg', { form: 'tablet', dose: 1, frequency: 'od', ...days(5), meal: 'none' }],
     [
       'Deksametazon 4 mg',
-      { form: 'injection', dose: 1, frequency: 'od', ...days(3), meal: 'none', minutes: 0 },
+      { form: 'injection', dose: 1, frequency: 'od', ...days(3), meal: 'none' },
     ],
-    [
-      'Askorutin',
-      { form: 'tablet', dose: 1, frequency: 'tid', ...weeks(2), meal: 'after', minutes: 0 },
-    ],
-    [
-      'Kaltsiy D3',
-      { form: 'tablet', dose: 1, frequency: 'bid', ...weeks(4), meal: 'with', minutes: 0 },
-    ],
+    ['Askorutin', { form: 'tablet', dose: 1, frequency: 'tid', ...weeks(2), meal: 'after' }],
+    ['Kaltsiy D3', { form: 'tablet', dose: 1, frequency: 'bid', ...weeks(4), meal: 'with' }],
   ]),
 ]

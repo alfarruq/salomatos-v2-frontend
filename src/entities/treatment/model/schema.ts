@@ -1,92 +1,71 @@
 import * as v from 'valibot'
 import { pageSchema } from '@/shared/api/pagination'
-import { parseCalendarDate } from '@/shared/lib/calendarDate'
-import type { Treatment } from './types'
+import { clinicDayOf } from '@/shared/lib/datetime'
+import type { ToothSurface, Treatment } from './types'
 
-/**
- * The wire contract for `/api/v1/clinic/treatments/` (ADR-006), from
- * `TreatmentList` (drf-yasg). The list `GET` was first confirmed as a plain
- * array, then observed (2026-10-07, live) as DRF's page envelope — so the read
- * accepts both. The bulk `POST` answers with a plain array of created rows.
- *
- * Every field but `id` is read defensively. `TreatmentList` marks most of them
- * required, but `PatientListSerializer`'s `doctor` and `treatment_type` made
- * the same promise and are absent for a patient with nothing on record — one
- * bad row should not empty a patient's whole treatment history.
- */
-
-/** Absent or null both mean "nothing here" — see `entities/patient`'s schema. */
-const optionalString = v.optional(v.nullable(v.string()), null)
-
-/**
- * A number the server may send as a string.
- *
- * `remaining` is documented `readOnly` and typed `string` — the same
- * `SerializerMethodField` pattern that made every money figure on the patient
- * endpoints unreliable to type-trust. The other counters are declared
- * `integer`, but that promise has been wrong before too, so all of them go
- * through the same coercion.
- */
-const optionalNumber = v.pipe(
-  v.optional(v.nullable(v.union([v.number(), v.string()])), null),
-  v.transform((value) => {
-    if (value === null || value === '') return null
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }),
+const optionalText = v.pipe(
+  v.optional(v.nullable(v.string()), null),
+  v.transform((value) => (value === null || value === '' ? null : value)),
 )
 
-/** Unknown values are dropped rather than rejected — see `entities/patient`'s `statusSchema`. */
-const statusSchema = v.optional(
-  v.fallback(v.nullable(v.picklist(['in_progress', 'completed'])), null),
-  null,
+/** DRF sends `DecimalField` as a string; so'm fit a double exactly. */
+const money = v.pipe(
+  v.union([v.string(), v.number()]),
+  v.transform((value) => Number(value)),
+  v.check((value: number) => Number.isFinite(value)),
 )
 
+const SURFACES: readonly ToothSurface[] = ['M', 'O', 'D', 'B', 'L', 'I']
+
+/** `ProcedureSerializer`, validated at runtime (ADR-006). */
 export const treatmentSchema = v.object({
-  id: v.pipe(v.number(), v.integer()),
-  patient_id: optionalNumber,
-  patient: optionalString,
-  doctor: optionalString,
-  treatment_type: optionalString,
-  total_treatment_cost: optionalNumber,
-  total_paid: optionalNumber,
-  remaining: optionalNumber,
-  visit_number: optionalNumber,
-  tooth_number: optionalNumber,
-  start_date: optionalString,
-  notes: optionalString,
-  status: statusSchema,
+  id: v.pipe(v.string(), v.uuid()),
+  patient: v.string(),
+  patient_name: optionalText,
+  doctor: v.optional(v.nullable(v.string()), null),
+  doctor_name: optionalText,
+  service: v.string(),
+  service_name: optionalText,
+  tooth: v.optional(v.nullable(v.number()), null),
+  surfaces: v.pipe(
+    v.optional(v.array(v.string()), []),
+    v.transform((values) =>
+      values.filter((value): value is ToothSurface => SURFACES.includes(value as ToothSurface)),
+    ),
+  ),
+  quantity: v.optional(v.number(), 1),
+  unit_price: money,
+  discount_percent: v.optional(money, '0'),
+  total: money,
+  performed_at: v.pipe(v.string(), v.isoTimestamp()),
+  notes: optionalText,
+  voided_at: v.optional(v.nullable(v.string()), null),
+  void_reason: optionalText,
 })
 
-export const treatmentListSchema = v.array(treatmentSchema)
-
-export const treatmentListResponseSchema = v.union([
-  treatmentListSchema,
-  pageSchema(treatmentSchema),
-])
+export const treatmentPageSchema = pageSchema(treatmentSchema)
 
 export type TreatmentResponse = v.InferOutput<typeof treatmentSchema>
-
-/** `null` for anything the backend sent that is not a real calendar date. */
-function toCalendarDateOrNull(value: string | null) {
-  if (value === null) return null
-  return parseCalendarDate(value) === null ? null : value
-}
 
 export function toTreatment(response: TreatmentResponse): Treatment {
   return {
     id: response.id,
-    patientId: response.patient_id,
-    patientName: response.patient,
-    doctorName: response.doctor,
-    treatmentTypeName: response.treatment_type,
-    totalTreatmentCost: response.total_treatment_cost,
-    totalPaid: response.total_paid,
-    remaining: response.remaining,
-    visitNumber: response.visit_number,
-    toothNumber: response.tooth_number,
-    startDate: toCalendarDateOrNull(response.start_date),
+    patientId: response.patient,
+    patientName: response.patient_name,
+    doctorId: response.doctor,
+    doctorName: response.doctor_name,
+    serviceId: response.service,
+    treatmentTypeName: response.service_name,
+    toothNumber: response.tooth,
+    surfaces: response.surfaces,
+    quantity: response.quantity,
+    unitPrice: response.unit_price,
+    discountPercent: response.discount_percent,
+    totalTreatmentCost: response.total,
+    performedAt: response.performed_at,
+    startDate: clinicDayOf(response.performed_at),
     notes: response.notes,
-    status: response.status,
+    status: response.voided_at === null ? 'done' : 'voided',
+    voidReason: response.void_reason,
   }
 }

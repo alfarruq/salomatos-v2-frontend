@@ -1,6 +1,7 @@
 import ky, { HTTPError, TimeoutError } from 'ky'
 import { ApiError, normalizeDrfError } from './errors'
 import { getApiContext } from './httpContext'
+import { getTenantScope } from './tenantScope'
 import { getAccessToken } from './tokenStore'
 
 /*
@@ -27,20 +28,15 @@ export const api = ky.create({
     beforeRequest: [
       ({ request }) => {
         /*
-         * ADR-003 (revised): the backend authenticates with a bearer token, not
-         * a session cookie. `DEFAULT_AUTHENTICATION_CLASSES` is simplejwt's, so
-         * Django's CSRF middleware does not apply to these views and no CSRF
-         * header is sent — there is no cookie-borne credential for a
-         * cross-site request to abuse.
-         *
-         * No `X-Clinic-Id` header either, though §5.2 asks for one: this
-         * backend derives the tenant from `request.user` and reads no such
-         * header anywhere. Sending it would look like it protected something.
-         * The tenant still scopes the *cache* — that is what §6.2 requires —
-         * via the clinic id in every query key.
+         * Bearer token, no cookie, so Django's CSRF middleware does not apply.
+         * The tenant header names the clinic (or, for owners, the organization)
+         * the request is for; the backend checks it against the membership.
          */
         const token = getAccessToken()
         if (token !== null) request.headers.set('Authorization', `Bearer ${token}`)
+        const scope = getTenantScope()
+        if (scope?.kind === 'clinic') request.headers.set('X-Clinic-Id', scope.id)
+        if (scope?.kind === 'organization') request.headers.set('X-Organization-Id', scope.id)
       },
     ],
 
@@ -77,6 +73,20 @@ export async function httpClient<T>(url: string, options?: RequestInit): Promise
     // 204 and friends have no body; asking for JSON would throw.
     if (response.status === 204) return undefined as T
     return await response.json<T>()
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+/**
+ * A binary response (an X-ray, a prescription PDF). Private files have no
+ * public URL: they stream through authenticated endpoints, so an `<img src>`
+ * cannot load them and the bytes are fetched with the token instead.
+ */
+export async function httpBlob(url: string, options?: RequestInit): Promise<Blob> {
+  try {
+    const response = await api(url, options as never)
+    return await response.blob()
   } catch (error) {
     throw toApiError(error)
   }

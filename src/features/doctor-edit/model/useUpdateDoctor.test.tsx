@@ -3,17 +3,20 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
+import { MOCK_STAFF, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { useUpdateDoctor } from './useUpdateDoctor'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
+
+const SARDOR = MOCK_STAFF[0]
+const SARDOR_ID = SARDOR?.id ?? ''
 
 const INPUT = {
   username: 'sardor',
@@ -21,7 +24,7 @@ const INPUT = {
   fullName: 'Sardor Usmonov',
   phoneNumber: '+998901112244',
   email: '',
-  doctorTypeId: '5',
+  doctorTypeId: mockId(5, 1),
 }
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -29,90 +32,53 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 }
 
+function captureBody(): { body: unknown } {
+  const captured: { body: unknown } = { body: undefined }
+  server.use(
+    http.patch('/api/v1/staff/:id/', async ({ request }) => {
+      captured.body = await request.json()
+      return HttpResponse.json(SARDOR)
+    }),
+  )
+  return captured
+}
+
 describe('useUpdateDoctor', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('admin'))
 
-  it('omits doctor_type when the select was never touched', async () => {
-    /*
-     * The list response has no doctor_type to prefill the select with, so an
-     * untouched select must not be read as "clear the assignment" — sending
-     * null here would silently unset a real one nobody meant to change.
-     */
-    let sentBody: unknown
-    server.use(
-      http.patch('/api/v1/clinic/doctors/:id/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({
-          id: 2,
-          full_name: 'Sardor Usmonov',
-          phone_number: null,
-          email: null,
-        })
-      }),
-    )
-
-    const { result } = renderHook(() => useUpdateDoctor(1), { wrapper })
-    result.current.mutate({ doctorId: 2, input: INPUT, includeDoctorType: false })
+  it('sends the specialty as its id', async () => {
+    const captured = captureBody()
+    const { result } = renderHook(() => useUpdateDoctor('clinic:test'), { wrapper })
+    result.current.mutate({ doctorId: SARDOR_ID, input: { ...INPUT, doctorTypeId: mockId(5, 2) } })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(sentBody).not.toHaveProperty('doctor_type')
-  })
-
-  it('sends doctor_type once the select was actually changed', async () => {
-    let sentBody: unknown
-    server.use(
-      http.patch('/api/v1/clinic/doctors/:id/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({
-          id: 2,
-          full_name: 'Sardor Usmonov',
-          phone_number: null,
-          email: null,
-        })
-      }),
-    )
-
-    const { result } = renderHook(() => useUpdateDoctor(1), { wrapper })
-    result.current.mutate({ doctorId: 2, input: INPUT, includeDoctorType: true })
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(sentBody).toMatchObject({ doctor_type: 5 })
+    expect(captured.body).toMatchObject({ role: 'doctor', specialty: mockId(5, 2) })
   })
 
   it('keeps the current password when the field was left empty', async () => {
-    let sentBody: unknown
-    server.use(
-      http.patch('/api/v1/clinic/doctors/:id/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({ id: 2, full_name: 'Sardor Usmonov' })
-      }),
-    )
-
-    const { result } = renderHook(() => useUpdateDoctor(1), { wrapper })
-    result.current.mutate({ doctorId: 2, input: INPUT, includeDoctorType: false })
+    const captured = captureBody()
+    const { result } = renderHook(() => useUpdateDoctor('clinic:test'), { wrapper })
+    result.current.mutate({ doctorId: SARDOR_ID, input: INPUT })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(sentBody).toMatchObject({ username: 'sardor' })
-    expect(sentBody).not.toHaveProperty('password')
+    expect(captured.body).toMatchObject({ username: 'sardor' })
+    expect(captured.body).not.toHaveProperty('password')
   })
 
   it('sends a new password once one is typed', async () => {
-    let sentBody: unknown
-    server.use(
-      http.patch('/api/v1/clinic/doctors/:id/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({ id: 2, full_name: 'Sardor Usmonov' })
-      }),
-    )
-
-    const { result } = renderHook(() => useUpdateDoctor(1), { wrapper })
-    result.current.mutate({
-      doctorId: 2,
-      input: { ...INPUT, password: 'yangi-parol' },
-      includeDoctorType: false,
-    })
+    const captured = captureBody()
+    const { result } = renderHook(() => useUpdateDoctor('clinic:test'), { wrapper })
+    result.current.mutate({ doctorId: SARDOR_ID, input: { ...INPUT, password: 'yangi-parol' } })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(sentBody).toMatchObject({ password: 'yangi-parol' })
+    expect(captured.body).toMatchObject({ password: 'yangi-parol' })
+  })
+
+  it('saves through the mock server end to end', async () => {
+    const { result } = renderHook(() => useUpdateDoctor('clinic:test'), { wrapper })
+    result.current.mutate({ doctorId: SARDOR_ID, input: { ...INPUT, fullName: 'Sardor U.' } })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.fullName).toBe('Sardor U.')
   })
 })

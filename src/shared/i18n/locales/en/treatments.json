@@ -1,23 +1,20 @@
 {
   "table": {
     "totalLabel": "Total",
-    "inProgressLabel": "In progress",
-    "completedLabel": "Completed",
     "columnTooth": "Tooth",
     "columnType": "Treatment",
     "columnDate": "Date",
     "columnStatus": "Status",
     "columnCost": "Cost",
-    "columnDebt": "Debt",
     "columnActions": "Actions",
     "toothCellHint": "Double-click for details",
     "actionsMenuLabel": "Actions — {{type}}, {{date}}",
     "actionDetail": "Details",
-    "actionEdit": "Edit",
-    "actionComplete": "Mark as completed",
     "empty": "No treatments yet",
     "emptyDescription": "Nothing has been added for this patient yet.",
-    "emptyAction": "Add the first treatment"
+    "emptyAction": "Add the first treatment",
+    "voidedLabel": "Voided",
+    "columnDoctor": "Doctor"
   },
   "detail": {
     "title": "Treatment details",
@@ -25,37 +22,22 @@
     "dateLabel": "Date",
     "doctorLabel": "Doctor",
     "totalCostLabel": "Total cost",
-    "totalPaidLabel": "Total paid",
-    "remainingLabel": "Remaining",
     "notesLabel": "Notes",
-    "delete": "Delete treatment",
-    "edit": "Edit",
-    "takePayment": "Take payment",
-    "complete": "Mark as completed"
-  },
-  "delete": {
-    "title": "Delete treatment",
-    "description": "Delete “{{type}}” (tooth {{tooth}}) entirely?",
-    "warning": "Its cost and payments are deleted with it. This cannot be undone.",
-    "wait": "Delete ({{seconds}})",
-    "failed": "Could not delete the treatment. Please try again."
+    "priceLabel": "Price",
+    "discountLabel": "Discount",
+    "voidReasonLabel": "Void reason"
   },
   "composer": {
     "title": "New treatment",
-    "editTitle": "Edit treatment",
     "doctorLabel": "Doctor",
     "doctorPlaceholder": "Select a doctor",
-    "statusLabel": "Status",
     "notesLabel": "Notes",
     "toothHint": "Click the chart to pick a tooth",
     "treatmentTypePlaceholder": "Treatment",
     "chooseDoctorFirst": "Choose a doctor first — the treatments offered depend on their specialty.",
-    "doctorHasNoType": "This doctor has no specialty (doctor type) set. Assign one to see treatments.",
-    "noTypesForSpecialty": "No treatments have been added for “{{specialty}}” yet.",
     "addTreatmentLabel": "Add a treatment",
     "rowType": "Treatment",
-    "rowCost": "Total cost",
-    "rowPaid": "Total paid",
+    "rowCost": "Price",
     "rowsTitle": "Added treatments ({{total}})",
     "rowsEmpty": "Pick a tooth or a treatment type above to add a treatment.",
     "totalsLabel": "Total",
@@ -73,18 +55,18 @@
     "patientLabel": "Patient",
     "patientPlaceholder": "Type the patient's name",
     "patientClear": "Remove patient",
-    "patientNoResults": "No patient found"
+    "patientNoResults": "No patient found",
+    "rowDiscount": "Discount, %",
+    "rowTotal": "Total",
+    "noServices": "The price list has no services for this doctor yet. Add them under Manage → Services."
   },
   "chart": {
-    "completed": "Completed",
-    "inProgress": "In progress"
+    "treated": "Treated"
   },
   "list": {
     "title": "Treatments",
     "columnPatient": "Patient",
     "columnDoctor": "Doctor",
-    "columnVisit": "Visit",
-    "columnPaid": "Paid",
     "empty": "No treatments yet",
     "emptyDescription": "Treatments are added on a patient's page.",
     "summary": "{{from}}–{{to}} of {{count}}",
@@ -92,7 +74,6 @@
   },
   "filters": {
     "patientResults": "Matching patients",
-    "patientById": "Patient #{{id}}",
     "patientClear": "Remove the patient filter",
     "searching": "Searching…",
     "searchFailed": "Search failed. Please try again.",
@@ -101,16 +82,23 @@
     "doctorAll": "All doctors",
     "typeLabel": "Filter by treatment type",
     "typeAll": "All treatment types",
-    "debtLabel": "Filter by debt",
-    "debtAll": "Debt: all",
-    "debtWith": "With debt",
-    "debtWithout": "No debt",
     "statusLabel": "Filter by status",
     "statusAll": "Status: all",
-    "statusInProgress": "In progress",
-    "statusCompleted": "Completed",
     "noMatch": "No matching treatments",
     "noMatchDescription": "Try changing the filters.",
-    "clear": "Clear filters"
+    "clear": "Clear filters",
+    "patientLoading": "Patient"
+  },
+  "status": {
+    "done": "Done",
+    "voided": "Voided"
+  },
+  "void": {
+    "title": "Void procedure",
+    "description": "“{{type}}”, tooth {{tooth}}. It stays in the history, marked as voided, and no longer counts towards the bill.",
+    "reason": "Reason",
+    "confirm": "Void",
+    "failed": "Could not void the procedure. Please try again.",
+    "forbidden": "You don't have permission to void procedures."
   }
 }

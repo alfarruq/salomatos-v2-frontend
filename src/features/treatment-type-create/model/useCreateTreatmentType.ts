@@ -11,7 +11,7 @@ import {
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createTreatmentType(input: TreatmentTypeFormInput): Promise<TreatmentType> {
-  const raw = await httpClient<unknown>('v1/clinic/treatment-types/', {
+  const raw = await httpClient<unknown>('v1/services/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toTreatmentTypePayload(input)),
@@ -22,7 +22,7 @@ async function createTreatmentType(input: TreatmentTypeFormInput): Promise<Treat
 }
 
 /** ⛔ No optimistic update (§6.5): the server assigns the id. */
-export function useCreateTreatmentType(clinicId: number) {
+export function useCreateTreatmentType(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

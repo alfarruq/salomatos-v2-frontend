@@ -16,20 +16,14 @@ import { Route as AuthDashboardRouteImport } from './pages/_auth/dashboard'
 import { Route as AuthFinanceRouteImport } from './pages/_auth/finance'
 import { Route as AuthManageRouteImport } from './pages/_auth/manage'
 import { Route as AuthAppointmentsIndexRouteImport } from './pages/_auth/appointments/index'
-import { Route as AuthFinanceIndexRouteImport } from './pages/_auth/finance/index'
-import { Route as AuthFinanceExpensesRouteImport } from './pages/_auth/finance/expenses'
-import { Route as AuthFinancePayrollRouteImport } from './pages/_auth/finance/payroll'
-import { Route as AuthFinanceRecurringRouteImport } from './pages/_auth/finance/recurring'
 import { Route as AuthManageIndexRouteImport } from './pages/_auth/manage/index'
 import { Route as AuthManageAdminsRouteImport } from './pages/_auth/manage/admins'
 import { Route as AuthManageClinicRouteImport } from './pages/_auth/manage/clinic'
 import { Route as AuthManageDoctorTypesRouteImport } from './pages/_auth/manage/doctor-types'
 import { Route as AuthManageDoctorsRouteImport } from './pages/_auth/manage/doctors'
 import { Route as AuthManageServicesRouteImport } from './pages/_auth/manage/services'
-import { Route as AuthManageSmsRouteImport } from './pages/_auth/manage/sms'
 import { Route as AuthPatientsIndexRouteImport } from './pages/_auth/patients/index'
 import { Route as AuthPatientsPatientIdRouteImport } from './pages/_auth/patients/$patientId'
-import { Route as AuthStatisticsIndexRouteImport } from './pages/_auth/statistics/index'
 import { Route as AuthTreatmentsIndexRouteImport } from './pages/_auth/treatments/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,26 +60,6 @@ const AuthAppointmentsIndexRoute = AuthAppointmentsIndexRouteImport.update({
   path: '/appointments/',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthFinanceIndexRoute = AuthFinanceIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthFinanceRoute,
-} as any)
-const AuthFinanceExpensesRoute = AuthFinanceExpensesRouteImport.update({
-  id: '/expenses',
-  path: '/expenses',
-  getParentRoute: () => AuthFinanceRoute,
-} as any)
-const AuthFinancePayrollRoute = AuthFinancePayrollRouteImport.update({
-  id: '/payroll',
-  path: '/payroll',
-  getParentRoute: () => AuthFinanceRoute,
-} as any)
-const AuthFinanceRecurringRoute = AuthFinanceRecurringRouteImport.update({
-  id: '/recurring',
-  path: '/recurring',
-  getParentRoute: () => AuthFinanceRoute,
-} as any)
 const AuthManageIndexRoute = AuthManageIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -116,11 +90,6 @@ const AuthManageServicesRoute = AuthManageServicesRouteImport.update({
   path: '/services',
   getParentRoute: () => AuthManageRoute,
 } as any)
-const AuthManageSmsRoute = AuthManageSmsRouteImport.update({
-  id: '/sms',
-  path: '/sms',
-  getParentRoute: () => AuthManageRoute,
-} as any)
 const AuthPatientsIndexRoute = AuthPatientsIndexRouteImport.update({
   id: '/patients/',
   path: '/patients/',
@@ -129,11 +98,6 @@ const AuthPatientsIndexRoute = AuthPatientsIndexRouteImport.update({
 const AuthPatientsPatientIdRoute = AuthPatientsPatientIdRouteImport.update({
   id: '/patients/$patientId',
   path: '/patients/$patientId',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthStatisticsIndexRoute = AuthStatisticsIndexRouteImport.update({
-  id: '/statistics/',
-  path: '/statistics/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthTreatmentsIndexRoute = AuthTreatmentsIndexRouteImport.update({
@@ -146,44 +110,33 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthDashboardRoute
-  '/finance': typeof AuthFinanceRouteWithChildren
+  '/finance': typeof AuthFinanceRoute
   '/manage': typeof AuthManageRouteWithChildren
-  '/finance/expenses': typeof AuthFinanceExpensesRoute
-  '/finance/payroll': typeof AuthFinancePayrollRoute
-  '/finance/recurring': typeof AuthFinanceRecurringRoute
   '/manage/admins': typeof AuthManageAdminsRoute
   '/manage/clinic': typeof AuthManageClinicRoute
   '/manage/doctor-types': typeof AuthManageDoctorTypesRoute
   '/manage/doctors': typeof AuthManageDoctorsRoute
   '/manage/services': typeof AuthManageServicesRoute
-  '/manage/sms': typeof AuthManageSmsRoute
   '/patients/$patientId': typeof AuthPatientsPatientIdRoute
   '/appointments/': typeof AuthAppointmentsIndexRoute
-  '/finance/': typeof AuthFinanceIndexRoute
   '/manage/': typeof AuthManageIndexRoute
   '/patients/': typeof AuthPatientsIndexRoute
-  '/statistics/': typeof AuthStatisticsIndexRoute
   '/treatments/': typeof AuthTreatmentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthDashboardRoute
-  '/finance/expenses': typeof AuthFinanceExpensesRoute
-  '/finance/payroll': typeof AuthFinancePayrollRoute
-  '/finance/recurring': typeof AuthFinanceRecurringRoute
+  '/finance': typeof AuthFinanceRoute
   '/manage/admins': typeof AuthManageAdminsRoute
   '/manage/clinic': typeof AuthManageClinicRoute
   '/manage/doctor-types': typeof AuthManageDoctorTypesRoute
   '/manage/doctors': typeof AuthManageDoctorsRoute
   '/manage/services': typeof AuthManageServicesRoute
-  '/manage/sms': typeof AuthManageSmsRoute
   '/patients/$patientId': typeof AuthPatientsPatientIdRoute
   '/appointments': typeof AuthAppointmentsIndexRoute
-  '/finance': typeof AuthFinanceIndexRoute
   '/manage': typeof AuthManageIndexRoute
   '/patients': typeof AuthPatientsIndexRoute
-  '/statistics': typeof AuthStatisticsIndexRoute
   '/treatments': typeof AuthTreatmentsIndexRoute
 }
 export interface FileRoutesById {
@@ -192,23 +145,17 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
-  '/_auth/finance': typeof AuthFinanceRouteWithChildren
+  '/_auth/finance': typeof AuthFinanceRoute
   '/_auth/manage': typeof AuthManageRouteWithChildren
-  '/_auth/finance/expenses': typeof AuthFinanceExpensesRoute
-  '/_auth/finance/payroll': typeof AuthFinancePayrollRoute
-  '/_auth/finance/recurring': typeof AuthFinanceRecurringRoute
   '/_auth/manage/admins': typeof AuthManageAdminsRoute
   '/_auth/manage/clinic': typeof AuthManageClinicRoute
   '/_auth/manage/doctor-types': typeof AuthManageDoctorTypesRoute
   '/_auth/manage/doctors': typeof AuthManageDoctorsRoute
   '/_auth/manage/services': typeof AuthManageServicesRoute
-  '/_auth/manage/sms': typeof AuthManageSmsRoute
   '/_auth/patients/$patientId': typeof AuthPatientsPatientIdRoute
   '/_auth/appointments/': typeof AuthAppointmentsIndexRoute
-  '/_auth/finance/': typeof AuthFinanceIndexRoute
   '/_auth/manage/': typeof AuthManageIndexRoute
   '/_auth/patients/': typeof AuthPatientsIndexRoute
-  '/_auth/statistics/': typeof AuthStatisticsIndexRoute
   '/_auth/treatments/': typeof AuthTreatmentsIndexRoute
 }
 export interface FileRouteTypes {
@@ -219,42 +166,31 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/finance'
     | '/manage'
-    | '/finance/expenses'
-    | '/finance/payroll'
-    | '/finance/recurring'
     | '/manage/admins'
     | '/manage/clinic'
     | '/manage/doctor-types'
     | '/manage/doctors'
     | '/manage/services'
-    | '/manage/sms'
     | '/patients/$patientId'
     | '/appointments/'
-    | '/finance/'
     | '/manage/'
     | '/patients/'
-    | '/statistics/'
     | '/treatments/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/dashboard'
-    | '/finance/expenses'
-    | '/finance/payroll'
-    | '/finance/recurring'
+    | '/finance'
     | '/manage/admins'
     | '/manage/clinic'
     | '/manage/doctor-types'
     | '/manage/doctors'
     | '/manage/services'
-    | '/manage/sms'
     | '/patients/$patientId'
     | '/appointments'
-    | '/finance'
     | '/manage'
     | '/patients'
-    | '/statistics'
     | '/treatments'
   id:
     | '__root__'
@@ -264,21 +200,15 @@ export interface FileRouteTypes {
     | '/_auth/dashboard'
     | '/_auth/finance'
     | '/_auth/manage'
-    | '/_auth/finance/expenses'
-    | '/_auth/finance/payroll'
-    | '/_auth/finance/recurring'
     | '/_auth/manage/admins'
     | '/_auth/manage/clinic'
     | '/_auth/manage/doctor-types'
     | '/_auth/manage/doctors'
     | '/_auth/manage/services'
-    | '/_auth/manage/sms'
     | '/_auth/patients/$patientId'
     | '/_auth/appointments/'
-    | '/_auth/finance/'
     | '/_auth/manage/'
     | '/_auth/patients/'
-    | '/_auth/statistics/'
     | '/_auth/treatments/'
   fileRoutesById: FileRoutesById
 }
@@ -339,34 +269,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAppointmentsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/finance/': {
-      id: '/_auth/finance/'
-      path: '/'
-      fullPath: '/finance/'
-      preLoaderRoute: typeof AuthFinanceIndexRouteImport
-      parentRoute: typeof AuthFinanceRoute
-    }
-    '/_auth/finance/expenses': {
-      id: '/_auth/finance/expenses'
-      path: '/expenses'
-      fullPath: '/finance/expenses'
-      preLoaderRoute: typeof AuthFinanceExpensesRouteImport
-      parentRoute: typeof AuthFinanceRoute
-    }
-    '/_auth/finance/payroll': {
-      id: '/_auth/finance/payroll'
-      path: '/payroll'
-      fullPath: '/finance/payroll'
-      preLoaderRoute: typeof AuthFinancePayrollRouteImport
-      parentRoute: typeof AuthFinanceRoute
-    }
-    '/_auth/finance/recurring': {
-      id: '/_auth/finance/recurring'
-      path: '/recurring'
-      fullPath: '/finance/recurring'
-      preLoaderRoute: typeof AuthFinanceRecurringRouteImport
-      parentRoute: typeof AuthFinanceRoute
-    }
     '/_auth/manage/': {
       id: '/_auth/manage/'
       path: '/'
@@ -409,13 +311,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthManageServicesRouteImport
       parentRoute: typeof AuthManageRoute
     }
-    '/_auth/manage/sms': {
-      id: '/_auth/manage/sms'
-      path: '/sms'
-      fullPath: '/manage/sms'
-      preLoaderRoute: typeof AuthManageSmsRouteImport
-      parentRoute: typeof AuthManageRoute
-    }
     '/_auth/patients/': {
       id: '/_auth/patients/'
       path: '/patients'
@@ -430,13 +325,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPatientsPatientIdRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/statistics/': {
-      id: '/_auth/statistics/'
-      path: '/statistics'
-      fullPath: '/statistics/'
-      preLoaderRoute: typeof AuthStatisticsIndexRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_auth/treatments/': {
       id: '/_auth/treatments/'
       path: '/treatments'
@@ -447,31 +335,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthFinanceRouteChildren {
-  AuthFinanceExpensesRoute: typeof AuthFinanceExpensesRoute
-  AuthFinancePayrollRoute: typeof AuthFinancePayrollRoute
-  AuthFinanceRecurringRoute: typeof AuthFinanceRecurringRoute
-  AuthFinanceIndexRoute: typeof AuthFinanceIndexRoute
-}
-
-const AuthFinanceRouteChildren: AuthFinanceRouteChildren = {
-  AuthFinanceExpensesRoute: AuthFinanceExpensesRoute,
-  AuthFinancePayrollRoute: AuthFinancePayrollRoute,
-  AuthFinanceRecurringRoute: AuthFinanceRecurringRoute,
-  AuthFinanceIndexRoute: AuthFinanceIndexRoute,
-}
-
-const AuthFinanceRouteWithChildren = AuthFinanceRoute._addFileChildren(
-  AuthFinanceRouteChildren,
-)
-
 interface AuthManageRouteChildren {
   AuthManageAdminsRoute: typeof AuthManageAdminsRoute
   AuthManageClinicRoute: typeof AuthManageClinicRoute
   AuthManageDoctorTypesRoute: typeof AuthManageDoctorTypesRoute
   AuthManageDoctorsRoute: typeof AuthManageDoctorsRoute
   AuthManageServicesRoute: typeof AuthManageServicesRoute
-  AuthManageSmsRoute: typeof AuthManageSmsRoute
   AuthManageIndexRoute: typeof AuthManageIndexRoute
 }
 
@@ -481,7 +350,6 @@ const AuthManageRouteChildren: AuthManageRouteChildren = {
   AuthManageDoctorTypesRoute: AuthManageDoctorTypesRoute,
   AuthManageDoctorsRoute: AuthManageDoctorsRoute,
   AuthManageServicesRoute: AuthManageServicesRoute,
-  AuthManageSmsRoute: AuthManageSmsRoute,
   AuthManageIndexRoute: AuthManageIndexRoute,
 }
 
@@ -491,23 +359,21 @@ const AuthManageRouteWithChildren = AuthManageRoute._addFileChildren(
 
 interface AuthRouteChildren {
   AuthDashboardRoute: typeof AuthDashboardRoute
-  AuthFinanceRoute: typeof AuthFinanceRouteWithChildren
+  AuthFinanceRoute: typeof AuthFinanceRoute
   AuthManageRoute: typeof AuthManageRouteWithChildren
   AuthPatientsPatientIdRoute: typeof AuthPatientsPatientIdRoute
   AuthAppointmentsIndexRoute: typeof AuthAppointmentsIndexRoute
   AuthPatientsIndexRoute: typeof AuthPatientsIndexRoute
-  AuthStatisticsIndexRoute: typeof AuthStatisticsIndexRoute
   AuthTreatmentsIndexRoute: typeof AuthTreatmentsIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthDashboardRoute: AuthDashboardRoute,
-  AuthFinanceRoute: AuthFinanceRouteWithChildren,
+  AuthFinanceRoute: AuthFinanceRoute,
   AuthManageRoute: AuthManageRouteWithChildren,
   AuthPatientsPatientIdRoute: AuthPatientsPatientIdRoute,
   AuthAppointmentsIndexRoute: AuthAppointmentsIndexRoute,
   AuthPatientsIndexRoute: AuthPatientsIndexRoute,
-  AuthStatisticsIndexRoute: AuthStatisticsIndexRoute,
   AuthTreatmentsIndexRoute: AuthTreatmentsIndexRoute,
 }
 

@@ -14,24 +14,13 @@ import { httpClient } from '@/shared/api/httpClient'
 async function updateDoctor({
   doctorId,
   input,
-  includeDoctorType,
 }: {
   doctorId: DoctorId
   input: DoctorFormInput
-  /**
-   * `toDoctorForm` cannot fill `doctorTypeId` from the server — the list
-   * response has no such field, only create/update accept one — so the
-   * select always opens unset regardless of what is actually assigned. Saving
-   * that unconditionally would silently clear a real assignment nobody meant
-   * to touch. `false` unless the dialog reports the select itself was
-   * changed this session (`formState.dirtyFields.doctorTypeId`).
-   */
-  includeDoctorType: boolean
 }): Promise<Doctor> {
   const payload = toDoctorPayload(input)
-  if (!includeDoctorType) delete payload['doctor_type']
 
-  const raw = await httpClient<unknown>(`v1/clinic/doctors/${doctorId}/`, {
+  const raw = await httpClient<unknown>(`v1/staff/${doctorId}/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -41,7 +30,7 @@ async function updateDoctor({
 }
 
 /** ⛔ No optimistic update (§6.5): a rejected edit would leave the wrong name on screen. */
-export function useUpdateDoctor(clinicId: number) {
+export function useUpdateDoctor(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

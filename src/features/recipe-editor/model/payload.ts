@@ -1,23 +1,28 @@
-import { mealTakesMinutes } from '@/entities/recipe'
+import { FREQUENCIES, type Frequency } from '@/entities/recipe'
 import type { CatalogMedicine } from './catalog'
 import type { MedicineRow } from './types'
 
-/** `POST /api/v1/core/recipes/` — every medicine field is required, confirmed live. */
+/** `POST /api/v1/prescriptions/` — every item field the serializer requires is always sent. */
+/** `PrescriptionItemSerializer`'s writable fields. */
 export interface MedicinePayload {
-  name: string
-  dose: number
-  type: string
-  frequency: string
-  duration: number
-  meal: string
-  minutes: number
+  medicine: string
+  dose: string
+  form: string
+  times_per_day: number
+  duration_days: number
+  meal_relation: string
+  instructions: string
 }
 
 export interface RecipePayload {
-  patient: number
-  doctor: number
+  patient: string
+  doctor: string
   notes: string
-  medicines: MedicinePayload[]
+  items: MedicinePayload[]
+}
+
+function timesPerDay(frequency: Frequency): number {
+  return FREQUENCIES.indexOf(frequency) + 1
 }
 
 const DAYS_PER_WEEK = 7
@@ -37,7 +42,6 @@ export function newMedicineRow(): MedicineRow {
     form: 'tablet',
     frequency: 'bid',
     meal: 'after',
-    minutes: '30',
     durationAmount: '5',
     durationUnit: 'days',
   }
@@ -52,7 +56,6 @@ export function fillFromCatalog(row: MedicineRow, medicine: CatalogMedicine): Me
     form: medicine.form,
     frequency: medicine.frequency,
     meal: medicine.meal,
-    minutes: String(medicine.minutes),
     durationAmount: String(medicine.durationAmount),
     durationUnit: medicine.durationUnit,
   }
@@ -74,24 +77,18 @@ export function toMedicinePayload(row: MedicineRow): MedicinePayload | null {
   const name = row.name.trim()
   const dose = parseInteger(row.dose, 1)
   const amount = parseInteger(row.durationAmount, 1)
-  const takesMinutes = mealTakesMinutes(row.meal)
-  const minutes = takesMinutes ? parseInteger(row.minutes === '' ? '0' : row.minutes, 0) : 0
-  if (name === '' || dose === null || amount === null || minutes === null) return null
+  if (name === '' || dose === null || amount === null) return null
 
   return {
-    name,
-    dose,
-    type: row.form,
-    frequency: row.frequency,
-    /*
-     * ⚠️ The server's `duration` is a bare integer with no unit field, so a
-     * course in weeks is stored as days. It reopens as "14 kun", not
-     * "2 hafta" — the unit is lost until the backend adds one.
-     */
-    duration: row.durationUnit === 'weeks' ? amount * DAYS_PER_WEEK : amount,
-    meal: row.meal,
-    // `minutes` is non-nullable on the server; 0 means "does not apply".
-    minutes,
+    medicine: name,
+    dose: String(dose),
+    form: row.form,
+    times_per_day: timesPerDay(row.frequency),
+    // The server counts days; a course in weeks is stored as days.
+    duration_days: row.durationUnit === 'weeks' ? amount * DAYS_PER_WEEK : amount,
+    // "Regardless of food" is `any` on the server.
+    meal_relation: row.meal === 'none' ? 'any' : row.meal,
+    instructions: '',
   }
 }
 
@@ -100,8 +97,8 @@ export function isRowComplete(row: MedicineRow): boolean {
 }
 
 export function toRecipePayload(input: {
-  patientId: number
-  doctorId: number
+  patientId: string
+  doctorId: string
   notes: string
   rows: MedicineRow[]
 }): RecipePayload {
@@ -109,6 +106,6 @@ export function toRecipePayload(input: {
     patient: input.patientId,
     doctor: input.doctorId,
     notes: input.notes.trim(),
-    medicines: input.rows.map(toMedicinePayload).filter((payload) => payload !== null),
+    items: input.rows.map(toMedicinePayload).filter((payload) => payload !== null),
   }
 }

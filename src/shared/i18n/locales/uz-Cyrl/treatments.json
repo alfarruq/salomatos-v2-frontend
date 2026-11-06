@@ -1,23 +1,20 @@
 {
   "table": {
     "totalLabel": "Жами",
-    "inProgressLabel": "Жараёнда",
-    "completedLabel": "Якунланган",
     "columnTooth": "Тиш",
     "columnType": "Даволаш тури",
     "columnDate": "Сана",
     "columnStatus": "Ҳолат",
     "columnCost": "Даволаш қиймати",
-    "columnDebt": "Қарз",
     "columnActions": "Амаллар",
     "toothCellHint": "Батафсил кўриш учун икки марта босинг",
     "actionsMenuLabel": "Амаллар — {{type}}, {{date}}",
     "actionDetail": "Батафсил",
-    "actionEdit": "Таҳрирлаш",
-    "actionComplete": "Муолажани якунлаш",
     "empty": "Муолажалар йўқ",
     "emptyDescription": "Бу бемор учун ҳали ҳеч нарса қўшилмаган.",
-    "emptyAction": "Биринчи муолажани қўшинг"
+    "emptyAction": "Биринчи муолажани қўшинг",
+    "voidedLabel": "Яроқсиз",
+    "columnDoctor": "Шифокор"
   },
   "detail": {
     "title": "Муолажа маълумотлари",
@@ -25,37 +22,22 @@
     "dateLabel": "Сана",
     "doctorLabel": "Шифокор",
     "totalCostLabel": "Жами муолажа қиймати",
-    "totalPaidLabel": "Жами тўланган",
-    "remainingLabel": "Қолдиқ",
     "notesLabel": "Изоҳ",
-    "delete": "Муолажани ўчириш",
-    "edit": "Таҳрирлаш",
-    "takePayment": "Тўлов олиш",
-    "complete": "Муолажани якунлаш"
-  },
-  "delete": {
-    "title": "Муолажани ўчириш",
-    "description": "{{type}} ({{tooth}}-тиш) муолажаси бутунлай ўчирилсинми?",
-    "warning": "Муолажанинг қиймати ва тўловлари ҳам у билан бирга ўчади. Бу амални ортга қайтариб бўлмайди.",
-    "wait": "Ўчириш ({{seconds}})",
-    "failed": "Муолажани ўчириб бўлмади. Қайта уриниб кўринг."
+    "priceLabel": "Нарх",
+    "discountLabel": "Чегирма",
+    "voidReasonLabel": "Яроқсиз деб белгилаш сабаби"
   },
   "composer": {
     "title": "Янги муолажа",
-    "editTitle": "Муолажани таҳрирлаш",
     "doctorLabel": "Шифокор",
     "doctorPlaceholder": "Шифокорни танланг",
-    "statusLabel": "Ҳолат",
     "notesLabel": "Изоҳлар",
     "toothHint": "Тиш танлаш учун харитага босинг",
     "treatmentTypePlaceholder": "Даволаш тури",
     "chooseDoctorFirst": "Аввал шифокорни танланг — даволаш турлари унинг мутахассислигига қараб чиқади.",
-    "doctorHasNoType": "Бу шифокорга мутахассислик (шифокор тури) бириктирилмаган. Даволаш турларини кўриш учун аввал унга тур белгиланг.",
-    "noTypesForSpecialty": "\"{{specialty}}\" мутахассислиги учун ҳали даволаш тури қўшилмаган.",
     "addTreatmentLabel": "Даволаш турини қўшиш",
     "rowType": "Даволаш тури",
-    "rowCost": "Жами қиймат",
-    "rowPaid": "Жами тўланган",
+    "rowCost": "Нарх",
     "rowsTitle": "Киритилган муолажалар ({{total}})",
     "rowsEmpty": "Муолажа қўшиш учун юқоридан тиш ёки даволаш турини танланг.",
     "totalsLabel": "Жами",
@@ -73,18 +55,18 @@
     "patientLabel": "Бемор",
     "patientPlaceholder": "Бемор исмини ёзинг",
     "patientClear": "Беморни олиб ташлаш",
-    "patientNoResults": "Бундай бемор топилмади"
+    "patientNoResults": "Бундай бемор топилмади",
+    "rowDiscount": "Чегирма, %",
+    "rowTotal": "Жами",
+    "noServices": "Нархлар рўйхатида бу шифокор учун ҳали хизмат йўқ. Уларни «Бошқарув → Хизматлар» бўлимида қўшинг."
   },
   "chart": {
-    "completed": "Тугалланган",
-    "inProgress": "Жараёнда"
+    "treated": "Даволанган"
   },
   "list": {
     "title": "Муолажалар",
     "columnPatient": "Бемор",
     "columnDoctor": "Шифокор",
-    "columnVisit": "Ташриф",
-    "columnPaid": "Тўланган",
     "empty": "Ҳозирча муолажа йўқ",
     "emptyDescription": "Муолажалар бемор саҳифасида қўшилади.",
     "summary": "{{count}} тадан {{from}}–{{to}}",
@@ -92,7 +74,6 @@
   },
   "filters": {
     "patientResults": "Топилган беморлар",
-    "patientById": "Бемор #{{id}}",
     "patientClear": "Бемор фильтрини олиб ташлаш",
     "searching": "Қидирилмоқда…",
     "searchFailed": "Қидириб бўлмади. Қайтадан уриниб кўринг.",
@@ -101,16 +82,23 @@
     "doctorAll": "Барча шифокорлар",
     "typeLabel": "Даволаш тури бўйича фильтр",
     "typeAll": "Барча даволаш турлари",
-    "debtLabel": "Қарздорлик бўйича фильтр",
-    "debtAll": "Қарздорлик: ҳаммаси",
-    "debtWith": "Қарзи бор",
-    "debtWithout": "Қарзи йўқ",
     "statusLabel": "Ҳолат бўйича фильтр",
     "statusAll": "Ҳолат: ҳаммаси",
-    "statusInProgress": "Жараёнда",
-    "statusCompleted": "Тугалланган",
     "noMatch": "Мос муолажа топилмади",
     "noMatchDescription": "Фильтрларни ўзгартириб кўринг.",
-    "clear": "Фильтрларни тозалаш"
+    "clear": "Фильтрларни тозалаш",
+    "patientLoading": "Бемор"
+  },
+  "status": {
+    "done": "Бажарилди",
+    "voided": "Яроқсиз"
+  },
+  "void": {
+    "title": "Муолажани яроқсиз деб белгилаш",
+    "description": "«{{type}}», {{tooth}}-тиш. Ёзув тарихда белгиланган ҳолда қолади ва ҳисобга кирмайди.",
+    "reason": "Сабаб",
+    "confirm": "Яроқсиз деб белгилаш",
+    "failed": "Муолажани яроқсиз деб белгилаб бўлмади. Қайта уриниб кўринг.",
+    "forbidden": "Муолажани яроқсиз деб белгилашга рухсатингиз йўқ."
   }
 }

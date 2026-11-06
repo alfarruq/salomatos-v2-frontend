@@ -7,8 +7,8 @@ import { clinicDayOf } from '@/shared/lib/datetime'
 import { Badge, Button, Card, EmptyState, ErrorState, QueryBoundary, Skeleton } from '@/shared/ui'
 
 export interface PrescriptionCardsProps {
-  clinicId: number
-  patientId: number
+  clinicId: string
+  patientId: string
   onCreate: () => void
   onEdit: (recipe: Recipe) => void
   onDelete: (recipe: Recipe) => void

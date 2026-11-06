@@ -5,18 +5,20 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { accessTokenFor, MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { MOCK_PATIENTS, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { RecipeEditor } from './RecipeEditor'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
+
+const AZIZA = MOCK_PATIENTS[0]?.id ?? ''
 
 function renderEditor() {
   const onOpenChange = vi.fn()
@@ -29,10 +31,10 @@ function renderEditor() {
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
           <RecipeEditor
-            clinicId={MOCK_USERS.clinic.id}
+            clinicId="clinic:test"
             onOpenChange={onOpenChange}
             open
-            patientId={101}
+            patientId={AZIZA}
             patientName="Dilnoza Rahimova"
           />
         </Suspense>
@@ -46,7 +48,7 @@ function renderEditor() {
 function captureBody() {
   const captured: { body: unknown } = { body: undefined }
   server.events.on('request:start', async ({ request }) => {
-    if (request.method === 'POST' && request.url.includes('/api/v1/core/recipes/')) {
+    if (request.method === 'POST' && request.url.includes('/api/v1/prescriptions/')) {
       captured.body = await request.clone().json()
     }
   })
@@ -68,7 +70,7 @@ async function pickMedicine(query: string, option: string) {
 const SAVE = 'Retseptni saqlash'
 
 describe('RecipeEditor', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('admin'))
 
   it('opens with the patient, one empty row and nothing to save', async () => {
     renderEditor()
@@ -104,24 +106,24 @@ describe('RecipeEditor', () => {
     await pickMedicine('Ketorol', 'Ketorol 10 mg')
 
     expect(screen.getByRole('button', { name: 'Dori nomi' })).toHaveTextContent('Ketorol 10 mg')
-    expect(screen.getByRole('combobox', { name: 'Qabul' })).toHaveTextContent("Kerak bo'lganda")
+    expect(screen.getByRole('combobox', { name: 'Qabul' })).toHaveTextContent('3 mahal/kun')
 
     await userEvent.click(screen.getByRole('button', { name: SAVE }))
 
     await vi.waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
     expect(captured.body).toEqual({
-      patient: 101,
-      doctor: 2,
+      patient: AZIZA,
+      doctor: mockId(4, 4),
       notes: '',
-      medicines: [
+      items: [
         {
-          name: 'Ketorol 10 mg',
-          dose: 1,
-          type: 'tablet',
-          frequency: 'prn',
-          duration: 3,
-          meal: 'after',
-          minutes: 0,
+          medicine: 'Ketorol 10 mg',
+          dose: '1',
+          form: 'tablet',
+          times_per_day: 3,
+          duration_days: 3,
+          meal_relation: 'after',
+          instructions: '',
         },
       ],
     })
@@ -137,25 +139,14 @@ describe('RecipeEditor', () => {
 
     await vi.waitFor(() =>
       expect(captured.body).toMatchObject({
-        medicines: [{ name: 'Vitamin E', dose: 1, type: 'tablet', frequency: 'bid' }],
+        items: [{ medicine: 'Vitamin E', dose: '1', form: 'tablet', times_per_day: 2 }],
       }),
     )
   })
 
-  it('hides minutes when the timing does not depend on food', async () => {
-    renderEditor()
-
-    expect(await screen.findByRole('textbox', { name: 'Daqiqa' })).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('combobox', { name: 'Ovqat' }))
-    await userEvent.click(await screen.findByRole('option', { name: 'Ovqat bilan' }))
-
-    expect(screen.queryByRole('textbox', { name: 'Daqiqa' })).not.toBeInTheDocument()
-  })
-
   it('keeps the dialog and the medicines when the server refuses', async () => {
     server.use(
-      http.post('/api/v1/core/recipes/', () =>
+      http.post('/api/v1/prescriptions/', () =>
         HttpResponse.json({ message: 'boom' }, { status: 500 }),
       ),
     )

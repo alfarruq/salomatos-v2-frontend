@@ -17,14 +17,14 @@ import { TodayQueue } from './TodayQueue'
 const FILTER_ALL = 'all'
 
 export interface DashboardTodayProps {
-  clinicId: number
+  clinicId: string
   /** Whose appointments to show; null for everyone's. */
-  doctorId: number | null
+  doctorId: string | null
   /**
    * Present only for those who may look across doctors. A doctor gets no
    * filter at all: their queue is their own, fixed by the page.
    */
-  doctorFilter?: { onChange: (doctorId: number | null) => void }
+  doctorFilter?: { onChange: (doctorId: string | null) => void }
 }
 
 /**
@@ -42,7 +42,7 @@ export function DashboardToday({ clinicId, doctorId, doctorFilter }: DashboardTo
   })
 
   const addButton = (
-    <Can permission="appointment:write">
+    <Can permission="appointment:manage">
       <Button
         iconLeft={<CalendarDays aria-hidden="true" className="size-4" />}
         onClick={() => setAppointmentOpen(true)}
@@ -141,26 +141,26 @@ function DoctorFilter({
   value,
   onChange,
 }: {
-  clinicId: number
-  value: number | null
-  onChange: (doctorId: number | null) => void
+  clinicId: string
+  value: string | null
+  onChange: (doctorId: string | null) => void
 }) {
   const { t } = useTranslation('dashboard')
   const doctors = useQuery(doctorQueries.list(clinicId))
 
   const options = [
     { value: FILTER_ALL, label: t('filter.doctorAll') },
-    ...(doctors.data ?? []).map((doctor) => ({ value: String(doctor.id), label: doctor.fullName })),
+    ...(doctors.data ?? []).map((doctor) => ({ value: doctor.id, label: doctor.fullName })),
   ]
 
   return (
     <Select
       aria-label={t('filter.doctorLabel')}
       className="w-auto min-w-48"
-      onValueChange={(next) => onChange(next === FILTER_ALL ? null : Number(next))}
+      onValueChange={(next) => onChange(next === FILTER_ALL ? null : next)}
       options={options}
       size="sm"
-      value={value === null ? FILTER_ALL : String(value)}
+      value={value ?? FILTER_ALL}
     />
   )
 }

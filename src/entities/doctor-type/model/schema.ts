@@ -10,11 +10,9 @@ import type { DoctorType } from './types'
  */
 export const doctorTypeSchema = v.object({
   // A type without a name is not renderable; nothing else is on this row.
-  id: v.pipe(v.number(), v.integer()),
+  id: v.pipe(v.string(), v.uuid()),
   name: v.string(),
 })
-
-export const doctorTypeListSchema = v.array(doctorTypeSchema)
 
 export type DoctorTypeResponse = v.InferOutput<typeof doctorTypeSchema>
 

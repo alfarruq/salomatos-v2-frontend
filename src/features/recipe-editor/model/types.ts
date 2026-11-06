@@ -11,7 +11,6 @@ export interface MedicineRow {
   form: DoseForm
   frequency: Frequency
   meal: MealRelation
-  minutes: string
   durationAmount: string
   durationUnit: DurationUnit
 }

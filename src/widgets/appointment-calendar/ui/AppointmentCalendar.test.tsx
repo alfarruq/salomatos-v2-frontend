@@ -6,18 +6,68 @@ import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppointmentFilters } from '@/entities/appointment'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
+import { mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { AppointmentCalendar } from './AppointmentCalendar'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
+
+const SARDOR = mockId(4, 4)
+const NODIRA = mockId(4, 5)
+
+/** `time` is Tashkent wall clock; the server sends UTC, five hours earlier. */
+function row(n: number, date: string, time: string, name: string, doctor = SARDOR) {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number)
+  const start = new Date(`${date}T00:00:00Z`)
+  start.setUTCHours(hours - 5, minutes)
+  return {
+    id: mockId(8, n),
+    clinic_name: 'Chilonzor',
+    patient: mockId(7, n),
+    patient_name: name,
+    doctor,
+    doctor_name: doctor === SARDOR ? 'Sardor Usmonov' : 'Nodira Karimova',
+    chair: null,
+    service: null,
+    start_at: start.toISOString(),
+    end_at: new Date(start.getTime() + 30 * 60_000).toISOString(),
+    status: 'scheduled',
+    notes: '',
+  }
+}
+
+const ROWS = [
+  row(1, '2026-09-27', '09:00', 'Vali Aliyev'),
+  row(2, '2026-09-27', '11:00', 'Gulnora Yusupova', NODIRA),
+  row(3, '2026-09-29', '10:00', 'Bekzod Aliyev'),
+  row(4, '2026-10-02', '10:00', 'Hafta Oxiri'),
+]
+
+// Answers the way the server does: by the start range and the doctor.
+function serveRows() {
+  server.use(
+    http.get('/api/v1/appointments/', ({ request }) => {
+      const params = new URL(request.url).searchParams
+      const from = params.get('start_from')
+      const to = params.get('start_to')
+      const doctor = params.get('doctor')
+      const results = ROWS.filter(
+        (r) =>
+          (from === null || r.start_at >= new Date(from).toISOString()) &&
+          (to === null || r.start_at < new Date(to).toISOString()) &&
+          (doctor === null || r.doctor === doctor),
+      )
+      return HttpResponse.json({ count: results.length, next: null, previous: null, results })
+    }),
+  )
+}
 
 function renderCalendar(
   filters: AppointmentFilters,
@@ -30,7 +80,7 @@ function renderCalendar(
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
           <AppointmentCalendar
-            clinicId={1}
+            clinicId="clinic:test"
             filters={filters}
             onFiltersChange={onFiltersChange}
             onOpenPatient={onOpenPatient}
@@ -46,37 +96,26 @@ function renderCalendar(
 }
 
 describe('AppointmentCalendar', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => {
+    signInAs('admin')
+    serveRows()
+  })
 
-  it("shows the day's appointments, walk-in included", async () => {
+  it("shows the day's appointments only", async () => {
     renderCalendar({ view: 'day', date: '2026-09-27' })
 
     await screen.findByText('Vali Aliyev')
-    expect(screen.getByText('Yangi Mijoz')).toBeInTheDocument()
-    // A different day's appointment must not leak into this one's table.
-    expect(screen.queryByText('Nodira Karimova')).not.toBeInTheDocument()
+    expect(screen.getByText('Gulnora Yusupova')).toBeInTheDocument()
+    expect(screen.queryByText('Bekzod Aliyev')).not.toBeInTheDocument()
   })
 
-  it("opens a registered patient's card from their appointment", async () => {
+  it("opens the patient's card from their appointment", async () => {
     const onOpenPatient = vi.fn()
     renderCalendar({ view: 'day', date: '2026-09-27' }, vi.fn(), onOpenPatient)
 
     await userEvent.click(await screen.findByText('Vali Aliyev'))
 
-    expect(onOpenPatient).toHaveBeenCalledWith(101)
-  })
-
-  it('offers to register a walk-in, pre-filled from the appointment', async () => {
-    const onOpenPatient = vi.fn()
-    renderCalendar({ view: 'day', date: '2026-09-27' }, vi.fn(), onOpenPatient)
-
-    await userEvent.click(await screen.findByText('Yangi Mijoz'))
-    expect(await screen.findByText("Bemor bazada yo'q")).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: "Ha, qo'shish" }))
-
-    expect(await screen.findByLabelText('F. I. Sh.')).toHaveValue('Yangi Mijoz')
-    expect(screen.getByLabelText('Telefon raqami')).toHaveValue('90-765-43-21')
-    expect(onOpenPatient).not.toHaveBeenCalled()
+    expect(onOpenPatient).toHaveBeenCalledWith(mockId(7, 1))
   })
 
   it('opens the picked date as a day view from the week view', async () => {
@@ -87,62 +126,24 @@ describe('AppointmentCalendar', () => {
     expect(onFiltersChange).toHaveBeenLastCalledWith({ view: 'day', date: '2026-10-05' })
   })
 
-  it('does not show a date column in day view, but does in week view', async () => {
+  it('does not show a date column in day view', async () => {
     renderCalendar({ view: 'day', date: '2026-09-27' })
     await screen.findByText('Vali Aliyev')
     expect(screen.queryByText('Sana')).not.toBeInTheDocument()
   })
 
   it('groups the week into day columns by each appointment’s own date', async () => {
-    // 2026-09-28 is a Monday, so this Monday–Sunday board runs through
-    // 2026-10-04 — unlike the shared `MOCK_APPOINTMENTS` fixture, which
-    // straddles a week boundary (27th is the *previous* week’s Sunday) and so
-    // cannot exercise both a Monday and a later-in-the-week column at once.
-    server.use(
-      // A week is fetched day by day, so answer each `?date=` with its own rows.
-      http.get('/api/v1/calendars/appointments/', ({ request }) => {
-        const date = new URL(request.url).searchParams.get('date')
-        const rows = [
-          {
-            id: 601,
-            patient_id: null,
-            patient: 'Hafta Boshi',
-            phone_number: null,
-            doctor_id: null,
-            doctor: null,
-            treatment_type: null,
-            date: '2026-09-28',
-            time: '09:00:00',
-            notes: null,
-            status: 'in_progress',
-          },
-          {
-            id: 602,
-            patient_id: null,
-            patient: 'Hafta Oxiri',
-            phone_number: null,
-            doctor_id: null,
-            doctor: null,
-            treatment_type: null,
-            date: '2026-10-02',
-            time: '10:00:00',
-            notes: null,
-            status: 'completed',
-          },
-        ]
-        return HttpResponse.json(rows.filter((row) => row.date === date))
-      }),
-    )
-
+    // 2026-09-28 is a Monday, so the board runs through 2026-10-04.
     renderCalendar({ view: 'week', date: '2026-09-28' })
 
-    await screen.findByText('Hafta Boshi')
+    await screen.findByText('Bekzod Aliyev')
     expect(screen.getByText('Hafta Oxiri')).toBeInTheDocument()
-    expect(screen.getByText('Du')).toBeInTheDocument()
+    expect(screen.queryByText('Vali Aliyev')).not.toBeInTheDocument()
+    expect(screen.getByText('Se')).toBeInTheDocument()
     expect(screen.getByText('Ju')).toBeInTheDocument()
   })
 
-  it('asks to move a day forward through onFiltersChange, not by refetching in place', async () => {
+  it('asks to move a day forward through onFiltersChange', async () => {
     const { onFiltersChange } = renderCalendar({ view: 'day', date: '2026-09-27' })
     await screen.findByText('Vali Aliyev')
 
@@ -157,13 +158,6 @@ describe('AppointmentCalendar', () => {
     expect(await screen.findByText("Hozircha uchrashuv yo'q")).toBeInTheDocument()
   })
 
-  it('no longer offers an all-appointments view', async () => {
-    renderCalendar({ view: 'day', date: '2026-09-27' })
-    await screen.findByText('Vali Aliyev')
-
-    expect(screen.queryByRole('button', { name: 'Hammasi' })).not.toBeInTheDocument()
-  })
-
   it('moves a week forward from the arrow beside the weekday row', async () => {
     const { onFiltersChange } = renderCalendar({ view: 'week', date: '2026-09-28' })
 
@@ -172,11 +166,11 @@ describe('AppointmentCalendar', () => {
     expect(onFiltersChange).toHaveBeenLastCalledWith({ view: 'week', date: '2026-10-05' })
   })
 
-  it('narrows the list to one doctor through doctor_id', async () => {
-    renderCalendar({ view: 'all', date: '2026-09-27', doctorId: 2 })
+  it('narrows the list to one doctor by id', async () => {
+    renderCalendar({ view: 'day', date: '2026-09-27', doctorId: NODIRA })
 
-    await screen.findByText('Vali Aliyev')
-    expect(screen.queryByText('Yangi Mijoz')).not.toBeInTheDocument()
+    await screen.findByText('Gulnora Yusupova')
+    expect(screen.queryByText('Vali Aliyev')).not.toBeInTheDocument()
   })
 
   it('picks a doctor through onFiltersChange, keeping the view', async () => {
@@ -189,12 +183,16 @@ describe('AppointmentCalendar', () => {
     expect(onFiltersChange).toHaveBeenLastCalledWith({
       view: 'day',
       date: '2026-09-27',
-      doctorId: 2,
+      doctorId: SARDOR,
     })
   })
 
   it('keeps the picked doctor when switching view', async () => {
-    const { onFiltersChange } = renderCalendar({ view: 'day', date: '2026-09-27', doctorId: 2 })
+    const { onFiltersChange } = renderCalendar({
+      view: 'day',
+      date: '2026-09-27',
+      doctorId: SARDOR,
+    })
     await screen.findByText('Vali Aliyev')
 
     await userEvent.click(screen.getByRole('button', { name: 'Haftalik' }))
@@ -202,15 +200,15 @@ describe('AppointmentCalendar', () => {
     expect(onFiltersChange).toHaveBeenLastCalledWith({
       view: 'week',
       date: expect.any(String),
-      doctorId: 2,
+      doctorId: SARDOR,
     })
   })
 
-  it('shows the date column and every fixture row in the all view', async () => {
+  it('shows the date column and every row in the all view', async () => {
     renderCalendar({ view: 'all', date: '2026-09-27' })
 
     await screen.findByText('Vali Aliyev')
     expect(screen.getByText('Sana')).toBeInTheDocument()
-    expect(screen.getByText('Nodira Karimova')).toBeInTheDocument()
+    expect(screen.getByText('Hafta Oxiri')).toBeInTheDocument()
   })
 })

@@ -14,7 +14,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useCreateAdministrator } from '../model/useCreateAdministrator'
 
 export interface CreateAdministratorDialogProps {
-  clinicId: number
+  clinicId: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }

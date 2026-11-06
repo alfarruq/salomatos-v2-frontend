@@ -1,5 +1,5 @@
 /** Integer, not a UUID — ADR-013. */
-export type DoctorTypeId = number
+export type DoctorTypeId = string
 
 /**
  * A category of doctor the clinic can hire — "Stomatolog", "Ortodont" and so

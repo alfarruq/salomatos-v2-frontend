@@ -1,32 +1,21 @@
 import type { CalendarDate } from '@/shared/lib/calendarDate'
 
 /**
- * `Treatment.Status` on the backend — the same two values as
- * `entities/patient`'s `PatientStatus`, declared again rather than imported:
- * entities may not see one another (§4), and the model itself repeats this
- * choice field on two tables.
+ * A recorded procedure is either standing or voided. Money is append-only on
+ * the server: a mistake is voided with a reason, never edited or deleted.
  */
-export type TreatmentStatus = 'in_progress' | 'completed'
+export type TreatmentStatus = 'done' | 'voided'
 
-/**
- * One performed or booked treatment, from `/clinic/treatments/`.
- *
- * Not the same shape as `entities/patient`'s `PatientTreatment` — that is the
- * short tooth-chart summary embedded in the patient detail response; this is
- * the full record, with cost, dates and clinical notes.
- */
-/**
- * The clinic-wide list's filters — combinable; `status` added server-side on
- * 2026-10-19, the rest confirmed live on 2026-10-14. Ids only: a patient's name never goes in a URL (§3).
- */
+/** A tooth surface, FDI convention: mesial, occlusal, distal, buccal, lingual, incisal. */
+export type ToothSurface = 'M' | 'O' | 'D' | 'B' | 'L' | 'I'
+
+/** Filters of the clinic-wide journal. Ids only: a patient's name never goes in a URL (§3). */
 export interface TreatmentListFilters {
   page: number
-  patientId: number | null
-  doctorId: number | null
-  treatmentTypeId: number | null
-  /** `with` → `remaining=true`, `without` → `remaining=false`, null → both. */
-  debt: 'with' | 'without' | null
-  /** Sent as `status=`; null → both. */
+  patientId: string | null
+  doctorId: string | null
+  /** A service id. */
+  treatmentTypeId: string | null
   status: TreatmentStatus | null
 }
 
@@ -35,24 +24,32 @@ export const defaultTreatmentListFilters: TreatmentListFilters = {
   patientId: null,
   doctorId: null,
   treatmentTypeId: null,
-  debt: null,
   status: null,
 }
 
+/** One performed procedure (`ProcedureSerializer`) — the slice keeps its old name. */
 export interface Treatment {
-  id: number
-  /** Sent beside the name on the list endpoint — the clinic-wide table links by it. */
-  patientId: number | null
+  id: string
+  patientId: string
   patientName: string | null
+  doctorId: string | null
   doctorName: string | null
+  serviceId: string
   treatmentTypeName: string | null
-  totalTreatmentCost: number | null
-  totalPaid: number | null
-  remaining: number | null
-  visitNumber: number | null
   /** FDI tooth number. */
   toothNumber: number | null
-  startDate: CalendarDate | null
+  surfaces: readonly ToothSurface[]
+  quantity: number
+  /** So'm, copied from the price list when the procedure was recorded. */
+  unitPrice: number
+  discountPercent: number
+  /** `quantity × unitPrice × (1 − discount)`, as the server computed it. */
+  totalTreatmentCost: number
+  /** UTC ISO-8601 instant. */
+  performedAt: string
+  /** `performedAt` on the clinic's calendar. */
+  startDate: CalendarDate
   notes: string | null
-  status: TreatmentStatus | null
+  status: TreatmentStatus
+  voidReason: string | null
 }

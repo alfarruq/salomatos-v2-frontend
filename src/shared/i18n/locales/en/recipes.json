@@ -28,19 +28,13 @@
     "od": "Once a day",
     "bid": "Twice a day",
     "tid": "3 times a day",
-    "qid": "4 times a day",
-    "q6h": "Every 6 hours",
-    "q8h": "Every 8 hours",
-    "q12h": "Every 12 hours",
-    "prn": "As needed"
+    "qid": "4 times a day"
   },
   "meal": {
     "before": "Before meals",
     "after": "After meals",
     "with": "With meals",
-    "none": "Regardless of meals",
-    "beforeMinutes": "{{minutes}} min before meals",
-    "afterMinutes": "{{minutes}} min after meals"
+    "none": "Regardless of meals"
   },
   "duration": {
     "days_one": "{{count}} day",
@@ -85,7 +79,6 @@
     "formLabel": "Form",
     "frequencyLabel": "Intake",
     "mealLabel": "Food",
-    "minutesLabel": "Minutes",
     "durationLabel": "Duration",
     "unitLabel": "Unit",
     "removeMedicine": "Remove medicine",

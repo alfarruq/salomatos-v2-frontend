@@ -6,7 +6,6 @@ import type { PatientListItem } from '@/entities/patient'
 import { PatientAvatar, PatientStatusBadge } from '@/entities/patient'
 import { Can } from '@/entities/session'
 import { formatCalendarDate } from '@/shared/lib/calendarDate'
-import { formatSom } from '@/shared/lib/money'
 import { DropdownMenu, DropdownMenuItem, formatSubscriber, subscriberDigitsOf } from '@/shared/ui'
 
 /**
@@ -27,7 +26,7 @@ const EMPTY = '—'
 
 export interface UsePatientColumnsOptions {
   onEdit: (patient: PatientListItem) => void
-  onDelete: (patient: PatientListItem) => void
+  onArchive: (patient: PatientListItem) => void
 }
 
 /**
@@ -37,7 +36,7 @@ export interface UsePatientColumnsOptions {
  * change without a remount. Memoised on the language so the table is not
  * rebuilt on every render.
  */
-export function usePatientColumns({ onEdit, onDelete }: UsePatientColumnsOptions) {
+export function usePatientColumns({ onEdit, onArchive }: UsePatientColumnsOptions) {
   const { t, i18n } = useTranslation(['patients', 'common'])
   const locale = i18n.language
 
@@ -65,56 +64,25 @@ export function usePatientColumns({ onEdit, onDelete }: UsePatientColumnsOptions
         },
       }),
 
-      column.accessor('lastAppointment', {
-        header: () => t('column.lastAppointment'),
+      column.accessor('birthDate', {
+        header: () => t('column.birthDate'),
         cell: (info) => {
-          const slot = info.getValue()
-          if (slot === null) {
-            return <span className="text-text-tertiary">{t('table.noAppointment')}</span>
-          }
-
-          const date = formatCalendarDate(slot.date, locale)
-          return date === null ? EMPTY : `${date}, ${slot.time}`
+          const value = info.getValue()
+          return value === null ? EMPTY : (formatCalendarDate(value, locale) ?? EMPTY)
         },
       }),
 
-      column.accessor('treatmentType', {
-        header: () => t('column.treatmentType'),
+      column.accessor('primaryDoctorName', {
+        header: () => t('column.doctor'),
         cell: (info) => info.getValue() ?? EMPTY,
       }),
 
       column.accessor('status', {
         header: () => t('column.status'),
-        // A dash, not a "no treatment" badge: on most rows that badge was noise
-        // that hid the ones actually in treatment.
+        // Only the exception gets a badge: "active" on every row would be noise.
         cell: (info) => {
           const status = info.getValue()
-          return status === null ? EMPTY : <PatientStatusBadge status={status} />
-        },
-      }),
-
-      column.accessor('doctorName', {
-        header: () => t('column.doctor'),
-        // A name with no id behind it — the serializer sends no doctor id, so
-        // this cannot become a link until it does.
-        cell: (info) => info.getValue() ?? EMPTY,
-      }),
-
-      column.accessor('totalRemaining', {
-        header: () => t('column.remaining'),
-        // Money right-aligns so the digits line up down the column; §13's
-        // density guidance is about scanning, and this is what makes a
-        // financial column scannable.
-        meta: { align: 'right' },
-        // Debt in red at the clinic's request (§2: design is the user's call),
-        // so the rows that owe money stand out from the zeros.
-        cell: (info) => {
-          const amount = info.getValue()
-          return (
-            <span className={amount > 0 ? 'font-semibold text-danger' : 'text-text'}>
-              {formatSom(amount, locale, t('common:currency.som'))}
-            </span>
-          )
+          return status === 'archived' ? <PatientStatusBadge status={status} /> : EMPTY
         },
       }),
 
@@ -126,7 +94,7 @@ export function usePatientColumns({ onEdit, onDelete }: UsePatientColumnsOptions
           return (
             <div className="flex justify-end">
               {/* UX only — Django decides what may actually be written (§9.1). */}
-              <Can permission="patient:write">
+              <Can permission="patient:manage">
                 <DropdownMenu
                   trigger={
                     <button
@@ -145,9 +113,11 @@ export function usePatientColumns({ onEdit, onDelete }: UsePatientColumnsOptions
                   <DropdownMenuItem onSelect={() => onEdit(patient)}>
                     {t('common:action.edit')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem isDestructive onSelect={() => onDelete(patient)}>
-                    {t('common:action.delete')}
-                  </DropdownMenuItem>
+                  {patient.status === 'active' ? (
+                    <DropdownMenuItem onSelect={() => onArchive(patient)}>
+                      {t('patients:archive.confirm')}
+                    </DropdownMenuItem>
+                  ) : null}
                 </DropdownMenu>
               </Can>
             </div>
@@ -155,6 +125,6 @@ export function usePatientColumns({ onEdit, onDelete }: UsePatientColumnsOptions
         },
       }),
     ],
-    [t, locale, onEdit, onDelete],
+    [t, locale, onEdit, onArchive],
   )
 }

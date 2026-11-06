@@ -9,6 +9,12 @@ export {
   toDoctorForm,
   toDoctorPayload,
 } from './model/formSchema'
-export { doctorListSchema, doctorSchema, toDoctor } from './model/schema'
+export {
+  doctorPageSchema,
+  doctorSchema,
+  staffPageSchema,
+  staffSchema,
+  toDoctor,
+} from './model/schema'
 export type { Doctor, DoctorId } from './model/types'
 export { DoctorFormFields, type DoctorFormFieldsProps } from './ui/DoctorFormFields'

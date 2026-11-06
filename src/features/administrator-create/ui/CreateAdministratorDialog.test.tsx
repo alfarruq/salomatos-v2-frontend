@@ -1,20 +1,18 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { CreateAdministratorDialog } from './CreateAdministratorDialog'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
@@ -29,7 +27,7 @@ function renderDialog() {
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
-          <CreateAdministratorDialog clinicId={1} onOpenChange={onOpenChange} open />
+          <CreateAdministratorDialog clinicId="clinic:test" onOpenChange={onOpenChange} open />
         </Suspense>
       </I18nextProvider>
     </QueryClientProvider>,
@@ -47,33 +45,34 @@ async function fillIn(username: string) {
 }
 
 describe('CreateAdministratorDialog', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('admin'))
 
-  it('sends the login and password, never a role or clinic', async () => {
-    let sentBody: unknown
-    server.use(
-      http.post('/api/v1/clinic/admins/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({ id: 950, username: 'yangi.admin', full_name: 'Yangi Admin' })
-      }),
-    )
+  it('creates an admin membership with the login and password, never a clinic', async () => {
+    const captured: { body: unknown } = { body: undefined }
+    server.events.on('request:start', async ({ request }) => {
+      if (request.method === 'POST' && request.url.endsWith('/api/v1/staff/')) {
+        captured.body = await request.clone().json()
+      }
+    })
 
     const { onOpenChange } = renderDialog()
     await fillIn('yangi.admin')
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
-    expect(sentBody).toEqual({
+    // The branch comes from the X-Clinic-Id header, never from the body.
+    expect(captured.body).not.toHaveProperty('clinic')
+    expect(captured.body).toMatchObject({
+      role: 'admin',
       username: 'yangi.admin',
       password: 'maxfiy-parol',
       full_name: 'Yangi Admin',
       phone_number: '+998935550077',
-      email: null,
     })
   })
 
   it('puts a taken login back on the login input', async () => {
     renderDialog()
-    await fillIn('reception')
+    await fillIn('admin')
 
     expect(await screen.findByText('Bu qiymat allaqachon band')).toBeInTheDocument()
   })

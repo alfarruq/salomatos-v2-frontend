@@ -71,11 +71,7 @@ export function PatientFormFields({
       </Field>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field
-          error={message(errors.doctorId?.message)}
-          isRequired
-          label={t('patients:form.doctor')}
-        >
+        <Field error={message(errors.doctorId?.message)} label={t('patients:form.doctor')}>
           <Controller
             control={form.control}
             name="doctorId"
@@ -114,8 +110,28 @@ export function PatientFormFields({
         <Input autoComplete="off" disabled={isDisabled} {...form.register('address')} />
       </Field>
 
-      <Field error={message(errors.office?.message)} label={t('patients:form.office')}>
-        <Input autoComplete="off" disabled={isDisabled} {...form.register('office')} />
+      <Field error={message(errors.gender?.message)} label={t('patients:form.gender')}>
+        <Controller
+          control={form.control}
+          name="gender"
+          render={({ field }) => (
+            <Select
+              disabled={isDisabled}
+              name={field.name}
+              onValueChange={field.onChange}
+              options={[
+                { value: 'male', label: t('patients:gender.male') },
+                { value: 'female', label: t('patients:gender.female') },
+              ]}
+              placeholder={t('patients:form.genderPlaceholder')}
+              value={field.value}
+            />
+          )}
+        />
+      </Field>
+
+      <Field error={message(errors.notes?.message)} label={t('patients:form.notes')}>
+        <Input autoComplete="off" disabled={isDisabled} {...form.register('notes')} />
       </Field>
     </div>
   )

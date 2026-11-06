@@ -5,7 +5,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useDeleteAdministrator } from '../model/useDeleteAdministrator'
 
 export interface DeleteAdministratorDialogProps {
-  clinicId: number
+  clinicId: string
   administrator: Pick<Administrator, 'id' | 'fullName'>
   open: boolean
   onOpenChange: (open: boolean) => void

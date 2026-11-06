@@ -16,7 +16,7 @@ const MIN_SEARCH_LENGTH = 2
 const MAX_RESULTS = 6
 
 export interface TreatmentFiltersProps {
-  clinicId: number
+  clinicId: string
   filters: TreatmentListFilters
   onFiltersChange: (filters: TreatmentListFilters) => void
 }
@@ -29,7 +29,7 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
 
   const change = (patch: Partial<TreatmentListFilters>) =>
     onFiltersChange({ ...filters, ...patch, page: 1 })
-  const idOrNull = (value: string) => (value === FILTER_ALL ? null : Number(value))
+  const idOrNull = (value: string) => (value === FILTER_ALL ? null : value)
 
   return (
     <div className="flex flex-wrap items-start gap-2">
@@ -46,12 +46,12 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         options={[
           { value: FILTER_ALL, label: t('filters.doctorAll') },
           ...(doctorsQuery.data ?? []).map((doctor) => ({
-            value: String(doctor.id),
+            value: doctor.id,
             label: doctor.fullName,
           })),
         ]}
         size="sm"
-        value={filters.doctorId === null ? FILTER_ALL : String(filters.doctorId)}
+        value={filters.doctorId ?? FILTER_ALL}
       />
 
       <Select
@@ -60,25 +60,10 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         onValueChange={(value) => change({ treatmentTypeId: idOrNull(value) })}
         options={[
           { value: FILTER_ALL, label: t('filters.typeAll') },
-          ...(typesQuery.data ?? []).map((type) => ({ value: String(type.id), label: type.name })),
+          ...(typesQuery.data ?? []).map((type) => ({ value: type.id, label: type.name })),
         ]}
         size="sm"
-        value={filters.treatmentTypeId === null ? FILTER_ALL : String(filters.treatmentTypeId)}
-      />
-
-      <Select
-        aria-label={t('filters.debtLabel')}
-        className="w-auto shrink-0"
-        onValueChange={(value) =>
-          change({ debt: value === FILTER_ALL ? null : (value as 'with' | 'without') })
-        }
-        options={[
-          { value: FILTER_ALL, label: t('filters.debtAll') },
-          { value: 'with', label: t('filters.debtWith') },
-          { value: 'without', label: t('filters.debtWithout') },
-        ]}
-        size="sm"
-        value={filters.debt ?? FILTER_ALL}
+        value={filters.treatmentTypeId ?? FILTER_ALL}
       />
 
       <Select
@@ -89,8 +74,8 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         }
         options={[
           { value: FILTER_ALL, label: t('filters.statusAll') },
-          { value: 'in_progress', label: t('filters.statusInProgress') },
-          { value: 'completed', label: t('filters.statusCompleted') },
+          { value: 'done', label: t('status.done') },
+          { value: 'voided', label: t('status.voided') },
         ]}
         size="sm"
         value={filters.status ?? FILTER_ALL}
@@ -111,9 +96,9 @@ function PatientFilter({
   patientId,
   onChange,
 }: {
-  clinicId: number
-  patientId: number | null
-  onChange: (patientId: number | null) => void
+  clinicId: string
+  patientId: string | null
+  onChange: (patientId: string | null) => void
 }) {
   const { t } = useTranslation('treatments')
   const search = usePatientSearch()
@@ -125,7 +110,7 @@ function PatientFilter({
     enabled: isSearching,
   })
   const pickedQuery = useQuery({
-    ...patientQueries.detail(clinicId, patientId ?? 0),
+    ...patientQueries.detail(clinicId, patientId ?? ''),
     enabled: patientId !== null,
   })
 
@@ -133,7 +118,7 @@ function PatientFilter({
     return (
       <span className="inline-flex h-8 items-center gap-1 rounded-full border border-accent bg-accent-soft pr-1 pl-3 text-callout text-accent-text pointer-coarse:min-h-11">
         <span className="max-w-48 truncate">
-          {pickedQuery.data?.fullName ?? t('filters.patientById', { id: patientId })}
+          {pickedQuery.data?.fullName ?? t('filters.patientLoading')}
         </span>
         <button
           aria-label={t('filters.patientClear')}

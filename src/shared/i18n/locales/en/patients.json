@@ -1,8 +1,7 @@
 {
   "status": {
-    "in_progress": "In treatment",
-    "completed": "Completed",
-    "none": "No treatment"
+    "active": "Active",
+    "archived": "Archived"
   },
   "form": {
     "fullName": "Full name",
@@ -12,7 +11,9 @@
     "birthDate": "Date of birth",
     "birthDatePlaceholder": "dd/mm/yyyy",
     "address": "Address",
-    "office": "Workplace"
+    "gender": "Gender",
+    "genderPlaceholder": "Not specified",
+    "notes": "Notes"
   },
   "create": {
     "title": "New patient",
@@ -26,15 +27,6 @@
     "title": "Edit patient",
     "description": "Changes are saved immediately.",
     "failed": "Could not save the changes. Please try again."
-  },
-  "delete": {
-    "title": "Delete patient",
-    "description": "Delete “{{name}}” entirely?",
-    "warning": "This cannot be undone. What happens to the patient's treatment, appointment and payment history is unknown — it may be deleted too, or left without an owner.",
-    "wait": "Delete ({{seconds}})",
-    "failed": "Could not delete the patient. Please try again.",
-    "forbidden": "You don't have permission to delete patients.",
-    "failedWithCode": "The server did not delete the patient (error code: {{status}}). Try again; if it keeps happening, send this message."
   },
   "search": {
     "label": "Search patients",
@@ -58,7 +50,8 @@
     "total": "Total patients",
     "inProgress": "In treatment",
     "completed": "Completed",
-    "debtors": "With balance due"
+    "debtors": "With balance due",
+    "archived": "Archived"
   },
   "table": {
     "noAppointment": "No appointment"
@@ -71,7 +64,8 @@
     "treatmentType": "Treatment",
     "doctor": "Doctor",
     "lastAppointment": "Appointment",
-    "remaining": "Outstanding"
+    "remaining": "Outstanding",
+    "birthDate": "Date of birth"
   },
   "empty": {
     "title": "No patients yet",
@@ -131,5 +125,24 @@
       "treatment": "Treatment",
       "prescription": "Prescription"
     }
+  },
+  "gender": {
+    "male": "Male",
+    "female": "Female"
+  },
+  "attachmentKind": {
+    "xray": "X-ray",
+    "panorama": "Panoramic X-ray",
+    "cbct": "CBCT",
+    "photo": "Photo",
+    "document": "Document"
+  },
+  "archive": {
+    "title": "Archive patient",
+    "description": "“{{name}}” will be hidden from the lists. The card and its whole history are kept and can be restored.",
+    "confirm": "Archive",
+    "failed": "Could not archive the patient. Please try again.",
+    "forbidden": "You don't have permission to archive patients.",
+    "done": "Patient archived"
   }
 }

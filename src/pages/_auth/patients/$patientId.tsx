@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
-  Briefcase,
+  Archive,
+  Building2,
   Cake,
   Calendar,
   CalendarPlus,
@@ -10,34 +11,27 @@ import {
   Phone,
   Pill,
   Stethoscope,
-  Trash2,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AttachmentGallery, attachmentQueries } from '@/entities/attachment'
 import type { Patient } from '@/entities/patient'
-import {
-  PatientAvatar,
-  PatientGallery,
-  PatientStatusBadge,
-  patientQueries,
-} from '@/entities/patient'
+import { PatientAvatar, PatientStatusBadge, patientQueries } from '@/entities/patient'
 import { recipeQueries } from '@/entities/recipe'
-import { Can } from '@/entities/session'
+import { Can, useCan } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { treatmentQueries } from '@/entities/treatment'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
-import { DeletePatientDialog } from '@/features/patient-delete'
+import { ArchivePatientDialog } from '@/features/patient-archive'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { GalleryDropzone } from '@/features/patient-gallery-upload'
 import { RecipeEditor } from '@/features/recipe-editor'
 import { TreatmentComposer } from '@/features/treatment-composer'
-import { DeleteTreatmentDialog } from '@/features/treatment-delete'
-import { formatCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
+import { VoidTreatmentDialog } from '@/features/treatment-void'
+import { ageOn, formatCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
-import { formatSom } from '@/shared/lib/money'
 import {
-  Badge,
   Button,
   Card,
   ErrorState,
@@ -48,8 +42,11 @@ import {
   Tabs,
   toast,
 } from '@/shared/ui'
+import { PatientBilling } from '@/widgets/patient-billing'
 import { PrescriptionCards } from '@/widgets/patient-prescriptions'
 import { TreatmentHistoryTable, TreatmentToothChart } from '@/widgets/patient-treatments'
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const Route = createFileRoute('/_auth/patients/$patientId')({
   component: PatientDetailPage,
@@ -61,11 +58,10 @@ function PatientDetailPage() {
   const { clinicId } = Route.useRouteContext()
   const navigate = useNavigate()
   const [isEditOpen, setEditOpen] = useState(false)
-  const [isDeleteOpen, setDeleteOpen] = useState(false)
+  const [isArchiveOpen, setArchiveOpen] = useState(false)
   const [isAppointmentOpen, setAppointmentOpen] = useState(false)
   // Here rather than in the tabs: the header's button and the table both open it.
   const [isComposerOpen, setComposerOpen] = useState(false)
-  const [editingTreatment, setEditingTreatment] = useState<Treatment | null>(null)
   // A fresh key per opening: the form seeds its state once, on mount, so
   // without this the next opening would inherit the last one's doctor and rows.
   const [composerSession, setComposerSession] = useState(0)
@@ -79,21 +75,19 @@ function PatientDetailPage() {
     setRecipeEditorOpen(true)
   }
 
-  const openComposer = (treatment: Treatment | null) => {
-    setEditingTreatment(treatment)
+  const openComposer = () => {
     setComposerSession((session) => session + 1)
     setComposerOpen(true)
   }
 
   /*
-   * ADR-013: ids are integers here. A non-numeric path segment is a typed or
-   * tampered URL, not a patient — asking the server about `NaN` would answer
-   * 404 anyway, one round trip later.
+   * Ids are UUIDs. Anything else in the path is a typed or tampered URL, not a
+   * patient — the server would answer 404 anyway, one round trip later.
    */
-  const id = Number(patientId)
-  const query = useQuery({ ...patientQueries.detail(clinicId, id), enabled: Number.isInteger(id) })
+  const isValidId = UUID_PATTERN.test(patientId)
+  const query = useQuery({ ...patientQueries.detail(clinicId, patientId), enabled: isValidId })
 
-  if (!Number.isInteger(id)) {
+  if (!isValidId) {
     return (
       <ErrorState
         description={t('patients:detail.notFoundBody')}
@@ -128,35 +122,41 @@ function PatientDetailPage() {
             </Link>
 
             <div className="flex flex-wrap gap-2">
-              <Button
-                className="max-md:hidden"
-                iconLeft={<Stethoscope aria-hidden="true" className="size-4" />}
-                onClick={() => openComposer(null)}
-                size="sm"
-                variant="primary"
-              >
-                {t('patients:detail.newTreatment')}
-              </Button>
-              <Button
-                className="max-md:hidden"
-                iconLeft={<Pill aria-hidden="true" className="size-4" />}
-                onClick={openRecipeEditor}
-                size="sm"
-                variant="secondary"
-              >
-                {t('patients:detail.writePrescription')}
-              </Button>
-              <Button
-                className="max-md:hidden"
-                iconLeft={<CalendarPlus aria-hidden="true" className="size-4" />}
-                onClick={() => setAppointmentOpen(true)}
-                size="sm"
-                variant="secondary"
-              >
-                {t('patients:detail.newAppointment')}
-              </Button>
               {/* UX only — Django decides what may actually be written (§9.1). */}
-              <Can permission="patient:write">
+              <Can permission="procedure:manage">
+                <Button
+                  className="max-md:hidden"
+                  iconLeft={<Stethoscope aria-hidden="true" className="size-4" />}
+                  onClick={openComposer}
+                  size="sm"
+                  variant="primary"
+                >
+                  {t('patients:detail.newTreatment')}
+                </Button>
+              </Can>
+              <Can permission="prescription:manage">
+                <Button
+                  className="max-md:hidden"
+                  iconLeft={<Pill aria-hidden="true" className="size-4" />}
+                  onClick={openRecipeEditor}
+                  size="sm"
+                  variant="secondary"
+                >
+                  {t('patients:detail.writePrescription')}
+                </Button>
+              </Can>
+              <Can permission="appointment:manage">
+                <Button
+                  className="max-md:hidden"
+                  iconLeft={<CalendarPlus aria-hidden="true" className="size-4" />}
+                  onClick={() => setAppointmentOpen(true)}
+                  size="sm"
+                  variant="secondary"
+                >
+                  {t('patients:detail.newAppointment')}
+                </Button>
+              </Can>
+              <Can permission="patient:manage">
                 <Button
                   iconLeft={<Pencil aria-hidden="true" className="size-4" />}
                   onClick={() => setEditOpen(true)}
@@ -165,25 +165,34 @@ function PatientDetailPage() {
                 >
                   {t('patients:edit.title')}
                 </Button>
-                <Button
-                  iconLeft={<Trash2 aria-hidden="true" className="size-4" />}
-                  onClick={() => setDeleteOpen(true)}
-                  size="sm"
-                  variant="danger"
-                >
-                  {t('common:action.delete')}
-                </Button>
               </Can>
+              {patient.status === 'active' ? (
+                <Can permission="patient:archive">
+                  <Button
+                    iconLeft={<Archive aria-hidden="true" className="size-4" />}
+                    onClick={() => setArchiveOpen(true)}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    {t('patients:archive.confirm')}
+                  </Button>
+                </Can>
+              ) : null}
             </div>
           </div>
 
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-            <PatientSidebar
-              onNewAppointment={() => setAppointmentOpen(true)}
-              onNewTreatment={() => openComposer(null)}
-              onWritePrescription={openRecipeEditor}
-              patient={patient}
-            />
+            <div className="flex flex-col gap-6">
+              <PatientSidebar
+                onNewAppointment={() => setAppointmentOpen(true)}
+                onNewTreatment={openComposer}
+                onWritePrescription={openRecipeEditor}
+                patient={patient}
+              />
+              <Can permission="payment:view">
+                <PatientBilling clinicId={clinicId} patientId={patient.id} />
+              </Can>
+            </div>
             <PatientTabs
               onOpenComposer={openComposer}
               onOpenRecipeEditor={openRecipeEditor}
@@ -193,12 +202,11 @@ function PatientDetailPage() {
 
           <TreatmentComposer
             clinicId={clinicId}
+            initialDoctorId={patient.primaryDoctorId}
             key={composerSession}
-            nextVisitNumber={patient.visitNumber + 1}
             onOpenChange={setComposerOpen}
             open={isComposerOpen}
             patientId={patient.id}
-            {...(editingTreatment === null ? {} : { initialTreatment: editingTreatment })}
           />
 
           <RecipeEditor
@@ -229,11 +237,11 @@ function PatientDetailPage() {
             patient={patient}
           />
 
-          <DeletePatientDialog
+          <ArchivePatientDialog
             clinicId={clinicId}
-            onDeleted={() => void navigate({ to: '/patients' })}
-            onOpenChange={setDeleteOpen}
-            open={isDeleteOpen}
+            onArchived={() => void navigate({ to: '/patients' })}
+            onOpenChange={setArchiveOpen}
+            open={isArchiveOpen}
             patient={patient}
           />
         </div>
@@ -292,7 +300,9 @@ function PatientSidebar({
 }) {
   const { t, i18n } = useTranslation(['patients', 'common'])
   const locale = i18n.language
-  const currencyLabel = t('common:currency.som')
+  const canTreat = useCan('procedure:manage')
+  const canPrescribe = useCan('prescription:manage')
+  const canBook = useCan('appointment:manage')
 
   const birthDate =
     patient.birthDate === null ? null : formatCalendarDate(patient.birthDate, locale)
@@ -301,19 +311,15 @@ function PatientSidebar({
       ? null
       : `+998-${formatSubscriber(subscriberDigitsOf(patient.phoneNumber))}`
 
-  // Guards the same way `formatSom`'s callers already have to: a patient with
-  // nothing billed yet must read as "nothing owed", not as a division by zero.
-  const paidRatio =
-    patient.totalTreatmentCost === 0 ? 1 : patient.totalPaid / patient.totalTreatmentCost
-  const progressPercent = Math.min(100, Math.max(0, Math.round(paidRatio * 100)))
+  const age = patient.birthDate === null ? null : ageOn(patient.birthDate, todayCalendarDate())
 
   return (
     <Card className="flex flex-col gap-4 p-4 sm:p-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <PatientAvatar imageUrl={patient.imageUrl} name={patient.fullName} size="lg" />
+        <PatientAvatar name={patient.fullName} size="lg" />
         <div className="flex flex-col items-center gap-1">
           <h1 className="text-title2 text-text">{patient.fullName}</h1>
-          <PatientStatusBadge status={patient.status} />
+          {patient.status === 'archived' ? <PatientStatusBadge status={patient.status} /> : null}
         </div>
       </div>
 
@@ -333,16 +339,19 @@ function PatientSidebar({
           </a>
         )}
         <QuickAction
+          disabled={!canBook}
           icon={<CalendarPlus className="size-5" />}
           label={t('patients:detail.quick.appointment')}
           onClick={onNewAppointment}
         />
         <QuickAction
+          disabled={!canTreat}
           icon={<Stethoscope className="size-5" />}
           label={t('patients:detail.quick.treatment')}
           onClick={onNewTreatment}
         />
         <QuickAction
+          disabled={!canPrescribe}
           icon={<Pill className="size-5" />}
           label={t('patients:detail.quick.prescription')}
           onClick={onWritePrescription}
@@ -359,51 +368,24 @@ function PatientSidebar({
             {phoneDisplay}
           </a>
         )}
-        <SidebarFact icon={<Stethoscope className="size-4" />} value={patient.doctorName} />
+        <SidebarFact icon={<Stethoscope className="size-4" />} value={patient.primaryDoctorName} />
+        <SidebarFact icon={<Building2 className="size-4" />} value={patient.clinicName} />
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-4">
         <SidebarFact icon={<Calendar className="size-4" />} value={birthDate} />
         <SidebarFact
           icon={<Cake className="size-4" />}
-          value={patient.age === null ? null : t('patients:detail.ageYears', { age: patient.age })}
+          value={age === null ? null : t('patients:detail.ageYears', { age })}
         />
         <SidebarFact icon={<MapPin className="size-4" />} value={patient.address} />
-        <SidebarFact icon={<Briefcase className="size-4" />} value={patient.office} />
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <div className="flex items-center justify-between">
-          <span className="text-caption text-text-tertiary uppercase">
-            {t('patients:column.remaining')}
-          </span>
-          <Badge tone="neutral">
-            {t('patients:detail.visitCount', { count: patient.visitNumber })}
-          </Badge>
-        </div>
-
-        <span
-          className={
-            patient.totalRemaining === 0 ? 'text-title2 text-success' : 'text-title2 text-text'
-          }
-        >
-          {formatSom(patient.totalRemaining, locale, currencyLabel)}
-        </span>
-
-        <div className="h-2 w-full overflow-hidden rounded-full bg-sunken">
-          <div
-            className="h-full rounded-full bg-success"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <span className="text-caption text-text-secondary">
-          {t('patients:detail.totalPaidOf', {
-            paid: formatSom(patient.totalPaid, locale, currencyLabel),
-            total: formatSom(patient.totalTreatmentCost, locale, currencyLabel),
-          })}
-        </span>
-      </div>
+      {patient.notes === null ? null : (
+        <p className="border-t border-border pt-4 text-callout whitespace-pre-line text-text-secondary">
+          {patient.notes}
+        </p>
+      )}
     </Card>
   )
 }
@@ -435,16 +417,18 @@ function PatientTabs({
   onOpenRecipeEditor,
 }: {
   patient: Patient
-  onOpenComposer: (treatment: Treatment | null) => void
+  onOpenComposer: () => void
   onOpenRecipeEditor: () => void
 }) {
   const { t } = useTranslation(['patients', 'common'])
   const { clinicId } = Route.useRouteContext()
-  const [deletingTreatment, setDeletingTreatment] = useState<Treatment | null>(null)
+  const [voidingTreatment, setVoidingTreatment] = useState<Treatment | null>(null)
   // The same queries (and cache entries) the tabs' own contents read, so the
   // counts cost no extra request once a tab has been opened.
   const treatmentCount = useQuery(treatmentQueries.list(clinicId, patient.id)).data?.length
   const recipeCount = useQuery(recipeQueries.list(clinicId, patient.id)).data?.length
+  const attachmentsQuery = useQuery(attachmentQueries.list(clinicId, patient.id))
+  const attachments = attachmentsQuery.data ?? []
 
   return (
     <>
@@ -457,10 +441,7 @@ function PatientTabs({
               <Card className="p-6">
                 <TreatmentToothChart
                   clinicId={clinicId}
-                  onComplete={() => toast.info(t('patients:detail.comingSoon'))}
-                  onDelete={setDeletingTreatment}
-                  onEdit={onOpenComposer}
-                  onTakePayment={() => toast.info(t('patients:detail.comingSoon'))}
+                  onVoid={setVoidingTreatment}
                   patientId={patient.id}
                 />
               </Card>
@@ -472,11 +453,8 @@ function PatientTabs({
             content: (
               <TreatmentHistoryTable
                 clinicId={clinicId}
-                onComplete={() => toast.info(t('patients:detail.comingSoon'))}
-                onCreate={() => onOpenComposer(null)}
-                onDelete={setDeletingTreatment}
-                onEdit={onOpenComposer}
-                onTakePayment={() => toast.info(t('patients:detail.comingSoon'))}
+                onCreate={onOpenComposer}
+                onVoid={setVoidingTreatment}
                 patientId={patient.id}
               />
             ),
@@ -500,14 +478,18 @@ function PatientTabs({
           {
             value: 'gallery',
             label: (
-              <TabLabel count={patient.gallery.length}>{t('patients:detail.tabGallery')}</TabLabel>
+              <TabLabel count={attachmentsQuery.data?.length}>
+                {t('patients:detail.tabGallery')}
+              </TabLabel>
             ),
             content: (
               <Card className="p-6">
                 <div className="flex flex-col gap-4">
-                  <GalleryDropzone clinicId={clinicId} patientId={patient.id} />
-                  {patient.gallery.length === 0 ? null : (
-                    <PatientGallery images={patient.gallery} />
+                  <Can permission="attachment:manage">
+                    <GalleryDropzone clinicId={clinicId} patientId={patient.id} />
+                  </Can>
+                  {attachments.length === 0 ? null : (
+                    <AttachmentGallery attachments={attachments} clinicId={clinicId} />
                   )}
                 </div>
               </Card>
@@ -516,15 +498,15 @@ function PatientTabs({
         ]}
       />
 
-      {deletingTreatment === null ? null : (
-        <DeleteTreatmentDialog
+      {voidingTreatment === null ? null : (
+        <VoidTreatmentDialog
           clinicId={clinicId}
-          onDeleted={() => setDeletingTreatment(null)}
-          onOpenChange={(open) => {
-            if (!open) setDeletingTreatment(null)
+          onOpenChange={(open: boolean) => {
+            if (!open) setVoidingTreatment(null)
           }}
+          onVoided={() => setVoidingTreatment(null)}
           open
-          treatment={deletingTreatment}
+          treatment={voidingTreatment}
         />
       )}
     </>

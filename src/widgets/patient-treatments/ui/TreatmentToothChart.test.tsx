@@ -5,55 +5,54 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { accessTokenFor, MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { MOCK_PATIENTS, MOCK_PROCEDURES, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { TreatmentToothChart } from './TreatmentToothChart'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
-const row = (id: number, tooth: number, type: string, status: string, start: string) => ({
-  id,
-  doctor: 'Sardor Usmonov',
-  treatment_type: type,
-  tooth_number: tooth,
-  start_date: start,
-  status,
+const row = (n: number, tooth: number, name: string, performedAt: string, voided = false) => ({
+  ...MOCK_PROCEDURES[0],
+  id: mockId(9, n),
+  tooth,
+  service_name: name,
+  performed_at: performedAt,
+  voided_at: voided ? '2026-09-02T06:00:00Z' : null,
 })
 
-/** Tooth 16: one done, one open (amber). Tooth 21: done (green). */
+/** Tooth 16: two procedures. Tooth 21: one. Tooth 26: only a voided line. */
 const ROWS = [
-  row(1, 16, 'Plomba', 'completed', '2026-08-01'),
-  row(2, 16, 'Эндо Тиадент', 'in_progress', '2026-09-01'),
-  row(3, 21, 'Tozalash', 'completed', '2026-07-01'),
+  row(1, 16, 'Plomba', '2026-08-01T06:00:00Z'),
+  row(2, 16, 'Эндо Тиадент', '2026-09-01T06:00:00Z'),
+  row(3, 21, 'Tozalash', '2026-07-01T06:00:00Z'),
+  row(4, 26, 'Plomba', '2026-09-01T06:00:00Z', true),
 ]
 
 function renderChart() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const handlers = {
-    onEdit: vi.fn(),
-    onComplete: vi.fn(),
-    onDelete: vi.fn(),
-    onTakePayment: vi.fn(),
-  }
 
   const { container } = render(
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
-          <TreatmentToothChart clinicId={MOCK_USERS.clinic.id} patientId={101} {...handlers} />
+          <TreatmentToothChart
+            clinicId="clinic:test"
+            onVoid={vi.fn()}
+            patientId={MOCK_PATIENTS[0]?.id ?? ''}
+          />
         </Suspense>
       </I18nextProvider>
     </QueryClientProvider>,
   )
 
-  return { container, handlers }
+  return { container }
 }
 
 const tooth = (container: HTMLElement, fdi: string) =>
@@ -61,27 +60,27 @@ const tooth = (container: HTMLElement, fdi: string) =>
 
 describe('TreatmentToothChart', () => {
   beforeEach(() => {
-    setAccessToken(accessTokenFor('clinic'))
+    signInAs('admin')
     server.use(
-      http.get('/api/v1/clinic/treatments/', () =>
+      http.get('/api/v1/procedures/', () =>
         HttpResponse.json({ count: ROWS.length, next: null, previous: null, results: ROWS }),
       ),
     )
   })
 
-  it('colours each tooth by its treatments, open ones winning', async () => {
+  it('marks every tooth with recorded work, and none for a voided line', async () => {
     const { container } = renderChart()
 
-    expect(await screen.findByText('Tugallangan')).toBeInTheDocument()
-    expect(screen.getByText('Jarayonda')).toBeInTheDocument()
-    expect(tooth(container, '16')).toHaveAttribute('data-status', 'in_progress')
-    expect(tooth(container, '21')).toHaveAttribute('data-status', 'completed')
+    expect(await screen.findByText('Davolangan')).toBeInTheDocument()
+    expect(tooth(container, '16')).toHaveAttribute('data-status', 'done')
+    expect(tooth(container, '21')).toHaveAttribute('data-status', 'done')
+    expect(tooth(container, '26')).toHaveAttribute('data-status', 'none')
     expect(tooth(container, '11')).toHaveAttribute('data-status', 'none')
   })
 
-  it("shows the tooth's treatment types on hover, and nothing on an untreated tooth", async () => {
+  it("shows the tooth's services on hover, and nothing on an untreated tooth", async () => {
     const { container } = renderChart()
-    await screen.findByText('Tugallangan')
+    await screen.findByText('Davolangan')
 
     await userEvent.hover(tooth(container, '16'))
     expect(screen.getByRole('tooltip')).toHaveTextContent('Tish 16')
@@ -92,9 +91,9 @@ describe('TreatmentToothChart', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
-  it("opens the tooth's latest treatment on click, and nothing for an untreated one", async () => {
+  it("opens the tooth's latest procedure on click, and nothing for an untreated one", async () => {
     const { container } = renderChart()
-    await screen.findByText('Tugallangan')
+    await screen.findByText('Davolangan')
 
     await userEvent.click(tooth(container, '11'))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
