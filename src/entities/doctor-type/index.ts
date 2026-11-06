@@ -8,7 +8,7 @@ export {
   toDoctorTypeForm,
   toDoctorTypePayload,
 } from './model/formSchema'
-export { doctorTypeListSchema, doctorTypeSchema, toDoctorType } from './model/schema'
+export { doctorTypeSchema, toDoctorType } from './model/schema'
 export type { DoctorType, DoctorTypeId } from './model/types'
 export {
   DoctorTypeFormFields,

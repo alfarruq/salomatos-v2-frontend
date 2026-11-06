@@ -1,13 +1,10 @@
 import * as v from 'valibot'
 import { toWorkingHoursPayload } from './schema'
-import { WEEKDAYS, type WorkingHours } from './types'
+import { type Clinic, WEEKDAYS, type WorkingHours } from './types'
 
 /**
- * The writable shape of a clinic — what `ClinicCreateUpdateSerializer`
- * accepts, minus `admin` (the server sets it, the same way it does for
- * doctors and services) and `logo` (an `ImageField`; this form is JSON-only,
- * and a logo upload needs multipart — out of scope here, matching `image` on
- * the doctor and session records, which are read-only for the same reason).
+ * The writable shape of a branch profile — what `ClinicSerializer` accepts on
+ * `PATCH clinic/`. The branch itself comes from `X-Clinic-Id`, never the body.
  */
 
 /** The national format, matching what `PhoneInput` emits. */
@@ -44,6 +41,25 @@ export const emptyClinicForm: ClinicFormInput = {
   hours: Object.fromEntries(
     WEEKDAYS.map((day) => [day, { isOpen: day !== 'sun', open: '09:00', close: '18:00' }]),
   ) as ClinicFormInput['hours'],
+}
+
+/** Fills the form from the branch's current profile, for editing. */
+export function toClinicForm(clinic: Clinic): ClinicFormInput {
+  const hours = Object.fromEntries(
+    WEEKDAYS.map((day) => {
+      const schedule = clinic.workingHours[day]
+      const fallback = emptyClinicForm.hours[day]
+      // A day missing from the stored hours keeps the default; an explicit null is closed.
+      if (schedule === undefined) return [day, fallback]
+      return [
+        day,
+        schedule === null
+          ? { ...fallback, isOpen: false }
+          : { isOpen: true, open: schedule.open, close: schedule.close },
+      ]
+    }),
+  ) as ClinicFormInput['hours']
+  return { name: clinic.name, phoneNumber: clinic.phoneNumber, address: clinic.address, hours }
 }
 
 export function toClinicPayload(input: ClinicFormInput): Record<string, unknown> {

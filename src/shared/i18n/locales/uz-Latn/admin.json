@@ -6,7 +6,6 @@
     "services": "Xizmatlar",
     "clinic": "Klinika",
     "doctorTypes": "Shifokor turlari",
-    "sms": "SMS",
     "admins": "Adminlar"
   },
   "doctor": {
@@ -68,10 +67,11 @@
     "opensAt": "{{day}} ochilish vaqti",
     "closesAt": "{{day}} yopilish vaqti",
     "closed": "Yopiq",
-    "setupTitle": "Klinikani sozlang",
-    "setupDescription": "Bu bir martalik sozlash. Nomi, telefon raqami va manzil majburiy.",
     "createFailed": "Klinikani saqlab bo'lmadi. Qayta urinib ko'ring.",
-    "editUnavailable": "Tahrirlash hozircha mavjud emas — dasturchilar jamoasidan so'rang."
+    "editUnavailable": "Tahrirlash hozircha mavjud emas — dasturchilar jamoasidan so'rang.",
+    "editTitle": "Filial profili",
+    "editDescription": "Nomi, telefoni va manzili retseptlarda chiqadi.",
+    "saved": "Saqlandi"
   },
   "doctorType": {
     "name": "Nomi",
@@ -88,32 +88,6 @@
     "deleteTitle": "Shifokor turini o'chirish",
     "deleteDescription": "\"{{name}}\" o'chirilsinmi? Bu turdan foydalanadigan shifokor va xizmatlarning boshqa ma'lumotlari saqlanib qoladi.",
     "deleteFailed": "Turni o'chirib bo'lmadi. Qayta urinib ko'ring."
-  },
-  "sms": {
-    "balanceTitle": "SMS balansi",
-    "pricePerSms": "1 SMS: {{price}}",
-    "estimatedSms_one": "taxminan {{count}} ta SMS yetadi",
-    "estimatedSms_other": "taxminan {{count}} ta SMS yetadi",
-    "balanceLow": "Balans kam qoldi. Eslatmalar to'xtab qolmasligi uchun hisobni to'ldiring.",
-    "balanceEmpty": "Balans tugagan, eslatmalar yuborilmayapti.",
-    "enabled": "Bemorlarga SMS eslatma yuborish",
-    "enabledHint": "O'chirilsa, tanlangan sozlamalar saqlanib qoladi.",
-    "whenTitle": "Qachon yuborilsin",
-    "whenHint": "Ko'pi bilan {{max}} tasini tanlash mumkin. Har bir SMS alohida to'lanadi.",
-    "offsetHours_one": "Qabuldan {{count}} soat oldin",
-    "offsetHours_other": "Qabuldan {{count}} soat oldin",
-    "offsetDays_one": "Qabuldan {{count}} kun oldin",
-    "offsetDays_other": "Qabuldan {{count}} kun oldin",
-    "sendOnCreate": "Qabul yozilganda darhol tasdiq SMS yuborish",
-    "previewTitle": "SMS namunasi",
-    "previewHint": "Matnda faqat sana, vaqt va klinika ma'lumoti bo'ladi. Bemor ismi va tibbiy ma'lumot yozilmaydi.",
-    "saved": "SMS sozlamalari saqlandi",
-    "saveFailed": "Sozlamalarni saqlab bo'lmadi. Qayta urinib ko'ring.",
-    "unavailable": "SMS xizmati hali ulanmagan",
-    "unavailableDescription": "Xizmat ishga tushgach, shu yerda balans va eslatma sozlamalari paydo bo'ladi.",
-    "previewModeTitle": "Namuna rejimi",
-    "previewModeBody": "SMS xizmati hali ulanmagan. Raqamlar namuna uchun, sozlamalar saqlanmaydi.",
-    "sampleText": "Klinika: qabulingiz 21.10 kuni 14:30 da. Tel: +998 71 200 00 00"
   },
   "administrator": {
     "fullName": "F. I. Sh.",

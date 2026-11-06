@@ -1,71 +1,96 @@
 import * as v from 'valibot'
-import { permissionsForRole } from './permissions'
-import type { Session } from './types'
+import { type TenantScope, tenantScopeKey } from '@/shared/api/tenantScope'
+import { readOnly } from './permissions'
+import { type ClinicMembership, PERMISSIONS, type Permission, type Session } from './types'
 
-/**
- * The wire contract for `/api/me/`, validated at runtime.
- *
- * ADR-006 (revised): there are no generated types to lean on. The backend
- * serves drf-yasg, which emits Swagger 2.0 rather than the OpenAPI 3 Orval
- * wants, and registers the schema route only under `DEBUG`. So this schema is
- * not a stopgap ahead of generation — it *is* the contract, and the only place
- * a serializer change gets caught.
- *
- * It is deliberately strict about `full_name` and `role` and permissive about
- * everything else, because those two are the fields the interface cannot do
- * without: one names the user, the other decides what they are shown.
- */
-
-/**
- * Absent or null, both meaning "nothing here".
- *
- * `v.nullable` alone still requires the key to be present, and a serializer
- * that stops sending a field it never had a value for is not a reason to
- * refuse to load the application. Strictness is spent where it buys
- * something — see `full_name` and `role` below.
- */
+/** The wire contract for `GET /api/v1/auth/me/`, validated at runtime (ADR-006). */
 const optionalString = v.optional(v.nullable(v.string()), null)
 
-export const meResponseSchema = v.object({
-  /*
-   * The two fields the interface genuinely cannot work without: one names the
-   * user on screen, the other decides what they are shown. If either is
-   * missing the honest outcome is an error, not an application with a blank
-   * header and every control hidden.
-   */
-  full_name: v.pipe(v.string(), v.minLength(1)),
-  role: v.picklist(['superadmin', 'admin', 'doctor', 'patient']),
+const membershipSchema = v.object({
+  id: v.string(),
+  clinic: v.object({ id: v.string(), name: v.string() }),
+  role: v.picklist(['owner', 'admin', 'doctor']),
+  permissions: v.array(v.string()),
+})
 
+export const meResponseSchema = v.object({
+  id: v.string(),
+  username: v.string(),
+  full_name: v.pipe(v.string(), v.minLength(1)),
   phone_number: optionalString,
   email: optionalString,
-  biography: optionalString,
-  /** A relative media path, not a URL. Absent for most accounts. */
-  image: optionalString,
-  experience: v.optional(v.nullable(v.number()), null),
+  memberships: v.array(membershipSchema),
+  organizations: v.optional(v.array(v.object({ id: v.string(), name: v.string() })), []),
 })
 
 export type MeResponse = v.InferOutput<typeof meResponseSchema>
 
+const KNOWN = new Set<string>(PERMISSIONS)
+
+function toPermissions(values: readonly string[]): ReadonlySet<Permission> {
+  return new Set(values.filter((value): value is Permission => KNOWN.has(value)))
+}
+
 /**
- * Maps the wire shape to the domain shape (§3.1's `model/mapper`).
+ * Maps the wire shape to the session, resolving the requested scope.
  *
- * `userId` comes from the caller rather than the response because the response
- * does not contain one — `UserMeSerializer` lists eight fields and `id` is not
- * among them. It is read from the access token instead (`fetchSession`).
+ * A scope the user no longer has (removed from a clinic, lost ownership) falls
+ * back to the first clinic instead of failing, so a stale choice cannot lock
+ * anyone out. Null means the user belongs to no active clinic.
  */
-export function toSession(response: MeResponse, userId: number): Session {
-  return {
-    userId,
-    // Same value, different meaning — see the field's comment in `types.ts`.
-    clinicId: userId,
+export function toSession(response: MeResponse, requested: TenantScope | null): Session | null {
+  const memberships: ClinicMembership[] = response.memberships.map((m) => ({
+    id: m.id,
+    clinicId: m.clinic.id,
+    clinicName: m.clinic.name,
+    role: m.role,
+    permissions: toPermissions(m.permissions),
+  }))
+  const first = memberships[0]
+  if (first === undefined) return null
+
+  const base = {
+    userId: response.id,
+    username: response.username,
     fullName: response.full_name,
-    phoneNumber: response.phone_number,
-    email: response.email,
-    role: response.role,
-    permissions: permissionsForRole(response.role),
+    phoneNumber: response.phone_number === '' ? null : response.phone_number,
+    email: response.email === '' ? null : response.email,
+    memberships,
+    organizations: response.organizations,
+  }
+
+  if (requested?.kind === 'organization') {
+    const organization = response.organizations.find((o) => o.id === requested.id)
+    const ownerMembership = memberships.find((m) => m.role === 'owner')
+    if (organization !== undefined && ownerMembership !== undefined) {
+      return {
+        ...base,
+        scope: requested,
+        clinicId: tenantScopeKey(requested),
+        scopeName: organization.name,
+        isAllBranches: true,
+        role: 'owner',
+        membershipId: null,
+        permissions: readOnly(ownerMembership.permissions),
+      }
+    }
+  }
+
+  const active =
+    (requested?.kind === 'clinic' && memberships.find((m) => m.clinicId === requested.id)) || first
+  const scope: TenantScope = { kind: 'clinic', id: active.clinicId }
+  return {
+    ...base,
+    scope,
+    clinicId: tenantScopeKey(scope),
+    scopeName: active.clinicName,
+    isAllBranches: false,
+    role: active.role,
+    membershipId: active.id,
+    permissions: active.permissions,
   }
 }
 
-export function parseSession(raw: unknown, userId: number): Session {
-  return toSession(v.parse(meResponseSchema, raw), userId)
+export function parseSession(raw: unknown, requested: TenantScope | null): Session | null {
+  return toSession(v.parse(meResponseSchema, raw), requested)
 }

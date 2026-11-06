@@ -21,7 +21,7 @@ const loginResponseSchema = v.object({
 })
 
 async function login(input: LoginInput): Promise<Session> {
-  const raw = await httpClient<unknown>('v1/authentication/login/', {
+  const raw = await httpClient<unknown>('v1/auth/login/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: input.username, password: input.password }),

@@ -11,11 +11,11 @@ import { httpClient } from '@/shared/api/httpClient'
  * ⚠️ Same missing tenant check as update — see `useUpdateDoctorType`.
  */
 async function deleteDoctorType(doctorTypeId: DoctorTypeId): Promise<void> {
-  await httpClient<void>(`v1/clinic/doctors/types/${doctorTypeId}/`, { method: 'DELETE' })
+  await httpClient<void>(`v1/specialties/${doctorTypeId}/`, { method: 'DELETE' })
 }
 
 /** ⛔ No optimistic update (§6.5): a refused delete should not vanish the row first. */
-export function useDeleteDoctorType(clinicId: number) {
+export function useDeleteDoctorType(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -1,18 +1,9 @@
 import { X } from 'lucide-react'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import {
-  Button,
-  DatePicker,
-  Field,
-  Input,
-  PhoneInput,
-  Select,
-  type SelectOption,
-  TEETH,
-  Textarea,
-} from '@/shared/ui'
+import { Button, DatePicker, Field, Input, Select, type SelectOption, Textarea } from '@/shared/ui'
 import type { AppointmentFormInput } from '../model/formSchema'
+import { APPOINTMENT_STATUSES } from '../model/types'
 
 /** Bookable slots, 30 minutes apart, 07:00 through 20:00. */
 const APPOINTMENT_TIME_OPTIONS: SelectOption[] = (() => {
@@ -27,23 +18,22 @@ const APPOINTMENT_TIME_OPTIONS: SelectOption[] = (() => {
   return options
 })()
 
-/** FDI numbers in chart order — upper arch right to left, then lower. */
-const TOOTH_OPTIONS: SelectOption[] = TEETH.map((tooth) => ({ value: tooth.fdi, label: tooth.fdi }))
+const DURATION_OPTIONS: SelectOption[] = [15, 30, 45, 60, 90, 120, 180].map((minutes) => ({
+  value: String(minutes),
+  label: String(minutes),
+}))
 
 export interface AppointmentTreatmentTypeProps {
-  /**
-   * Already narrowed to the selected doctor's specialty by the feature — the
-   * entity cannot see doctors or treatment types itself (§4).
-   */
+  /** Services from the price list, already as `{value, label}` — the entity cannot see them (§4). */
   options: SelectOption[]
   /** Shown instead of the select when there is nothing to pick from yet. */
   emptyHint: string | null
-  /** Only a dental doctor works on a single tooth. */
-  showToothNumber: boolean
+  /** Called with a picked service id, so the feature can set the visit length from it. */
+  onPick?: (serviceId: string) => void
 }
 
 export interface AppointmentPatientResult {
-  id: number
+  id: string
   fullName: string
   phoneNumber: string | null
 }
@@ -52,7 +42,7 @@ export interface AppointmentPatientPickerProps {
   searchTerm: string
   onSearchTermChange: (term: string) => void
   results: AppointmentPatientResult[]
-  /** Null when nothing is linked yet — a walk-in, or not chosen this session. */
+  /** Null when nothing is linked yet. */
   linkedPatientName: string | null
   onSelect: (patient: AppointmentPatientResult) => void
   onUnlink: () => void
@@ -67,10 +57,10 @@ export interface AppointmentFormFieldsProps {
    * same as `DoctorFormFields.doctorTypeOptions`.
    */
   doctorOptions: SelectOption[]
-  /** A fresh appointment always starts `in_progress` — only edit shows this. */
+  /** A fresh appointment always starts `scheduled` — only edit shows this. */
   showStatus?: boolean
   patientPicker: AppointmentPatientPickerProps
-  /** Absent hides treatment type and tooth number altogether (edit, for now). */
+  /** Absent hides the service select. */
   treatmentType?: AppointmentTreatmentTypeProps
 }
 
@@ -98,10 +88,9 @@ export function AppointmentFormFields({
   return (
     <div className="flex flex-col gap-4">
       {/*
-       * One input does both jobs: what is typed is the walk-in's name and,
-       * at the same time, the search term for an existing patient. Picking a
-       * result links that patient; typing again after that unlinks them, so
-       * the name sent never disagrees with the record it is linked to.
+       * The input is the search box; picking a result links that patient.
+       * Typing again unlinks them, so the name shown never disagrees with the
+       * record the visit is booked for.
        */}
       <Field
         description={
@@ -109,7 +98,7 @@ export function AppointmentFormFields({
             ? undefined
             : t('appointments:form.fullNameLinkedHint')
         }
-        error={message(errors.fullName?.message)}
+        error={message(errors.patientId?.message)}
         isRequired
         label={t('appointments:form.patient')}
       >
@@ -172,25 +161,6 @@ export function AppointmentFormFields({
       </Field>
 
       <Field
-        error={message(errors.phoneNumber?.message)}
-        isRequired
-        label={t('appointments:form.phoneNumber')}
-      >
-        <Controller
-          control={form.control}
-          name="phoneNumber"
-          render={({ field }) => (
-            <PhoneInput
-              disabled={isDisabled}
-              name={field.name}
-              onChange={field.onChange}
-              value={field.value}
-            />
-          )}
-        />
-      </Field>
-
-      <Field
         error={message(errors.doctorId?.message)}
         isRequired
         label={t('appointments:form.doctor')}
@@ -202,15 +172,7 @@ export function AppointmentFormFields({
             <Select
               disabled={isDisabled}
               name={field.name}
-              onValueChange={(value) => {
-                field.onChange(value)
-                // A type picked for the previous doctor is not one the new
-                // doctor performs, and a tooth means nothing to a non-dentist.
-                if (treatmentType !== undefined && value !== field.value) {
-                  form.setValue('treatmentTypeName', '')
-                  form.setValue('toothNumber', '')
-                }
-              }}
+              onValueChange={field.onChange}
               options={doctorOptions}
               placeholder={t('appointments:form.doctorPlaceholder')}
               value={field.value}
@@ -220,50 +182,29 @@ export function AppointmentFormFields({
       </Field>
 
       {treatmentType === undefined ? null : (
-        <div className={treatmentType.showToothNumber ? 'grid grid-cols-2 gap-4' : undefined}>
-          <Field
-            description={treatmentType.emptyHint ?? undefined}
-            error={message(errors.treatmentTypeName?.message)}
-            label={t('appointments:form.treatmentType')}
-          >
-            <Controller
-              control={form.control}
-              name="treatmentTypeName"
-              render={({ field }) => (
-                <Select
-                  disabled={isDisabled || treatmentType.options.length === 0}
-                  name={field.name}
-                  onValueChange={field.onChange}
-                  options={treatmentType.options}
-                  placeholder={t('appointments:form.treatmentTypePlaceholder')}
-                  value={field.value}
-                />
-              )}
-            />
-          </Field>
-
-          {treatmentType.showToothNumber ? (
-            <Field
-              error={message(errors.toothNumber?.message)}
-              label={t('appointments:form.toothNumber')}
-            >
-              <Controller
-                control={form.control}
-                name="toothNumber"
-                render={({ field }) => (
-                  <Select
-                    disabled={isDisabled}
-                    name={field.name}
-                    onValueChange={field.onChange}
-                    options={TOOTH_OPTIONS}
-                    placeholder={t('appointments:form.toothNumberPlaceholder')}
-                    value={field.value}
-                  />
-                )}
+        <Field
+          description={treatmentType.emptyHint ?? undefined}
+          error={message(errors.serviceId?.message)}
+          label={t('appointments:form.treatmentType')}
+        >
+          <Controller
+            control={form.control}
+            name="serviceId"
+            render={({ field }) => (
+              <Select
+                disabled={isDisabled || treatmentType.options.length === 0}
+                name={field.name}
+                onValueChange={(value) => {
+                  field.onChange(value)
+                  treatmentType.onPick?.(value)
+                }}
+                options={treatmentType.options}
+                placeholder={t('appointments:form.treatmentTypePlaceholder')}
+                value={field.value}
               />
-            </Field>
-          ) : null}
-        </div>
+            )}
+          />
+        </Field>
       )}
 
       <div className="grid grid-cols-2 gap-4">
@@ -302,6 +243,25 @@ export function AppointmentFormFields({
         </Field>
       </div>
 
+      <Field
+        error={message(errors.durationMinutes?.message)}
+        label={t('appointments:form.duration')}
+      >
+        <Controller
+          control={form.control}
+          name="durationMinutes"
+          render={({ field }) => (
+            <Select
+              disabled={isDisabled}
+              name={field.name}
+              onValueChange={field.onChange}
+              options={DURATION_OPTIONS}
+              value={field.value}
+            />
+          )}
+        />
+      </Field>
+
       {showStatus ? (
         <Field label={t('appointments:form.status')}>
           <Controller
@@ -312,10 +272,10 @@ export function AppointmentFormFields({
                 disabled={isDisabled}
                 name={field.name}
                 onValueChange={field.onChange}
-                options={[
-                  { value: 'in_progress', label: t('appointments:status.in_progress') },
-                  { value: 'completed', label: t('appointments:status.completed') },
-                ]}
+                options={APPOINTMENT_STATUSES.map((status) => ({
+                  value: status,
+                  label: t(`appointments:status.${status}`),
+                }))}
                 value={field.value}
               />
             )}

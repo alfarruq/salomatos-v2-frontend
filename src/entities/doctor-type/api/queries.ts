@@ -1,27 +1,26 @@
 import { queryOptions } from '@tanstack/react-query'
-import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
+import { fetchAllPages } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
-import { doctorTypeListSchema, toDoctorType } from '../model/schema'
+import { doctorTypeSchema, toDoctorType } from '../model/schema'
 import type { DoctorType } from '../model/types'
 
 /** §6.2 — `clinicId` is inside every key, without exception. */
 export const doctorTypeKeys = {
-  scope: (clinicId: number) => ['clinics', clinicId, 'doctor-types'] as const,
-  list: (clinicId: number) => [...doctorTypeKeys.scope(clinicId), 'list'] as const,
+  scope: (clinicId: string) => ['clinics', clinicId, 'doctor-types'] as const,
+  list: (clinicId: string) => [...doctorTypeKeys.scope(clinicId), 'list'] as const,
 }
 
 export async function fetchDoctorTypes(signal?: AbortSignal): Promise<DoctorType[]> {
-  const raw = await httpClient<unknown>(
-    'v1/clinic/doctors/types/',
-    signal === undefined ? {} : { signal },
+  const init = signal === undefined ? {} : { signal }
+  const rows = await fetchAllPages('v1/specialties/?page_size=100', doctorTypeSchema, (path) =>
+    httpClient<unknown>(path, init),
   )
-  // A plain array — this endpoint does not paginate. See the schema module.
-  return v.parse(doctorTypeListSchema, raw).map(toDoctorType)
+  return rows.map(toDoctorType)
 }
 
 export const doctorTypeQueries = {
-  list: (clinicId: number) =>
+  list: (clinicId: string) =>
     queryOptions({
       queryKey: doctorTypeKeys.list(clinicId),
       queryFn: ({ signal }) => fetchDoctorTypes(signal),

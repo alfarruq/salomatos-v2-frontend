@@ -1,74 +1,73 @@
 import * as v from 'valibot'
+import { pageSchema } from '@/shared/api/pagination'
+import { FREQUENCIES } from './medication'
 import type { Medicine, Recipe } from './types'
 
-/**
- * The wire contract for `/api/v1/core/recipes/?patient_id=` (ADR-006), from
- * `RecipeList` (drf-yasg), confirmed against a live create on 2026-10-07: a
- * plain array; `dose`, `duration` and `minutes` are integers; `type`,
- * `frequency` and `meal` are free text, which this client writes as the
- * codes in `medication.ts` but must still read as whatever older rows hold.
- *
- * Only `id` is trusted as required. `RecipeList` marks the rest required too,
- * but that promise has been wrong before on this backend, and a prescription
- * a doctor cannot fully read is still safer shown than dropped outright.
- */
-
-/** Absent or null both mean "nothing here" — see `entities/patient`'s schema. */
-const optionalString = v.optional(v.nullable(v.string()), null)
-
-const optionalNumber = v.pipe(
-  v.optional(v.nullable(v.union([v.number(), v.string()])), null),
-  v.transform((value) => {
-    if (value === null || value === '') return null
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }),
+const optionalText = v.pipe(
+  v.optional(v.nullable(v.string()), null),
+  v.transform((value) => (value === null || value === '' ? null : value)),
 )
 
 const medicineSchema = v.object({
-  id: v.pipe(v.number(), v.integer()),
-  name: optionalString,
-  dose: optionalNumber,
-  type: optionalString,
-  frequency: optionalString,
-  duration: optionalNumber,
-  meal: optionalString,
-  minutes: optionalNumber,
+  id: v.string(),
+  medicine: optionalText,
+  dose: optionalText,
+  form: optionalText,
+  times_per_day: v.optional(v.nullable(v.number()), null),
+  duration_days: v.optional(v.nullable(v.number()), null),
+  meal_relation: optionalText,
+  instructions: optionalText,
 })
 
+/** `PrescriptionSerializer`, validated at runtime (ADR-006). */
 export const recipeSchema = v.object({
-  id: v.pipe(v.number(), v.integer()),
-  doctor: optionalString,
-  notes: optionalString,
-  clinic: optionalString,
-  created_at: optionalString,
-  medicines: v.optional(v.fallback(v.array(medicineSchema), []), []),
+  id: v.pipe(v.string(), v.uuid()),
+  doctor_name: optionalText,
+  notes: optionalText,
+  clinic_name: optionalText,
+  created_at: optionalText,
+  items: v.optional(v.fallback(v.array(medicineSchema), []), []),
 })
 
-export const recipeListSchema = v.array(recipeSchema)
+export const recipePageSchema = pageSchema(recipeSchema)
 
 export type RecipeResponse = v.InferOutput<typeof recipeSchema>
 
+/** The server says "any time"; the editor's code for the same thing is `none`. */
+function toMeal(value: string | null): string | null {
+  return value === 'any' ? 'none' : value
+}
+
 function toMedicine(response: v.InferOutput<typeof medicineSchema>): Medicine {
+  const dose = response.dose !== null && /^\d+$/.test(response.dose) ? Number(response.dose) : null
+  const times = response.times_per_day
   return {
     id: response.id,
-    name: response.name,
-    dose: response.dose,
-    type: response.type,
-    frequency: response.frequency,
-    duration: response.duration,
-    meal: response.meal,
-    minutes: response.minutes,
+    name: response.medicine,
+    dose,
+    // A dose that is not a plain count ("400 mg") is kept as words beside the form.
+    type:
+      dose === null
+        ? [response.dose, response.form].filter((part) => part !== null).join(' ') || null
+        : response.form,
+    frequency:
+      times !== null && times >= 1 && times <= FREQUENCIES.length
+        ? (FREQUENCIES[times - 1] ?? null)
+        : null,
+    timesPerDay: times,
+    duration: response.duration_days,
+    meal: toMeal(response.meal_relation),
+    instructions: response.instructions,
   }
 }
 
 export function toRecipe(response: RecipeResponse): Recipe {
   return {
     id: response.id,
-    doctorName: response.doctor,
+    doctorName: response.doctor_name,
     notes: response.notes,
-    clinicName: response.clinic,
+    clinicName: response.clinic_name,
     createdAt: response.created_at,
-    medicines: response.medicines.map(toMedicine),
+    medicines: response.items.map(toMedicine),
   }
 }

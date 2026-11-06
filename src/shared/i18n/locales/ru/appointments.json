@@ -1,36 +1,37 @@
 {
   "title": "Записи на приём",
   "status": {
-    "in_progress": "В процессе",
-    "completed": "Завершён"
+    "completed": "Завершён",
+    "scheduled": "Запланирован",
+    "confirmed": "Подтверждён",
+    "arrived": "Пришёл",
+    "in_chair": "В кресле",
+    "no_show": "Не пришёл",
+    "cancelled": "Отменён"
   },
   "form": {
     "patient": "Пациент",
     "patientSearchPlaceholder": "Введите имя или найдите пациента",
     "unlinkPatient": "Отвязать пациента",
-    "fullName": "Ф. И. О.",
     "fullNameLinkedHint": "Пациент привязан — имя всегда берётся из его карточки.",
-    "phoneNumber": "Номер телефона",
     "doctor": "Врач",
     "doctorPlaceholder": "Не назначен",
-    "treatmentType": "Вид лечения",
+    "treatmentType": "Услуга",
     "treatmentTypePlaceholder": "Не выбран",
-    "toothNumber": "Номер зуба",
-    "toothNumberPlaceholder": "Выберите зуб",
-    "chooseDoctorFirst": "Сначала выберите врача — виды лечения зависят от его специальности.",
-    "doctorHasNoType": "У этого врача не указана специальность (тип врача). Укажите её, чтобы увидеть виды лечения.",
-    "noTypesForSpecialty": "Для специальности «{{specialty}}» ещё не добавлено ни одного вида лечения.",
     "date": "Дата",
     "datePlaceholder": "дд.мм.гггг",
     "previousMonth": "Предыдущий месяц",
     "nextMonth": "Следующий месяц",
     "time": "Время",
     "status": "Статус",
-    "notes": "Заметки"
+    "notes": "Заметки",
+    "duration": "Длительность, мин",
+    "chooseDoctorFirst": "Сначала выберите врача",
+    "noServices": "У этого врача пока нет услуг в прейскуранте."
   },
   "create": {
     "title": "Новая запись",
-    "description": "Выберите существующего пациента или укажите имя и телефон нового посетителя.",
+    "description": "Выберите зарегистрированного пациента. Нового пациента сначала добавьте на странице «Пациенты».",
     "submit": "Добавить запись",
     "failed": "Не удалось добавить запись. Попробуйте ещё раз.",
     "added": "Запись добавлена",
@@ -85,11 +86,5 @@
   },
   "pagination": {
     "summary": "{{from}}–{{to}} из {{count}}"
-  },
-  "unregistered": {
-    "title": "Пациента нет в базе",
-    "description": "{{name}} нет в списке пациентов. Добавить как пациента?",
-    "confirm": "Да, добавить",
-    "cancel": "Нет"
   }
 }

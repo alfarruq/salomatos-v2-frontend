@@ -38,11 +38,12 @@ export function toAdministratorPayload(
   input: AdministratorFormInput,
 ): Record<string, string | null> {
   return {
+    role: 'admin',
     username: input.username,
     password: input.password,
     full_name: input.fullName,
     phone_number: input.phoneNumber,
-    email: input.email === '' ? null : input.email,
+    email: input.email,
   }
 }
 

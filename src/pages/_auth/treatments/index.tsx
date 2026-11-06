@@ -9,19 +9,18 @@ import { TreatmentComposer } from '@/features/treatment-composer'
 import { Button } from '@/shared/ui'
 import { TreatmentTable } from '@/widgets/treatment-table'
 
-const positiveId = v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)))
+const uuid = v.optional(v.pipe(v.string(), v.uuid()))
 
 /**
- * Shareable view state (§3): ids, a page, a debt flag and a status — never a name.
- * `?patient=10` identifies a record; `?patient=Aliyev` would disclose one.
+ * Shareable view state (§3): UUIDs, a page and a status — never a name.
+ * `?patient=<uuid>` identifies a record; `?patient=Aliyev` would disclose one.
  */
 const treatmentsSearchSchema = v.object({
-  page: positiveId,
-  patient: positiveId,
-  doctor: positiveId,
-  type: positiveId,
-  debt: v.optional(v.picklist(['with', 'without'])),
-  status: v.optional(v.picklist(['in_progress', 'completed'])),
+  page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  patient: uuid,
+  doctor: uuid,
+  type: uuid,
+  status: v.optional(v.picklist(['done', 'voided'])),
 })
 
 type TreatmentsSearch = v.InferOutput<typeof treatmentsSearchSchema>
@@ -49,7 +48,6 @@ function TreatmentsPage() {
     patientId: search.patient ?? null,
     doctorId: search.doctor ?? null,
     treatmentTypeId: search.type ?? null,
-    debt: search.debt ?? null,
     status: search.status ?? null,
   }
 
@@ -58,7 +56,7 @@ function TreatmentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-title1 text-text">{t('list.title')}</h1>
         {/* UX only — Django decides who may actually write a treatment (§9.1). */}
-        <Can permission="medical-record:write">
+        <Can permission="procedure:manage">
           <Button
             iconLeft={<Plus aria-hidden="true" className="size-4" />}
             onClick={() => {
@@ -91,7 +89,6 @@ function TreatmentsPage() {
               ...(next.patientId === null ? {} : { patient: next.patientId }),
               ...(next.doctorId === null ? {} : { doctor: next.doctorId }),
               ...(next.treatmentTypeId === null ? {} : { type: next.treatmentTypeId }),
-              ...(next.debt === null ? {} : { debt: next.debt }),
               ...(next.status === null ? {} : { status: next.status }),
             }),
             to: '/treatments',

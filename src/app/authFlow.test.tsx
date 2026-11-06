@@ -10,9 +10,9 @@ import { useLockStore } from '@/features/session-lock'
 import { routeTree } from '@/routeTree.gen'
 import { clearSession } from '@/shared/api/authSession'
 import { configureApi, resetApiContext } from '@/shared/api/httpContext'
-import { accessTokenFor, MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { MOCK_CLINICS, MOCK_USERS } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { IDLE_TIMEOUT_MS, IDLE_WARNING_MS } from '@/shared/lib/useIdleTimer'
 import { Toaster } from '@/shared/ui'
@@ -72,8 +72,8 @@ function renderApp(initialPath = '/') {
  * Set directly rather than typed into the form because these tests are about
  * what happens *after* authentication; the form itself is covered above.
  */
-function signedIn(user: keyof typeof MOCK_USERS = 'clinic') {
-  setAccessToken(accessTokenFor(user))
+function signedIn(user: keyof typeof MOCK_USERS = 'admin') {
+  signInAs(user)
   useSessionStore.getState().setUsername(MOCK_USERS[user].username)
 }
 
@@ -98,7 +98,7 @@ describe('authentication flow', () => {
   it('signs in and lands on the dashboard', async () => {
     renderApp('/login')
 
-    await userEvent.type(await screen.findByLabelText('Foydalanuvchi nomi'), 'chilonzor')
+    await userEvent.type(await screen.findByLabelText('Foydalanuvchi nomi'), 'admin')
     await userEvent.type(screen.getByLabelText('Parol'), 'salomat')
     await userEvent.click(screen.getByRole('button', { name: 'Kirish' }))
 
@@ -108,7 +108,7 @@ describe('authentication flow', () => {
   it('puts the server`s rejection on the form rather than in a toast', async () => {
     renderApp('/login')
 
-    await userEvent.type(await screen.findByLabelText('Foydalanuvchi nomi'), 'chilonzor')
+    await userEvent.type(await screen.findByLabelText('Foydalanuvchi nomi'), 'admin')
     await userEvent.type(screen.getByLabelText('Parol'), 'wrong')
     await userEvent.click(screen.getByRole('button', { name: 'Kirish' }))
 
@@ -130,16 +130,12 @@ describe('authentication flow', () => {
     expect(await screen.findByRole('heading', { name: 'Boshqaruv paneli' })).toBeInTheDocument()
   })
 
-  it('turns a patient away and points them at the bot', async () => {
-    /*
-     * 🔴 This application is clinic staff software. Patients are rows in the
-     * same `User` table and can hold a valid token, so "they cannot log in" is
-     * not something the backend enforces — the guard is what does.
-     */
-    signedIn('patient')
+  it('turns away a user who belongs to no clinic', async () => {
+    // A valid token with no active membership reaches nothing in the app.
+    signedIn('orphan')
     renderApp('/dashboard')
 
-    expect(await screen.findByText('Bu klinika xodimlari uchun panel')).toBeInTheDocument()
+    expect(await screen.findByText("Klinikaga kirish yo'q")).toBeInTheDocument()
     // Back at the form, not inside the shell.
     expect(screen.getByLabelText('Parol')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Boshqaruv paneli' })).not.toBeInTheDocument()
@@ -147,12 +143,8 @@ describe('authentication flow', () => {
 
   it('keeps a doctor out of clinic administration', async () => {
     /*
-     * ADR-012 gives `clinic:manage` to the clinic account alone. A doctor
-     * reaching /manage is returned to the dashboard rather than shown a section
-     * whose every request the server would answer with an empty list.
-     *
-     * ⚠️ UX, not security: `DEFAULT_PERMISSION_CLASSES` is `IsAuthenticated`,
-     * so the endpoints themselves stay open to any signed-in account.
+     * A doctor has no `staff:manage`. Reaching /manage returns them to the
+     * dashboard; the server would refuse every request there with 403 anyway.
      */
     signedIn('doctor')
     renderApp('/manage/doctors')
@@ -161,19 +153,19 @@ describe('authentication flow', () => {
     expect(screen.queryByRole('heading', { name: 'Boshqaruv' })).not.toBeInTheDocument()
   })
 
-  it('lets the clinic account into administration', async () => {
-    signedIn('clinic')
+  it('lets a branch admin into administration', async () => {
+    signedIn('admin')
     renderApp('/manage/doctors')
 
     expect(await screen.findByRole('heading', { name: 'Boshqaruv' })).toBeInTheDocument()
     expect(await screen.findByText('Sardor Usmonov')).toBeInTheDocument()
   })
 
-  it('does not leave a rejected patient signed in', async () => {
-    signedIn('patient')
+  it('does not leave a rejected user signed in', async () => {
+    signedIn('orphan')
     renderApp('/dashboard')
 
-    await screen.findByText('Bu klinika xodimlari uchun panel')
+    await screen.findByText("Klinikaga kirish yo'q")
 
     // Otherwise /login would see a cached session and bounce them back into
     // the guard, which would bounce them out again.
@@ -190,7 +182,7 @@ describe('logout', () => {
     await screen.findByRole('heading', { name: 'Boshqaruv paneli' })
     expect(queryClient.getQueryCache().getAll().length).toBeGreaterThan(0)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Dilnoza Rahimova' }))
+    await userEvent.click(screen.getByRole('button', { name: MOCK_USERS.admin.full_name }))
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Chiqish' }))
 
     // §13.4 — a shared reception desk is the reason this is not optional.
@@ -229,7 +221,7 @@ describe('idle lock', () => {
     await screen.findByRole('heading', { name: 'Boshqaruv paneli' })
 
     // Keyed the way §6.2 requires, with the tenant id the session resolved to.
-    const patientsKey = ['clinics', MOCK_USERS.clinic.id, 'patients']
+    const patientsKey = ['clinics', `clinic:${MOCK_CLINICS.main.id}`, 'patients']
     queryClient.setQueryData(patientsKey, ['Vali Aliyev'])
 
     await act(async () => {
@@ -256,7 +248,7 @@ describe('idle lock', () => {
 
     // Identity is the only thing that survives a lock, and it is on screen in
     // a public room.
-    expect(screen.getByText(/Dilnoza Rahimova/)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(MOCK_USERS.admin.full_name))).toBeInTheDocument()
   })
 
   it('warns before locking so the user can stay', async () => {

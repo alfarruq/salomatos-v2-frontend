@@ -15,7 +15,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useUpdateDoctorType } from '../model/useUpdateDoctorType'
 
 export interface EditDoctorTypeDialogProps {
-  clinicId: number
+  clinicId: string
   doctorType: DoctorType
   open: boolean
   onOpenChange: (open: boolean) => void

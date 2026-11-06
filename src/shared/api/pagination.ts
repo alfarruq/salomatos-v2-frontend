@@ -5,8 +5,8 @@ import * as v from 'valibot'
  *
  * §5.4 asks for `CursorPagination` and gives a good reason: `OFFSET 50000` on a
  * thousand clinics' patient tables is how PostgreSQL is brought down. This
- * backend configures `PageNumberPagination` with `PAGE_SIZE = 10`
- * (`apps/core/utils.py`), so that is what the client reads.
+ * backend configures `PageNumberPagination` with `page_size = 20`
+ * (`apps/core/pagination.py`), so that is what the client reads.
  *
  * One thing genuinely improves as a result: `count` exists. Cursor pagination
  * cannot report a total, which is why `shared/ui/Pagination` was built without
@@ -43,8 +43,28 @@ export function pathFromNext(next: string): string {
 }
 
 /** Page size is the server's; this mirrors `PAGE_SIZE` so callers can do arithmetic. */
-export const PAGE_SIZE = 10
+export const PAGE_SIZE = 20
 
 export function pageCount(total: number, size: number = PAGE_SIZE): number {
   return Math.max(1, Math.ceil(total / size))
+}
+
+/**
+ * Reads every page of a short list (staff, specialties, the price list) for a
+ * picker. Not for patients or anything else that grows without bound.
+ */
+export async function fetchAllPages<TSchema extends v.GenericSchema>(
+  firstPath: string,
+  item: TSchema,
+  fetchPage: (path: string) => Promise<unknown>,
+): Promise<v.InferOutput<TSchema>[]> {
+  const schema = pageSchema(item)
+  const rows: v.InferOutput<TSchema>[] = []
+  let path: string | null = firstPath
+  while (path !== null) {
+    const page: v.InferOutput<typeof schema> = v.parse(schema, await fetchPage(path))
+    rows.push(...page.results)
+    path = page.next === null ? null : pathFromNext(page.next)
+  }
+  return rows
 }

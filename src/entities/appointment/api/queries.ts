@@ -1,120 +1,76 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
-import { type Page, pathFromNext } from '@/shared/api/pagination'
+import { fetchAllPages, type Page } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
 import { weekDatesOf } from '@/shared/lib/calendarDate'
-import { appointmentListSchema, toAppointment } from '../model/schema'
+import { clinicInstantOf } from '@/shared/lib/datetime'
+import { appointmentPageSchema, appointmentSchema, toAppointment } from '../model/schema'
 import type { Appointment, AppointmentFilters } from '../model/types'
 
 /** §6.2 — `clinicId` is inside every key, without exception. */
 export const appointmentKeys = {
-  scope: (clinicId: number) => ['clinics', clinicId, 'appointments'] as const,
-  list: (clinicId: number, filters: AppointmentFilters) =>
+  scope: (clinicId: string) => ['clinics', clinicId, 'appointments'] as const,
+  list: (clinicId: string, filters: AppointmentFilters) =>
     [...appointmentKeys.scope(clinicId), 'list', filters] as const,
-  page: (clinicId: number, filters: AppointmentFilters, page: number) =>
+  page: (clinicId: string, filters: AppointmentFilters, page: number) =>
     [...appointmentKeys.scope(clinicId), 'page', filters, page] as const,
 }
 
 /**
- * The backend filters by a real date since its 2026-10-12 update
- * (`?date=2026-10-12`), so the day view always sends the date it shows —
- * including today, which is then the clinic's day rather than the server's.
- * A week is read day by day (see `fetchAppointments`); `all` sends no `date`
- * at all.
+ * The day or week becomes a `start_from`/`start_to` range of instants, computed
+ * on the clinic's clock: a 02:00 Tashkent visit belongs to a day UTC still
+ * calls yesterday.
  */
-function toQueryString(filters: AppointmentFilters): string {
+function toQueryString(filters: AppointmentFilters, page = 1): string {
   const params = new URLSearchParams()
-  if (filters.view !== 'all') params.set('date', filters.date)
-  if (filters.doctorId !== undefined) params.set('doctor_id', String(filters.doctorId))
-  const query = params.toString()
-  return query === '' ? '' : `?${query}`
-}
-
-/**
- * One response's rows and where the next page is. The live endpoint sends
- * DRF's page envelope (`count`/`next`, ten per page — confirmed 2026-10-09);
- * a plain array is still read, as one complete page.
- */
-function pageOf(raw: unknown): Page<unknown> {
-  if (Array.isArray(raw)) return { count: raw.length, next: null, previous: null, results: raw }
-  if (
-    typeof raw === 'object' &&
-    raw !== null &&
-    Array.isArray((raw as { results?: unknown }).results)
-  ) {
-    const { results, next, previous, count } = raw as {
-      results: unknown[]
-      next?: unknown
-      previous?: unknown
-      count?: unknown
-    }
-    return {
-      count: typeof count === 'number' ? count : results.length,
-      next: typeof next === 'string' ? next : null,
-      previous: typeof previous === 'string' ? previous : null,
-      results,
-    }
+  if (filters.view !== 'all') {
+    const days = filters.view === 'week' ? weekDatesOf(filters.date) : [filters.date]
+    const first = days[0] ?? filters.date
+    const last = days[days.length - 1] ?? filters.date
+    params.set('start_from', clinicInstantOf(first, '00:00'))
+    params.set('start_to', clinicInstantOf(nextCalendarDay(last), '00:00'))
   }
-  return { count: 0, next: null, previous: null, results: raw as unknown[] }
+  if (filters.doctorId !== undefined) params.set('doctor', filters.doctorId)
+  if (filters.patientId !== undefined) params.set('patient', filters.patientId)
+  if (page > 1) params.set('page', String(page))
+  return `?${params.toString()}`
 }
 
-/**
- * Follows every page: reading only the first silently dropped the eleventh
- * appointment of a day, and today's counts are computed from this list.
- */
+function nextCalendarDay(date: string): string {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, (day ?? 1) + 1)).toISOString().slice(0, 10)
+}
+
+/** Every appointment in the range, across pages, oldest first. */
 export async function fetchAppointments(
   filters: AppointmentFilters,
   signal?: AbortSignal,
 ): Promise<Appointment[]> {
-  // The `?date=week` shortcut only ever answers for the server's current
-  // week, so any other week could not be shown. Seven dated requests reach
-  // every week through the one filter the backend does support.
-  if (filters.view === 'week') {
-    const days = await Promise.all(
-      weekDatesOf(filters.date).map((date) =>
-        fetchAppointments({ ...filters, view: 'day', date }, signal),
-      ),
-    )
-    return days.flat()
-  }
-
-  const rows: unknown[] = []
-  let path: string | null = `v1/calendars/appointments/${toQueryString(filters)}`
-
-  while (path !== null) {
-    const raw: unknown = await httpClient<unknown>(path, signal === undefined ? {} : { signal })
-    const page = pageOf(raw)
-    rows.push(...page.results)
-    path = page.next === null ? null : pathFromNext(page.next)
-  }
-
-  return v.parse(appointmentListSchema, rows).map(toAppointment)
+  const init = signal === undefined ? {} : { signal }
+  const rows = await fetchAllPages(
+    `v1/appointments/${toQueryString(filters)}&page_size=100`,
+    appointmentSchema,
+    (path) => httpClient<unknown>(path, init),
+  )
+  return rows.map(toAppointment)
 }
 
-/**
- * One server page (`?page=N`, `PAGE_SIZE` rows) for the week and all views,
- * where the list is long enough that loading every page up front is the cost.
- */
 export async function fetchAppointmentPage(
   filters: AppointmentFilters,
   page: number,
   signal?: AbortSignal,
 ): Promise<Page<Appointment>> {
-  const params = new URLSearchParams(toQueryString(filters))
-  if (page > 1) params.set('page', String(page))
-  const query = params.toString()
-
   const raw: unknown = await httpClient<unknown>(
-    `v1/calendars/appointments/${query === '' ? '' : `?${query}`}`,
+    `v1/appointments/${toQueryString(filters, page)}`,
     signal === undefined ? {} : { signal },
   )
-  const { results, ...rest } = pageOf(raw)
-  return { ...rest, results: v.parse(appointmentListSchema, results).map(toAppointment) }
+  const { results, ...rest } = v.parse(appointmentPageSchema, raw)
+  return { ...rest, results: results.map(toAppointment) }
 }
 
 export const appointmentQueries = {
-  list: (clinicId: number, filters: AppointmentFilters) =>
+  list: (clinicId: string, filters: AppointmentFilters) =>
     queryOptions({
       queryKey: appointmentKeys.list(clinicId, filters),
       queryFn: ({ signal }) => fetchAppointments(filters, signal),
@@ -122,7 +78,7 @@ export const appointmentQueries = {
       ...cachePolicy.live,
     }),
 
-  page: (clinicId: number, filters: AppointmentFilters, page: number) =>
+  page: (clinicId: string, filters: AppointmentFilters, page: number) =>
     queryOptions({
       queryKey: appointmentKeys.page(clinicId, filters, page),
       queryFn: ({ signal }) => fetchAppointmentPage(filters, page, signal),

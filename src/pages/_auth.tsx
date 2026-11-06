@@ -8,7 +8,6 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import {
-  BarChart3,
   CalendarDays,
   House,
   LogOut,
@@ -22,6 +21,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Can, sessionQueries, useSession } from '@/entities/session'
 import { useLogout } from '@/features/auth-logout'
+import { ScopeSwitcher } from '@/features/clinic-switch'
 import { LanguageSwitcher } from '@/features/language-switch'
 import { LockScreen, useIdleLock, useLockStore } from '@/features/session-lock'
 import { ThemeSwitcher } from '@/features/theme-switch'
@@ -29,6 +29,7 @@ import { clearSession } from '@/shared/api/authSession'
 import { ApiError } from '@/shared/api/errors'
 import { cn } from '@/shared/lib/cn'
 import {
+  Alert,
   AppShell,
   Avatar,
   DropdownMenu,
@@ -59,41 +60,14 @@ export const Route = createFileRoute('/_auth')({
         if (error instanceof ApiError && error.kind === 'unauthorized') {
           throw redirect({ to: '/login', search: { redirect: location.href } })
         }
-        // A network or server fault is not "signed out" — let the boundary
-        // show it rather than bouncing the user to a login form that will
-        // also fail.
+        if (error instanceof ApiError && error.messageKey === 'no_clinic') {
+          clearSession()
+          context.queryClient.clear()
+          throw redirect({ to: '/login', search: { denied: 'no_clinic' } })
+        }
         throw error
       })
 
-    /*
-     * 🔴 This application is for clinic staff. Patients reach their own
-     * records through the Telegram bot (`/api/telegram/*`) and have no account
-     * here at all — there is no patient portal, by product decision.
-     *
-     * The check matters because patients are rows in the same `User` table and
-     * authenticate against the same endpoint, so one with a password set can
-     * sign in. What they would get is an empty shell they could still type
-     * `/patients` into. The server returns nothing for them — every queryset
-     * filters by `clinic=request.user` — so this closes a door rather than
-     * plugging a leak, but a door that opens onto staff software is not one to
-     * leave ajar.
-     *
-     * Both the token and the cache go before the redirect: `/login` decides
-     * whether to show its form by asking whether a session exists, so leaving
-     * one cached would bounce the user straight back here.
-     */
-    if (session.role === 'patient') {
-      clearSession()
-      context.queryClient.clear()
-      throw redirect({ to: '/login', search: { denied: 'patient' } })
-    }
-
-    /*
-     * The tenant every child route scopes its queries by (§6.2). Never null:
-     * it is the authenticated user's own id, read from the token, so a
-     * resolved session always has one — which is what lets the patient routes
-     * take a plain `number` instead of guarding a nullable id on every screen.
-     */
     return { session, clinicId: session.clinicId }
   },
 
@@ -138,6 +112,7 @@ function AuthenticatedLayout() {
       headerActions={
         session ? (
           <>
+            <ScopeSwitcher session={session} />
             <ThemeSwitcher />
             <LanguageSwitcher />
             <DropdownMenu
@@ -178,7 +153,7 @@ function AuthenticatedLayout() {
             <House aria-hidden="true" className="size-6" />
             {t('nav.dashboard')}
           </Link>
-          <Can permission="patient:read">
+          <Can permission="patient:view">
             <Link
               activeProps={{ 'data-active': 'true' }}
               className={tabBarItemClassName}
@@ -188,7 +163,7 @@ function AuthenticatedLayout() {
               {t('nav.patients')}
             </Link>
           </Can>
-          <Can permission="appointment:read">
+          <Can permission="appointment:view">
             <Link
               activeProps={{ 'data-active': 'true' }}
               className={tabBarItemClassName}
@@ -206,35 +181,29 @@ function AuthenticatedLayout() {
             <SidebarLink icon={House} label={t('nav.dashboard')} to="/dashboard" />
           </li>
           {/* Nothing here is a permission check that matters — Django's is. */}
-          <Can permission="patient:read">
+          <Can permission="patient:view">
             <li>
               <SidebarLink icon={Users} label={t('nav.patients')} to="/patients" />
             </li>
           </Can>
           {/* Treatments are medical records — doctors and the desk both read them. */}
-          <Can permission="medical-record:read">
+          <Can permission="procedure:view">
             <li>
               <SidebarLink icon={Stethoscope} label={t('nav.treatments')} to="/treatments" />
             </li>
           </Can>
-          <Can permission="appointment:read">
+          <Can permission="appointment:view">
             <li>
               <SidebarLink icon={CalendarDays} label={t('nav.appointments')} to="/appointments" />
             </li>
           </Can>
-          {/* Clinic-wide figures are for whoever runs the clinic, not for one doctor's chair. */}
-          <Can permission="staff:manage">
-            <li>
-              <SidebarLink icon={BarChart3} label={t('nav.statistics')} to="/statistics" />
-            </li>
-          </Can>
-          <Can permission="billing:read">
+          <Can permission="payment:view">
             <li>
               <SidebarLink icon={Wallet} label={t('nav.billing')} to="/finance" />
             </li>
           </Can>
-          {/* `clinic:manage` is the clinic account alone (ADR-012). */}
-          <Can permission="clinic:manage">
+          {/* Staff, services and settings: owners and branch admins. */}
+          <Can permission="staff:manage">
             <li>
               <SidebarLink icon={Settings} label={t('nav.admin')} to="/manage" />
             </li>
@@ -247,6 +216,13 @@ function AuthenticatedLayout() {
         label={t('nav.refreshing')}
         onRefresh={() => queryClient.refetchQueries({ type: 'active' })}
       />
+      {session?.isAllBranches ? (
+        <div className="mb-4">
+          <Alert tone="info" title={t('scope.allBranches')}>
+            {t('scope.readOnly')}
+          </Alert>
+        </div>
+      ) : null}
       <Outlet />
     </AppShell>
   )

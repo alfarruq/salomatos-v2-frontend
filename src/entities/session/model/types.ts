@@ -1,60 +1,87 @@
-/**
- * Permissions the UI knows how to gate on (§9.2).
- *
- * The list is a closed union so a typo in `<Can permission="patinet:read">` is
- * a type error rather than a silently hidden button. Unlike the architecture
- * document intends, the *values* are derived from the role on this client —
- * see `permissions.ts` and ADR-012 for why, and for why that is a placeholder
- * rather than a design.
- */
-export type Permission =
-  | 'patient:read'
-  | 'patient:write'
-  | 'patient:archive'
-  | 'appointment:read'
-  | 'appointment:write'
-  | 'medical-record:read'
-  | 'medical-record:write'
-  | 'billing:read'
-  | 'billing:write'
-  /** Doctors' pay terms and payouts. Pay is private from other staff, admins included. */
-  | 'payroll:manage'
-  | 'clinic:manage'
-  | 'staff:manage'
+import type { TenantScope } from '@/shared/api/tenantScope'
 
 /**
- * The backend's `User.Roles`, verbatim — lowercase, and `admin` rather than
- * `ClinicAdmin`. Matching the wire exactly means no translation layer that
- * could drift.
- *
- * A closed union on purpose: `Roles` is a `TextChoices` on the model, so
- * adding one is a migration and a deploy, not something that can appear
- * unannounced. If an unknown role does arrive, failing loudly beats silently
- * granting the empty permission set and showing an empty application.
+ * Permissions the UI gates on (§9.2). The strings are the backend's
+ * (`apps/tenancy/permissions.py`) and arrive from `/api/v1/auth/me/`; a closed
+ * union so a typo in `<Can permission=…>` is a type error. Unknown strings
+ * from the server are dropped, not trusted.
  */
-export type Role = 'superadmin' | 'admin' | 'doctor' | 'patient'
+export const PERMISSIONS = [
+  'clinic:view',
+  'clinic:manage',
+  'staff:view',
+  'staff:manage',
+  'staff:manage_owners',
+  'specialty:manage',
+  'patient:view',
+  'patient:view_all',
+  'patient:manage',
+  'patient:archive',
+  'appointment:view',
+  'appointment:view_all',
+  'appointment:manage',
+  'chair:manage',
+  'service:view',
+  'service:manage',
+  'prescription:view',
+  'prescription:manage',
+  'attachment:view',
+  'attachment:manage',
+  'chart:view',
+  'chart:manage',
+  'plan:view',
+  'plan:manage',
+  'procedure:view',
+  'procedure:manage',
+  'procedure:void',
+  'payment:view',
+  'payment:manage',
+  'payment:void',
+  'report:view',
+  'audit:view',
+] as const
+
+export type Permission = (typeof PERMISSIONS)[number]
+
+/** `Membership.Role` on the backend. Patients never sign in here. */
+export type Role = 'owner' | 'admin' | 'doctor'
+
+export interface ClinicMembership {
+  id: string
+  clinicId: string
+  clinicName: string
+  role: Role
+  permissions: ReadonlySet<Permission>
+}
+
+export interface OwnedOrganization {
+  id: string
+  name: string
+}
 
 export interface Session {
-  /**
-   * From the token's `user_id` claim, not from `/api/me/` — the serializer
-   * returns no id at all. See `shared/lib/jwt`.
-   */
-  userId: number
-  /**
-   * The tenant every query key is scoped by (§6.2).
-   *
-   * Equal to `userId`, and that is not a shortcut: this backend resolves
-   * tenancy from `request.user` on every query, so "whose data is this" and
-   * "who is asking" are the same question. A clinic *is* a user row here
-   * (`User.clinic` points at a `superadmin` account), so for a clinic login
-   * this is literally the clinic's id; for any other login it is the scope
-   * that account's requests will return, which is what the cache must key on.
-   */
-  clinicId: number
-  /** One field on the wire. There is no first/last name split to recover. */
+  userId: string
+  username: string
   fullName: string
   phoneNumber: string | null
   email: string | null
+  memberships: readonly ClinicMembership[]
+  organizations: readonly OwnedOrganization[]
+  /** The tenant requests go to right now. */
+  scope: TenantScope
+  /**
+   * The cache scope every query key carries (§6.2): `clinic:<uuid>` or
+   * `organization:<uuid>`. Named `clinicId` because that is what every key
+   * factory already takes.
+   */
+  clinicId: string
+  /** Label for the scope switcher: a clinic name or the organization's. */
+  scopeName: string
+  /** True in "all branches" mode: reads span branches, writes are disabled. */
+  isAllBranches: boolean
+  /** The caller's role in the active clinic; `owner` in all-branches mode. */
   role: Role
+  /** The active membership's id (a doctor's id for "my patients" filters). Null in all-branches mode. */
+  membershipId: string | null
   permissions: ReadonlySet<Permission>
 }

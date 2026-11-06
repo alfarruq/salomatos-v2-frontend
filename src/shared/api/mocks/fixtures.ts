@@ -1,79 +1,171 @@
 /**
- * Synthetic data only — §16.3 forbids real patient data in fixtures, and this
- * file is the reason that rule is easy to keep: there is one obvious place to
- * put made-up people.
+ * Synthetic data only — §16.3 forbids real patient data in fixtures.
  *
- * Shapes here mirror the **actual Django contract**, not the one the
- * architecture document asked for: integer ids (ADR-013), `full_name` as a
- * single field, lowercase roles, and the `{message, message_key, errors,
- * exception_class}` error envelope. Keep them honest — a mock that is kinder
- * than the server is worse than no mock, because it makes the code pass tests
- * it will fail in production.
+ * Shapes mirror the Django v2 contract (`/api/v1/…`): UUID ids, money as
+ * decimal strings, tenant chosen by the `X-Clinic-Id` / `X-Organization-Id`
+ * header, and the `{message, message_key, errors, exception_class}` error
+ * envelope. A mock kinder than the server makes code pass tests it will fail
+ * in production, so keep these honest.
  */
 
-/**
- * A structurally valid, deliberately unsigned JWT.
- *
- * `readJwtPayload` only base64-decodes the payload — it cannot verify a
- * signature and says so — which is exactly why a fake one is enough here. The
- * `user_id` claim is what simplejwt emits and what the backend's
- * `CustomJwtAuthentication` reads.
- */
-function fakeAccessToken(userId: number): string {
+/** A structurally valid, deliberately unsigned JWT carrying simplejwt's `user_id`. */
+function fakeAccessToken(userId: string): string {
   const encode = (value: object): string =>
     btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-
-  const header = encode({ alg: 'HS256', typ: 'JWT' })
-  const payload = encode({ token_type: 'access', user_id: userId })
-  return `${header}.${payload}.not-a-real-signature`
+  return `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ token_type: 'access', user_id: userId })}.not-a-real-signature`
 }
 
+/** Deterministic UUIDs so tests can name rows. */
+export function mockId(kind: number, n: number): string {
+  return `00000000-0000-4000-8${String(kind).padStart(3, '0')}-${String(n).padStart(12, '0')}`
+}
+
+export const MOCK_ORGANIZATION = { id: mockId(1, 1), name: 'Demo Dental' }
+
+export const MOCK_CLINICS = {
+  main: {
+    id: mockId(2, 1),
+    name: 'Chilonzor',
+    phone_number: '+998712000001',
+    address: 'Chilonzor 1',
+    timezone: 'Asia/Tashkent',
+    working_hours: {},
+    is_active: true,
+  },
+  second: {
+    id: mockId(2, 2),
+    name: 'Yunusobod',
+    phone_number: '+998712000002',
+    address: 'Yunusobod 2',
+    timezone: 'Asia/Tashkent',
+    working_hours: {},
+    is_active: true,
+  },
+} as const
+
+const OWNER_PERMISSIONS = [
+  'clinic:view',
+  'clinic:manage',
+  'staff:view',
+  'staff:manage',
+  'staff:manage_owners',
+  'specialty:manage',
+  'patient:view',
+  'patient:view_all',
+  'patient:manage',
+  'patient:archive',
+  'appointment:view',
+  'appointment:view_all',
+  'appointment:manage',
+  'chair:manage',
+  'service:view',
+  'service:manage',
+  'prescription:view',
+  'prescription:manage',
+  'attachment:view',
+  'attachment:manage',
+  'chart:view',
+  'chart:manage',
+  'plan:view',
+  'plan:manage',
+  'procedure:view',
+  'procedure:manage',
+  'procedure:void',
+  'payment:view',
+  'payment:manage',
+  'payment:void',
+  'report:view',
+  'audit:view',
+]
+const DOCTOR_PERMISSIONS = [
+  'clinic:view',
+  'staff:view',
+  'patient:view',
+  'patient:manage',
+  'appointment:view',
+  'appointment:manage',
+  'service:view',
+  'prescription:view',
+  'prescription:manage',
+  'attachment:view',
+  'attachment:manage',
+  'chart:view',
+  'chart:manage',
+  'plan:view',
+  'plan:manage',
+  'procedure:view',
+  'procedure:manage',
+  'payment:view',
+]
+const ADMIN_PERMISSIONS = OWNER_PERMISSIONS.filter(
+  (p) => !['clinic:manage', 'staff:manage_owners', 'audit:view', 'payment:void'].includes(p),
+)
+
 export const MOCK_USERS = {
-  /**
-   * A clinic account. In this backend a clinic *is* a user row — `User.clinic`
-   * points at a `superadmin` — so this account's own id is the tenant id that
-   * patient and appointment queries hang off.
-   */
-  clinic: {
-    id: 1,
-    username: 'chilonzor',
+  /** Owns the organization: an owner membership in both branches. */
+  owner: {
+    id: mockId(3, 1),
+    username: 'owner',
     full_name: 'Dilnoza Rahimova',
     phone_number: '+998901112233',
-    email: 'clinic@example.test',
-    experience: null,
-    biography: null,
-    image: null,
-    role: 'superadmin',
+    email: 'owner@example.test',
+    memberships: [
+      {
+        id: mockId(4, 1),
+        clinic: { id: MOCK_CLINICS.main.id, name: MOCK_CLINICS.main.name },
+        role: 'owner',
+        permissions: OWNER_PERMISSIONS,
+      },
+      {
+        id: mockId(4, 2),
+        clinic: { id: MOCK_CLINICS.second.id, name: MOCK_CLINICS.second.name },
+        role: 'owner',
+        permissions: OWNER_PERMISSIONS,
+      },
+    ],
+    organizations: [MOCK_ORGANIZATION],
+  },
+  admin: {
+    id: mockId(3, 2),
+    username: 'admin',
+    full_name: 'Malika Tursunova',
+    phone_number: '+998901112255',
+    email: '',
+    memberships: [
+      {
+        id: mockId(4, 3),
+        clinic: { id: MOCK_CLINICS.main.id, name: MOCK_CLINICS.main.name },
+        role: 'admin',
+        permissions: ADMIN_PERMISSIONS,
+      },
+    ],
+    organizations: [],
   },
   doctor: {
-    id: 2,
+    id: mockId(3, 3),
     username: 'sardor',
     full_name: 'Sardor Usmonov',
     phone_number: '+998901112244',
     email: 'doctor@example.test',
-    experience: 7,
-    biography: null,
-    image: null,
-    role: 'doctor',
+    memberships: [
+      {
+        id: mockId(4, 4),
+        clinic: { id: MOCK_CLINICS.main.id, name: MOCK_CLINICS.main.name },
+        role: 'doctor',
+        permissions: DOCTOR_PERMISSIONS,
+      },
+    ],
+    organizations: [],
   },
-  /**
-   * A patient who can authenticate but must not get in.
-   *
-   * They exist because the backend makes them possible, not because the
-   * product wants them: patients are rows in the same `User` table and the
-   * login endpoint does not care what role a row has. The guard is what turns
-   * them away, and a fixture is what keeps that guard honest.
-   */
-  patient: {
-    id: 3,
-    username: 'bemor',
-    full_name: 'Vali Aliyev',
-    phone_number: '+998901234567',
-    email: null,
-    experience: null,
-    biography: null,
-    image: null,
-    role: 'patient',
+  /** Valid credentials, no active clinic: the guard must turn them away. */
+  orphan: {
+    id: mockId(3, 4),
+    username: 'orphan',
+    full_name: 'Former Employee',
+    phone_number: '',
+    email: '',
+    memberships: [],
+    organizations: [],
   },
 } as const
 
@@ -83,211 +175,8 @@ export function accessTokenFor(user: MockUserKey): string {
   return fakeAccessToken(MOCK_USERS[user].id)
 }
 
-/** Password for every mock account. Mock-only; nothing here reaches production. */
+/** Password for every mock account. Mock-only. */
 export const MOCK_PASSWORD = 'salomat'
-
-/**
- * Invented patients, in the exact shape `PatientListSerializer` emits.
- *
- * Note what is being reproduced faithfully and why it looks wrong: `doctor` is
- * a bare name with no id, `appointment_date` is a **pre-formatted**
- * `dd.MM.yyyy HH:mm` string, and money is a plain integer count of so'm. A
- * kinder mock would hide exactly the awkward parts the UI has to cope with.
- */
-export const MOCK_PATIENTS = [
-  {
-    id: 101,
-    full_name: 'Vali Aliyev',
-    phone_number: '+998901234567',
-    appointment_date: '24.08.2026 14:30',
-    treatment_type: 'Implantatsiya',
-    status: 'in_progress',
-    doctor: 'Sardor Usmonov',
-    remaining: 1_200_000,
-    total_remaining: 1_200_000,
-    birth_date: '1988-03-12',
-    address: 'Chilonzor 12',
-    office: null,
-  },
-  {
-    id: 102,
-    full_name: 'Nodira Karimova',
-    phone_number: '+998907654321',
-    appointment_date: null,
-    treatment_type: 'Tozalash',
-    status: 'completed',
-    doctor: 'Sardor Usmonov',
-    remaining: 0,
-    total_remaining: 0,
-    birth_date: '1995-11-02',
-    address: null,
-    office: null,
-  },
-  {
-    id: 103,
-    full_name: 'Jasur Toshmatov',
-    phone_number: '+998935550011',
-    // A patient with nothing on record yet: every optional field absent.
-    appointment_date: null,
-    treatment_type: null,
-    status: null,
-    doctor: null,
-    remaining: null,
-    total_remaining: 0,
-    birth_date: null,
-    address: null,
-    office: null,
-  },
-] as const
-
-/** `PatientDetailSerializer` for the patients above, keyed by id. */
-export const MOCK_PATIENT_DETAILS: Record<number, unknown> = {
-  101: {
-    id: 101,
-    full_name: 'Vali Aliyev',
-    phone_number: '+998901234567',
-    doctor: 'Sardor Usmonov',
-    address: 'Chilonzor 12',
-    office: null,
-    image: null,
-    birth_date: '1988-03-12',
-    age: 38,
-    status: 'in_progress',
-    total_treatment_cost: 4_000_000,
-    total_paid: 2_800_000,
-    remaining: 1_200_000,
-    total_remaining: 1_200_000,
-    visit_number: 3,
-    treatment_type: [{ id: 7, name: 'Implantatsiya', tooth_number: 36 }],
-    gallery: [
-      { id: 1, image: '/media/gallery/before.jpg', created_at: '2026-08-20T09:15:00Z' },
-      { id: 2, image: '/media/gallery/after.jpg', created_at: '2026-08-24T14:40:00Z' },
-    ],
-    recipe: [],
-  },
-  103: {
-    id: 103,
-    full_name: 'Jasur Toshmatov',
-    phone_number: '+998935550011',
-    doctor: null,
-    address: null,
-    office: null,
-    image: null,
-    birth_date: null,
-    age: null,
-    status: null,
-    total_treatment_cost: 0,
-    total_paid: 0,
-    remaining: 0,
-    total_remaining: 0,
-    visit_number: 0,
-    treatment_type: [],
-    gallery: [],
-    recipe: [],
-  },
-}
-
-/**
- * `TreatmentList`, keyed by `patient_id` the way `/clinic/treatments/` filters
- * them. The handler wraps these in the page envelope the live endpoint sends.
- */
-export const MOCK_TREATMENTS: Record<number, unknown[]> = {
-  101: [
-    {
-      id: 1,
-      patient: 'Vali Aliyev',
-      patient_id: 101,
-      doctor: 'Sardor Usmonov',
-      treatment_type: 'Implantatsiya',
-      total_treatment_cost: 4_000_000,
-      total_paid: 2_800_000,
-      remaining: '1200000',
-      visit_number: 3,
-      tooth_number: 36,
-      start_date: '2026-08-20',
-      notes: 'Implant o‘rnatildi, keyingi tashrif nazorat uchun.',
-      status: 'in_progress',
-    },
-    {
-      id: 2,
-      patient: 'Vali Aliyev',
-      patient_id: 101,
-      doctor: 'Sardor Usmonov',
-      treatment_type: 'Tozalash',
-      total_treatment_cost: 250_000,
-      total_paid: 250_000,
-      remaining: '0',
-      visit_number: 1,
-      tooth_number: null,
-      start_date: '2026-06-02',
-      notes: '',
-      status: 'completed',
-    },
-  ],
-  103: [],
-}
-
-/**
- * `RecipeList`, keyed by `patient_id` the way `/core/recipes/` filters them.
- * A plain array on the wire, confirmed by a live create on 2026-10-07:
- * `dose`, `duration` and `minutes` are integers. Recipe 2 holds free text in
- * `type`/`frequency`/`meal`, the way a row written by another client could.
- */
-export const MOCK_RECIPES: Record<number, unknown[]> = {
-  101: [
-    {
-      id: 2,
-      patient: 'Vali Aliyev',
-      doctor: 'Sardor Usmonov',
-      notes: '',
-      clinic: 'Dilnoza Rahimova',
-      created_at: '2026-08-20T09:30:00Z',
-      medicines: [
-        {
-          id: 3,
-          name: 'Amoksitsillin',
-          dose: 1,
-          type: 'Tabletka',
-          frequency: 'Kuniga 2 marta',
-          duration: 7,
-          meal: 'Ovqatdan keyin',
-          minutes: 0,
-        },
-      ],
-    },
-    {
-      id: 1,
-      patient: 'Vali Aliyev',
-      doctor: 'Sardor Usmonov',
-      notes: "Issiq ovqat iste'mol qilmang.",
-      clinic: 'Dilnoza Rahimova',
-      created_at: '2026-09-02T10:00:00Z',
-      medicines: [
-        {
-          id: 1,
-          name: 'Amoksiklav 625 mg',
-          dose: 1,
-          type: 'tablet',
-          frequency: 'bid',
-          duration: 5,
-          meal: 'after',
-          minutes: 30,
-        },
-        {
-          id: 2,
-          name: 'Xolisal gel',
-          dose: 1,
-          type: 'gel',
-          frequency: 'tid',
-          duration: 7,
-          meal: 'none',
-          minutes: 0,
-        },
-      ],
-    },
-  ],
-  103: [],
-}
 
 /** The envelope `apps/core/exceptions.py` puts around every failure. */
 export function errorEnvelope({
@@ -301,120 +190,230 @@ export function errorEnvelope({
   errors?: Record<string, unknown>
   exceptionClass?: string
 }) {
-  return {
-    message,
-    message_key: messageKey,
-    errors,
-    exception_class: exceptionClass,
-  }
+  return { message, message_key: messageKey, errors, exception_class: exceptionClass }
 }
 
-/**
- * The clinic's doctors, in the shape `DoctorListSerializer` emits.
- *
- * A plain array on the wire — this endpoint does not paginate, unlike
- * patients. The published schema does not say so; the Python does.
- */
-export const MOCK_DOCTORS = [
+const MAIN = MOCK_CLINICS.main
+const DOCTOR_MEMBERSHIP = MOCK_USERS.doctor.memberships[0].id
+
+export const MOCK_SPECIALTIES = [
+  { id: mockId(5, 1), clinic: MAIN.id, name: 'Stomatolog' },
+  { id: mockId(5, 2), clinic: MAIN.id, name: 'Ortodont' },
+]
+
+/** `StaffSerializer` rows. Ids are membership ids. */
+export const MOCK_STAFF = [
   {
-    id: 2,
+    id: DOCTOR_MEMBERSHIP,
+    clinic: MAIN.id,
     username: 'sardor',
     full_name: 'Sardor Usmonov',
     phone_number: '+998901112244',
     email: 'doctor@example.test',
-    // The server's own field is a name, not the id `MOCK_DOCTOR_TYPES` uses —
-    // `DoctorListSerializer.doctor_type` has no `source`, so it serialises the
-    // foreign key's `__str__`.
-    doctor_type: 'Stomatolog',
+    role: 'doctor',
+    is_active: true,
+    specialty: mockId(5, 1),
+    specialty_name: 'Stomatolog',
+    experience_years: 7,
+    biography: '',
   },
   {
-    // Everything optional absent: a doctor added in a hurry at reception.
-    id: 4,
-    // Created before the server issued logins.
-    username: null,
-    full_name: 'Malika Yusupova',
-    phone_number: null,
-    email: null,
-    doctor_type: null,
+    id: mockId(4, 5),
+    clinic: MAIN.id,
+    username: 'nodira',
+    full_name: 'Nodira Karimova',
+    phone_number: '+998901112266',
+    email: '',
+    role: 'doctor',
+    is_active: true,
+    specialty: mockId(5, 2),
+    specialty_name: 'Ortodont',
+    experience_years: 3,
+    biography: '',
   },
-] as const
-
-/**
- * The clinic's price list, as `TreatmentTypeListSerializer` emits each row.
- *
- * A name, like `MOCK_DOCTORS[].doctor_type` — confirmed against a real
- * response, which is what corrected the entity's earlier "it's the id" guess.
- */
-export const MOCK_TREATMENT_TYPES = [
-  { id: 7, name: 'Implantatsiya', price: 4_000_000, doctor_type: 'Stomatolog' },
-  { id: 8, name: 'Tozalash', price: 250_000, doctor_type: 'Ortodont' },
-  // Quoted per case — a real state, and not the same as free. Also unassigned.
-  { id: 9, name: 'Ortodontik davolash', price: null, doctor_type: null },
-] as const
-
-/** The clinic's admin accounts, as `AdminListSerializer` emits them. */
-export const MOCK_ADMINISTRATORS = [
   {
-    id: 12,
-    username: 'reception',
-    full_name: 'Dilnoza Karimova',
-    phone_number: '+998901113355',
-    email: null,
+    id: MOCK_USERS.admin.memberships[0].id,
+    clinic: MAIN.id,
+    username: 'admin',
+    full_name: 'Malika Tursunova',
+    phone_number: '+998901112255',
+    email: '',
+    role: 'admin',
+    is_active: true,
+    specialty: null,
+    specialty_name: null,
+    experience_years: null,
+    biography: '',
   },
-] as const
+]
 
-/** The clinic's doctor categories, as `DoctorTypeListSerializer` emits them. */
-export const MOCK_DOCTOR_TYPES = [
-  { id: 5, name: 'Stomatolog' },
-  { id: 6, name: 'Ortodont' },
-] as const
+export const MOCK_SERVICES = [
+  {
+    id: mockId(6, 1),
+    clinic: MAIN.id,
+    code: 'T01',
+    name: 'Plomba',
+    category: null,
+    specialty: mockId(5, 1),
+    price: '350000.00',
+    duration_minutes: 45,
+    is_active: true,
+  },
+  {
+    id: mockId(6, 2),
+    clinic: MAIN.id,
+    code: 'T02',
+    name: 'Tozalash',
+    category: null,
+    specialty: null,
+    price: '200000.00',
+    duration_minutes: 30,
+    is_active: true,
+  },
+  {
+    id: mockId(6, 3),
+    clinic: MAIN.id,
+    code: 'S01',
+    name: 'Implantatsiya',
+    category: null,
+    specialty: null,
+    price: '6000000.00',
+    duration_minutes: 90,
+    is_active: true,
+  },
+]
 
-/**
- * The clinic's schedule, as `/calendars/appointments/` actually emits it —
- * confirmed against a real response. There is no `full_name` field on read:
- * the display name comes back under `patient` alongside the real id in
- * `patient_id`, and `doctor`/`doctor_id` follow the same pair.
- */
+export const MOCK_PATIENTS = [
+  {
+    id: mockId(7, 1),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    full_name: 'Aziza Karimova',
+    phone_number: '+998901000001',
+    birth_date: '1990-04-12',
+    gender: 'female',
+    address: 'Chilonzor 5',
+    notes: '',
+    primary_doctor: DOCTOR_MEMBERSHIP,
+    primary_doctor_name: 'Sardor Usmonov',
+    archived_at: null,
+    created_at: '2026-08-01T05:00:00Z',
+  },
+  {
+    id: mockId(7, 2),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    full_name: 'Bekzod Aliyev',
+    phone_number: '+998901000002',
+    birth_date: '1985-11-02',
+    gender: 'male',
+    address: '',
+    notes: '',
+    primary_doctor: mockId(4, 5),
+    primary_doctor_name: 'Nodira Karimova',
+    archived_at: null,
+    created_at: '2026-08-02T05:00:00Z',
+  },
+  {
+    id: mockId(7, 3),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    full_name: 'Gulnora Yusupova',
+    phone_number: '+998901000003',
+    birth_date: null,
+    gender: '',
+    address: '',
+    notes: '',
+    primary_doctor: null,
+    primary_doctor_name: null,
+    archived_at: null,
+    created_at: '2026-08-03T05:00:00Z',
+  },
+]
+
 export const MOCK_APPOINTMENTS = [
   {
-    id: 501,
-    patient_id: 101,
-    patient: 'Vali Aliyev',
-    phone_number: '+998901234567',
-    doctor_id: 2,
-    doctor: 'Sardor Usmonov',
-    treatment_type: 'Implantatsiya',
-    date: '2026-09-27',
-    time: '09:30:00',
-    notes: null,
-    status: 'in_progress',
+    id: mockId(8, 1),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    patient: mockId(7, 1),
+    patient_name: 'Aziza Karimova',
+    doctor: DOCTOR_MEMBERSHIP,
+    doctor_name: 'Sardor Usmonov',
+    chair: null,
+    service: mockId(6, 1),
+    start_at: '2026-08-24T05:00:00Z',
+    end_at: '2026-08-24T05:45:00Z',
+    status: 'scheduled',
+    notes: '',
   },
+]
+
+export const MOCK_PROCEDURES = [
   {
-    // A walk-in — `patient_id` is null, but `patient` still carries the name
-    // that was typed (unconfirmed for a real walk-in, see the entity schema).
-    id: 502,
-    patient_id: null,
-    patient: 'Yangi Mijoz',
-    phone_number: '+998907654321',
-    doctor_id: 4,
-    doctor: 'Malika Yusupova',
-    treatment_type: null,
-    date: '2026-09-27',
-    time: '11:00:00',
-    notes: 'Birinchi tashrif',
-    status: 'in_progress',
+    id: mockId(9, 1),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    patient: mockId(7, 1),
+    patient_name: 'Aziza Karimova',
+    doctor: DOCTOR_MEMBERSHIP,
+    doctor_name: 'Sardor Usmonov',
+    service: mockId(6, 1),
+    service_name: 'Plomba',
+    plan_item: null,
+    appointment: null,
+    tooth: 36,
+    surfaces: ['O'],
+    quantity: 1,
+    unit_price: '350000.00',
+    discount_percent: '0.00',
+    total: '350000.00',
+    performed_at: '2026-08-10T06:00:00Z',
+    notes: '',
+    voided_at: null,
+    void_reason: '',
   },
+]
+
+export const MOCK_PAYMENTS = [
   {
-    id: 503,
-    patient_id: 102,
-    patient: 'Nodira Karimova',
-    phone_number: '+998907654321',
-    doctor_id: null,
-    doctor: null,
-    treatment_type: 'Tozalash',
-    date: '2026-09-28',
-    time: '14:00:00',
-    notes: null,
-    status: 'completed',
+    id: mockId(10, 1),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    patient: mockId(7, 1),
+    patient_name: 'Aziza Karimova',
+    amount: '150000.00',
+    method: 'cash',
+    paid_at: '2026-08-10T06:30:00Z',
+    received_by: MOCK_USERS.admin.memberships[0].id,
+    received_by_name: 'Malika Tursunova',
+    notes: '',
+    voided_at: null,
+    void_reason: '',
   },
-] as const
+]
+
+export const MOCK_PRESCRIPTIONS = [
+  {
+    id: mockId(11, 1),
+    clinic: MAIN.id,
+    clinic_name: MAIN.name,
+    patient: mockId(7, 1),
+    doctor: DOCTOR_MEMBERSHIP,
+    doctor_name: 'Sardor Usmonov',
+    notes: '',
+    items: [
+      {
+        id: mockId(12, 1),
+        medicine: 'Ibuprofen',
+        dose: '400 mg',
+        form: 'tabletka',
+        times_per_day: 2,
+        duration_days: 3,
+        meal_relation: 'after',
+        instructions: '',
+      },
+    ],
+    created_at: '2026-08-10T06:10:00Z',
+  },
+]

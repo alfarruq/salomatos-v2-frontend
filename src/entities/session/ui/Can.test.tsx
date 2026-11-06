@@ -6,14 +6,21 @@ import { Can } from './Can'
 
 function signIn(permissions: Session['permissions']) {
   useSessionStore.getState().setSession({
-    userId: 1,
-    clinicId: 1,
+    userId: 'user-1',
+    username: 'admin',
+    clinicId: 'clinic:test',
     fullName: 'Dilnoza Rahimova',
     phoneNumber: '+998901112233',
     email: 'a@example.test',
+    memberships: [],
+    organizations: [],
+    scope: { kind: 'clinic', id: 'test' },
+    scopeName: 'Test',
+    isAllBranches: false,
+    membershipId: 'membership-1',
     role: 'admin',
     // Set explicitly rather than derived from the role: these tests are about
-    // what <Can> does with a permission set, not about ADR-012's table.
+    // what <Can> does with a permission set, not about where it came from.
     permissions,
   })
 }
@@ -34,7 +41,7 @@ describe('Can', () => {
   })
 
   it('hides one they are not', () => {
-    signIn(new Set(['patient:read']))
+    signIn(new Set(['patient:view']))
 
     render(
       <Can permission="patient:archive">
@@ -47,7 +54,7 @@ describe('Can', () => {
 
   it('hides everything when nobody is signed in', () => {
     render(
-      <Can permission="patient:read">
+      <Can permission="patient:view">
         <button type="button">Bemorlar</button>
       </Can>,
     )
@@ -59,7 +66,7 @@ describe('Can', () => {
     signIn(new Set([]))
 
     render(
-      <Can fallback={<p>Ruxsat yo&apos;q</p>} permission="billing:read">
+      <Can fallback={<p>Ruxsat yo&apos;q</p>} permission="payment:view">
         <button type="button">Hisob</button>
       </Can>,
     )

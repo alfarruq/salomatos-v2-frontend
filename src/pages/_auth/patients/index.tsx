@@ -8,16 +8,15 @@ import { PatientTable } from '@/widgets/patient-table'
  * The shareable half of the list's state.
  *
  * ⛔ **No `search` field, and that absence is the point** (§7.3, §3). A
- * colleague must be able to send a link to "unpaid patients, page 2" — that is
+ * colleague must be able to send a link to "archived patients, page 2" — that is
  * what separates a tool from a toy — but a patient's *name* in the address bar
  * reaches the access log, the `Referer` header of every asset request, the
  * browser's history and whoever is looking at the screen. The search term lives
  * in `useState` inside the widget and never comes here.
  */
 const patientsSearchSchema = v.object({
-  status: v.optional(v.picklist(['in_progress', 'completed'])),
-  doctor: v.optional(v.string()),
-  treatment: v.optional(v.number()),
+  archived: v.optional(v.boolean()),
+  doctor: v.optional(v.pipe(v.string(), v.uuid())),
   page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 })
 
@@ -44,9 +43,8 @@ function PatientsPage() {
   const { clinicId } = Route.useRouteContext()
 
   const filters: Omit<PatientFilters, 'search'> = {
-    status: search.status ?? null,
-    doctor: search.doctor ?? '',
-    treatmentTypeId: search.treatment ?? null,
+    archived: search.archived ?? false,
+    doctorId: search.doctor ?? null,
     page: search.page ?? 1,
   }
 
@@ -64,16 +62,15 @@ function PatientsPage() {
            */
           void navigate({
             search: (): PatientsSearch => ({
-              ...(next.status === null ? {} : { status: next.status }),
-              ...(next.doctor === '' ? {} : { doctor: next.doctor }),
-              ...(next.treatmentTypeId === null ? {} : { treatment: next.treatmentTypeId }),
+              ...(next.archived ? { archived: true } : {}),
+              ...(next.doctorId === null ? {} : { doctor: next.doctorId }),
               ...(next.page === 1 ? {} : { page: next.page }),
             }),
             to: '/patients',
           })
         }}
         onOpenPatient={(patientId) => {
-          void navigate({ params: { patientId: String(patientId) }, to: '/patients/$patientId' })
+          void navigate({ params: { patientId }, to: '/patients/$patientId' })
         }}
       />
     </div>

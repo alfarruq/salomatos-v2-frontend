@@ -5,7 +5,7 @@ import { httpClient } from '@/shared/api/httpClient'
 import type { RecipePayload } from './payload'
 
 async function createRecipe(payload: RecipePayload): Promise<void> {
-  const raw = await httpClient<unknown>('v1/core/recipes/', {
+  const raw = await httpClient<unknown>('v1/prescriptions/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -14,7 +14,7 @@ async function createRecipe(payload: RecipePayload): Promise<void> {
 }
 
 /** ⛔ No optimistic update (§6.5): a prescription is a medical record. */
-export function useCreateRecipe(clinicId: number) {
+export function useCreateRecipe(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

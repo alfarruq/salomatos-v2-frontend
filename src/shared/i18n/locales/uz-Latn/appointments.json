@@ -1,36 +1,37 @@
 {
   "title": "Uchrashuvlar",
   "status": {
-    "in_progress": "Jarayonda",
-    "completed": "Yakunlangan"
+    "completed": "Yakunlangan",
+    "scheduled": "Rejalashtirilgan",
+    "confirmed": "Tasdiqlangan",
+    "arrived": "Keldi",
+    "in_chair": "Kresloda",
+    "no_show": "Kelmadi",
+    "cancelled": "Bekor qilingan"
   },
   "form": {
     "patient": "Bemor",
     "patientSearchPlaceholder": "Ism yozing yoki bemorni qidiring",
     "unlinkPatient": "Bemorni bog'lashni bekor qilish",
-    "fullName": "F. I. Sh.",
     "fullNameLinkedHint": "Bemor biriktirilgan — ism doim uning o'z kartasidan olinadi.",
-    "phoneNumber": "Telefon raqami",
     "doctor": "Shifokor",
     "doctorPlaceholder": "Tayinlanmagan",
-    "treatmentType": "Davolash turi",
+    "treatmentType": "Xizmat",
     "treatmentTypePlaceholder": "Tanlanmagan",
-    "toothNumber": "Tish raqami",
-    "toothNumberPlaceholder": "Tishni tanlang",
-    "chooseDoctorFirst": "Avval shifokorni tanlang — davolash turlari uning mutaxassisligiga qarab chiqadi.",
-    "doctorHasNoType": "Bu shifokorga mutaxassislik (shifokor turi) biriktirilmagan. Davolash turlarini ko'rish uchun avval unga tur belgilang.",
-    "noTypesForSpecialty": "\"{{specialty}}\" mutaxassisligi uchun hali davolash turi qo'shilmagan.",
     "date": "Sana",
     "datePlaceholder": "kk.oo.yyyy",
     "previousMonth": "Oldingi oy",
     "nextMonth": "Keyingi oy",
     "time": "Vaqt",
     "status": "Holati",
-    "notes": "Izoh"
+    "notes": "Izoh",
+    "duration": "Davomiyligi, daqiqa",
+    "chooseDoctorFirst": "Avval shifokorni tanlang",
+    "noServices": "Bu shifokor uchun narxlar ro'yxatida hali xizmat yo'q."
   },
   "create": {
     "title": "Yangi uchrashuv",
-    "description": "Mavjud bemorni tanlang yoki yangi kishining ismi va telefonini kiriting.",
+    "description": "Ro'yxatdagi bemorni tanlang. Yangi bemorni avval «Bemorlar» sahifasida qo'shing.",
     "submit": "Uchrashuv qo'shish",
     "failed": "Uchrashuvni qo'shib bo'lmadi. Qayta urinib ko'ring.",
     "added": "Uchrashuv qo'shildi",
@@ -85,11 +86,5 @@
   },
   "pagination": {
     "summary": "{{count}} tadan {{from}}–{{to}}"
-  },
-  "unregistered": {
-    "title": "Bemor bazada yo'q",
-    "description": "{{name}} bemorlar ro'yxatida mavjud emas. Bemor sifatida qo'shishni xohlaysizmi?",
-    "confirm": "Ha, qo'shish",
-    "cancel": "Yo'q"
   }
 }

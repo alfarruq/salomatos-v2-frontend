@@ -33,7 +33,7 @@ import { PAGES_PER_SCREEN, serverPagesFor } from '../model/screenPages'
 import { TreatmentFilters } from './TreatmentFilters'
 
 export interface TreatmentTableProps {
-  clinicId: number
+  clinicId: string
   /** From the URL — ids and a screen number only, never a name (§3). `page` counts screens of up to 30 rows. */
   filters: TreatmentListFilters
   onFiltersChange: (filters: TreatmentListFilters) => void
@@ -104,10 +104,9 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
     filters.patientId !== null ||
     filters.doctorId !== null ||
     filters.treatmentTypeId !== null ||
-    filters.debt !== null ||
     filters.status !== null
-  // A doctor has no `billing:read` (ADR-012): the money columns are not theirs.
-  const canSeeMoney = useCan('billing:read')
+  // Without `payment:view` the money column is not theirs.
+  const canSeeMoney = useCan('payment:view')
   const navigate = useNavigate()
 
   const money = (value: number | null) =>
@@ -188,69 +187,45 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                   <TableHead>{t('treatments:list.columnDoctor')}</TableHead>
                   <TableHead>{t('treatments:table.columnType')}</TableHead>
                   <TableHead align="center">{t('treatments:table.columnTooth')}</TableHead>
-                  <TableHead align="center">{t('treatments:list.columnVisit')}</TableHead>
                   {canSeeMoney ? (
-                    <>
-                      <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
-                      <TableHead align="right">{t('treatments:list.columnPaid')}</TableHead>
-                      <TableHead align="right">{t('treatments:table.columnDebt')}</TableHead>
-                    </>
+                    <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
                   ) : null}
                   <TableHead>{t('treatments:table.columnStatus')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.results.map((treatment) => (
-                  <TableRow
-                    isInteractive={treatment.patientId !== null}
-                    key={treatment.id}
-                    onClick={() => openPatient(treatment)}
-                  >
+                  <TableRow isInteractive key={treatment.id} onClick={() => openPatient(treatment)}>
                     <TableCell className="whitespace-nowrap tabular-nums">
-                      {treatment.startDate === null ? EMPTY : formatFixedDate(treatment.startDate)}
+                      {formatFixedDate(treatment.startDate)}
                     </TableCell>
                     <TableCell>
                       {/* The keyboard path to the patient; the row click is the mouse's. */}
-                      {treatment.patientId === null ? (
-                        (treatment.patientName ?? EMPTY)
-                      ) : (
-                        <Link
-                          className="font-medium text-text hover:underline focus-visible:underline"
-                          onClick={(event) => event.stopPropagation()}
-                          params={{ patientId: String(treatment.patientId) }}
-                          to="/patients/$patientId"
-                        >
-                          {treatment.patientName ?? EMPTY}
-                        </Link>
-                      )}
+                      <Link
+                        className="font-medium text-text hover:underline focus-visible:underline"
+                        onClick={(event) => event.stopPropagation()}
+                        params={{ patientId: treatment.patientId }}
+                        to="/patients/$patientId"
+                      >
+                        {treatment.patientName ?? EMPTY}
+                      </Link>
                     </TableCell>
                     <TableCell>{treatment.doctorName ?? EMPTY}</TableCell>
                     <TableCell>{treatment.treatmentTypeName ?? EMPTY}</TableCell>
                     <TableCell align="center" className="tabular-nums">
                       {treatment.toothNumber ?? EMPTY}
                     </TableCell>
-                    <TableCell align="center" className="tabular-nums">
-                      {treatment.visitNumber ?? EMPTY}
-                    </TableCell>
                     {canSeeMoney ? (
-                      <>
-                        <TableCell align="right" className="whitespace-nowrap tabular-nums">
-                          {money(treatment.totalTreatmentCost)}
-                        </TableCell>
-                        <TableCell align="right" className="whitespace-nowrap tabular-nums">
-                          {money(treatment.totalPaid)}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          className={cn(
-                            'whitespace-nowrap tabular-nums',
-                            // Same as the patient's own treatments tab: only money still owed is red.
-                            (treatment.remaining ?? 0) > 0 && 'font-semibold text-danger',
-                          )}
-                        >
-                          {money(treatment.remaining)}
-                        </TableCell>
-                      </>
+                      <TableCell
+                        align="right"
+                        className={cn(
+                          'whitespace-nowrap tabular-nums',
+                          // A voided line stays visible but no longer counts.
+                          treatment.status === 'voided' && 'text-text-tertiary line-through',
+                        )}
+                      >
+                        {money(treatment.totalTreatmentCost)}
+                      </TableCell>
                     ) : null}
                     <TableCell>
                       <TreatmentStatusBadge status={treatment.status} />

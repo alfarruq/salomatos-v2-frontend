@@ -9,7 +9,7 @@ describe('toClinic', () => {
         name: 'Salomat Dental',
         phone_number: '+998901112233',
         address: 'Chilonzor 12',
-        logo: null,
+        id: '00000000-0000-4000-8002-000000000001',
         working_hours: { mon: { open: '09:00', close: '18:00' }, sun: null },
       }),
     )
@@ -27,7 +27,7 @@ describe('toClinic', () => {
         name: 'Salomat Dental',
         phone_number: '+998901112233',
         address: '',
-        logo: null,
+        id: '00000000-0000-4000-8002-000000000001',
         working_hours: { mon: { open: '09:00', close: '18:00' } },
       }),
     )
@@ -47,7 +47,7 @@ describe('toClinic', () => {
         name: 'Salomat Dental',
         phone_number: '+998901112233',
         address: '',
-        logo: null,
+        id: '00000000-0000-4000-8002-000000000001',
         working_hours: { note: 'closed on holidays', mon: 'all day' },
       }),
     )
@@ -61,7 +61,7 @@ describe('toClinic', () => {
         name: 'Salomat Dental',
         phone_number: '+998901112233',
         address: '',
-        logo: null,
+        id: '00000000-0000-4000-8002-000000000001',
       }),
     )
 
@@ -71,6 +71,7 @@ describe('toClinic', () => {
   it('defaults a missing address to an empty string rather than refusing to load', () => {
     const clinic = toClinic(
       v.parse(clinicSchema, {
+        id: '00000000-0000-4000-8002-000000000001',
         name: 'Salomat Dental',
         phone_number: '+998901112233',
       }),

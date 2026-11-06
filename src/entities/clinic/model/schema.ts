@@ -41,10 +41,11 @@ function toWorkingHours(raw: unknown): WorkingHours {
 
 export const clinicSchema = v.object({
   // The two a profile is not worth showing without.
+  id: v.pipe(v.string(), v.uuid()),
   name: v.pipe(v.string(), v.minLength(1)),
-  phone_number: v.pipe(v.string(), v.minLength(1)),
+  phone_number: v.optional(v.string(), ''),
   address: v.optional(v.string(), ''),
-  logo: v.optional(v.nullable(v.string()), null),
+  timezone: v.optional(v.string(), 'Asia/Tashkent'),
   working_hours: v.optional(v.unknown(), null),
 })
 
@@ -52,16 +53,16 @@ export type ClinicResponse = v.InferOutput<typeof clinicSchema>
 
 export function toClinic(response: ClinicResponse): Clinic {
   return {
+    id: response.id,
     name: response.name,
     phoneNumber: response.phone_number,
     address: response.address,
-    logoUrl: response.logo,
+    timezone: response.timezone,
     workingHours: toWorkingHours(response.working_hours),
   }
 }
 
 /** The server's list endpoint returns a plain array — see `fetchClinic`. */
-export const clinicListSchema = v.array(clinicSchema)
 
 export function toWorkingHoursPayload(hours: WorkingHours): Record<Weekday, DaySchedule | null> {
   const payload = {} as Record<Weekday, DaySchedule | null>

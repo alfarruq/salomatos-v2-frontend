@@ -1,9 +1,10 @@
 import * as v from 'valibot'
-import { parseTypedDate, todayCalendarDate, toTypedDate } from '@/shared/lib/calendarDate'
+import { parseTypedDate, toTypedDate } from '@/shared/lib/calendarDate'
+import { clinicNow } from '@/shared/lib/datetime'
 import type { Patient } from './types'
 
 /**
- * The writable shape of a patient — what `PatientCreateUpdateSerializer`
+ * The writable shape of a patient — what `PatientSerializer`
  * accepts.
  *
  * **Why this lives in the entity rather than in a feature.** `patient-create`
@@ -33,12 +34,9 @@ const UZ_PHONE = /^\+998\d{9}$/
 export const patientFormSchema = v.object({
   fullName: v.pipe(v.string(), v.trim(), v.minLength(2, 'validation.tooShort')),
   phoneNumber: v.pipe(v.string(), v.regex(UZ_PHONE, 'validation.phoneUz')),
-  /**
-   * An `entities/doctor` id as a string. Required — the confirmed POST
-   * contract has no way to send "no doctor" (`{"doctor": 0}` in the example),
-   * matching the same requirement already confirmed on `entities/appointment`.
-   */
-  doctorId: v.pipe(v.string(), v.minLength(1, 'validation.required')),
+  /** A staff id, or '' for "no primary doctor yet" — the serializer accepts null. */
+  doctorId: v.string(),
+  gender: v.picklist(['', 'male', 'female']),
   /**
    * Held as typed, `dd/mm/yyyy`, and converted to the wire's `yyyy-MM-dd` in
    * `toPatientPayload`. Optional, but not a licence to send nonsense:
@@ -48,15 +46,15 @@ export const patientFormSchema = v.object({
   birthDate: v.pipe(
     v.string(),
     v.check((value) => value === '' || parseTypedDate(value) !== null, 'validation.invalid'),
-    // `todayCalendarDate()`, not the UTC day, which before 05:00 in Tashkent is
-    // still yesterday and would refuse a baby born this morning.
+    // The clinic's day (§14), the same one the form defaults to; the browser's
+    // own day can lag behind it and would refuse a baby born this morning.
     v.check((value) => {
       const date = parseTypedDate(value)
-      return date === null || date <= todayCalendarDate()
+      return date === null || date <= clinicNow().date
     }, 'validation.futureDate'),
   ),
   address: v.string(),
-  office: v.string(),
+  notes: v.string(),
 })
 
 export type PatientFormInput = v.InferOutput<typeof patientFormSchema>
@@ -65,57 +63,55 @@ export const emptyPatientForm: PatientFormInput = {
   fullName: '',
   phoneNumber: '',
   doctorId: '',
+  gender: '',
   birthDate: '',
   address: '',
-  office: '',
+  notes: '',
 }
 
-/**
- * Fills the form from an existing patient, for editing.
- *
- * Typed against a `Pick`, not the full `Patient`: the table's row type
- * (`PatientListItem`) carries every field this needs, and this way editing
- * from the table does not require fetching the detail response first.
- */
+/** Fills the form from an existing patient, for editing. */
 export function toPatientForm(
-  patient: Pick<Patient, 'fullName' | 'phoneNumber' | 'birthDate' | 'address' | 'office'>,
+  patient: Pick<
+    Patient,
+    'fullName' | 'phoneNumber' | 'birthDate' | 'address' | 'notes' | 'gender' | 'primaryDoctorId'
+  >,
 ): PatientFormInput {
   return {
     fullName: patient.fullName,
     phoneNumber: patient.phoneNumber ?? '',
-    // Cannot be filled from `doctorName` with confidence — `PatientListItem`/
-    // `Patient` only ever carry the doctor's *name* (§ types.ts), the same gap
-    // already documented on `entities/appointment`. Left unresolved and
-    // guarded by `dirtyFields` in the edit mutation, so it is never sent
-    // unless the person actually picks a doctor this session.
-    doctorId: '',
+    doctorId: patient.primaryDoctorId ?? '',
+    gender: patient.gender ?? '',
     birthDate: patient.birthDate === null ? '' : toTypedDate(patient.birthDate),
     address: patient.address ?? '',
-    office: patient.office ?? '',
+    notes: patient.notes ?? '',
   }
 }
 
-/** Maps to the snake_case body the serializer reads. Empty means null, not "". */
-export function toPatientPayload(input: PatientFormInput): Record<string, string | number | null> {
-  const orNull = (value: string): string | null => (value === '' ? null : value)
-
+/**
+ * Maps to the snake_case body the serializer reads. Text fields are
+ * `CharField(blank=True)` on the server, so "nothing" is "" there; the FK and
+ * the date are nullable.
+ */
+export function toPatientPayload(input: PatientFormInput): Record<string, string | null> {
   return {
     full_name: input.fullName,
     phone_number: input.phoneNumber,
-    doctor: input.doctorId === '' ? null : Number(input.doctorId),
+    primary_doctor: input.doctorId === '' ? null : input.doctorId,
+    gender: input.gender,
     birth_date: parseTypedDate(input.birthDate),
-    address: orNull(input.address),
-    office: orNull(input.office),
+    address: input.address,
+    notes: input.notes,
   }
 }
 
 const SERVER_FIELD_NAMES: Record<string, keyof PatientFormInput> = {
   full_name: 'fullName',
   phone_number: 'phoneNumber',
-  doctor: 'doctorId',
+  primary_doctor: 'doctorId',
+  gender: 'gender',
   birth_date: 'birthDate',
   address: 'address',
-  office: 'office',
+  notes: 'notes',
 }
 
 /**
@@ -123,8 +119,7 @@ const SERVER_FIELD_NAMES: Record<string, keyof PatientFormInput> = {
  * input that caused it (§10).
  *
  * Anything unrecognised becomes `root`, so a rejection naming a field this form
- * does not render — `doctor`, which the serializer accepts but the form omits —
- * is still shown rather than silently dropped.
+ * does not render is still shown rather than silently dropped.
  */
 export function patientFormFieldOf(serverField: string): keyof PatientFormInput | 'root' {
   return SERVER_FIELD_NAMES[serverField] ?? 'root'

@@ -15,7 +15,7 @@ const appointmentsSearchSchema = v.object({
   date: v.optional(v.string()),
   page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
   // A staff id, not PHI — the same kind of id `/patients/$patientId` carries.
-  doctorId: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  doctorId: v.optional(v.pipe(v.string(), v.uuid())),
 })
 
 type AppointmentsSearch = v.InferOutput<typeof appointmentsSearchSchema>
@@ -53,7 +53,7 @@ function AppointmentsPage() {
         clinicId={clinicId}
         filters={filters}
         onOpenPatient={(patientId) => {
-          void navigate({ params: { patientId: String(patientId) }, to: '/patients/$patientId' })
+          void navigate({ params: { patientId }, to: '/patients/$patientId' })
         }}
         onPageChange={(page) => {
           void navigate({

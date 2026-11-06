@@ -17,7 +17,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useUpdateDoctor } from '../model/useUpdateDoctor'
 
 export interface EditDoctorDialogProps {
-  clinicId: number
+  clinicId: string
   doctor: Doctor
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -57,9 +57,6 @@ export function EditDoctorDialog({ clinicId, doctor, open, onOpenChange }: EditD
       {
         doctorId: doctor.id,
         input: values,
-        // See `useUpdateDoctor`: the select cannot show what is already
-        // assigned, so it must only be saved when the person actually used it.
-        includeDoctorType: Boolean(form.formState.dirtyFields.doctorTypeId),
       },
       {
         onSuccess: () => onOpenChange(false),

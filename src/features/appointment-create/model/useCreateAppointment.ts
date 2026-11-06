@@ -11,7 +11,7 @@ import {
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createAppointment(input: AppointmentFormInput): Promise<Appointment> {
-  const raw = await httpClient<unknown>('v1/calendars/appointments/', {
+  const raw = await httpClient<unknown>('v1/appointments/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toAppointmentPayload(input)),
@@ -24,7 +24,7 @@ async function createAppointment(input: AppointmentFormInput): Promise<Appointme
  * ⛔ No optimistic update (§6.5): the server assigns the id, and a booking
  * shown before the server confirms it could double-book the slot.
  */
-export function useCreateAppointment(clinicId: number) {
+export function useCreateAppointment(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

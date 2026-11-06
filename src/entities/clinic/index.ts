@@ -4,9 +4,10 @@ export {
   clinicFormFieldOf,
   clinicFormSchema,
   emptyClinicForm,
+  toClinicForm,
   toClinicPayload,
 } from './model/formSchema'
-export { clinicListSchema, clinicSchema, toClinic, toWorkingHoursPayload } from './model/schema'
+export { clinicSchema, toClinic, toWorkingHoursPayload } from './model/schema'
 export {
   type Clinic,
   type DaySchedule,

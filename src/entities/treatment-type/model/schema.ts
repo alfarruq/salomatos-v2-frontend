@@ -36,21 +36,13 @@ const priceSchema = v.pipe(
 const optionalString = v.optional(v.nullable(v.string()), null)
 
 export const treatmentTypeSchema = v.object({
-  // A service without a name is not renderable; a service without a price is
-  // ordinary — plenty are quoted per case.
-  id: v.pipe(v.number(), v.integer()),
+  id: v.pipe(v.string(), v.uuid()),
   name: v.string(),
+  code: optionalString,
   price: priceSchema,
-  /*
-   * A name, not an id — confirmed against a real response (`"Stamatolog"`),
-   * the same shape `doctor_type` takes on `/clinic/doctors/` and for the same
-   * reason: this is the list serializer's `__str__` of the foreign key, and
-   * `createTreatmentType`'s own comment already noted create/update answer
-   * with that same list serializer. A value from here can only be shown —
-   * see `entities/doctor/model/types.ts` for why the create/edit select needs
-   * the id from `entities/doctor-type` instead, never this field.
-   */
-  doctor_type: optionalString,
+  specialty: v.optional(v.nullable(v.string()), null),
+  duration_minutes: v.optional(v.number(), 30),
+  is_active: v.optional(v.boolean(), true),
 })
 
 export const treatmentTypePageSchema = pageSchema(treatmentTypeSchema)
@@ -60,8 +52,11 @@ export type TreatmentTypeResponse = v.InferOutput<typeof treatmentTypeSchema>
 export function toTreatmentType(response: TreatmentTypeResponse): TreatmentType {
   return {
     id: response.id,
+    code: response.code === '' ? null : response.code,
     name: response.name,
-    price: response.price,
-    doctorTypeName: response.doctor_type,
+    price: response.price ?? 0,
+    doctorTypeId: response.specialty,
+    durationMinutes: response.duration_minutes,
+    isActive: response.is_active,
   }
 }

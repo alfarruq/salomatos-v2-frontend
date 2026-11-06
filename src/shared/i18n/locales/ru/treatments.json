@@ -1,23 +1,20 @@
 {
   "table": {
     "totalLabel": "Всего",
-    "inProgressLabel": "В процессе",
-    "completedLabel": "Завершено",
     "columnTooth": "Зуб",
     "columnType": "Лечение",
     "columnDate": "Дата",
     "columnStatus": "Статус",
     "columnCost": "Стоимость",
-    "columnDebt": "Долг",
     "columnActions": "Действия",
     "toothCellHint": "Дважды щёлкните для подробностей",
     "actionsMenuLabel": "Действия — {{type}}, {{date}}",
     "actionDetail": "Подробнее",
-    "actionEdit": "Изменить",
-    "actionComplete": "Отметить завершённым",
     "empty": "Лечения нет",
     "emptyDescription": "Для этого пациента пока ничего не добавлено.",
-    "emptyAction": "Добавить первое лечение"
+    "emptyAction": "Добавить первое лечение",
+    "voidedLabel": "Аннулировано",
+    "columnDoctor": "Врач"
   },
   "detail": {
     "title": "Сведения о лечении",
@@ -25,37 +22,22 @@
     "dateLabel": "Дата",
     "doctorLabel": "Врач",
     "totalCostLabel": "Общая стоимость",
-    "totalPaidLabel": "Всего оплачено",
-    "remainingLabel": "Остаток",
     "notesLabel": "Примечание",
-    "delete": "Удалить лечение",
-    "edit": "Изменить",
-    "takePayment": "Принять оплату",
-    "complete": "Отметить завершённым"
-  },
-  "delete": {
-    "title": "Удалить лечение",
-    "description": "Удалить лечение «{{type}}» (зуб {{tooth}}) полностью?",
-    "warning": "Стоимость и оплаты этого лечения удалятся вместе с ним. Это действие нельзя отменить.",
-    "wait": "Удалить ({{seconds}})",
-    "failed": "Не удалось удалить лечение. Попробуйте ещё раз."
+    "priceLabel": "Цена",
+    "discountLabel": "Скидка",
+    "voidReasonLabel": "Причина аннулирования"
   },
   "composer": {
     "title": "Новое лечение",
-    "editTitle": "Изменить лечение",
     "doctorLabel": "Врач",
     "doctorPlaceholder": "Выберите врача",
-    "statusLabel": "Статус",
     "notesLabel": "Примечание",
     "toothHint": "Нажмите на карту, чтобы выбрать зуб",
     "treatmentTypePlaceholder": "Лечение",
     "chooseDoctorFirst": "Сначала выберите врача — виды лечения зависят от его специальности.",
-    "doctorHasNoType": "У этого врача не указана специальность (тип врача). Укажите её, чтобы увидеть виды лечения.",
-    "noTypesForSpecialty": "Для специальности «{{specialty}}» ещё не добавлено ни одного вида лечения.",
     "addTreatmentLabel": "Добавить вид лечения",
     "rowType": "Лечение",
-    "rowCost": "Стоимость",
-    "rowPaid": "Оплачено",
+    "rowCost": "Цена",
     "rowsTitle": "Добавленные процедуры ({{total}})",
     "rowsEmpty": "Чтобы добавить процедуру, выберите зуб или вид лечения выше.",
     "totalsLabel": "Итого",
@@ -73,18 +55,18 @@
     "patientLabel": "Пациент",
     "patientPlaceholder": "Введите имя пациента",
     "patientClear": "Убрать пациента",
-    "patientNoResults": "Пациент не найден"
+    "patientNoResults": "Пациент не найден",
+    "rowDiscount": "Скидка, %",
+    "rowTotal": "Итого",
+    "noServices": "В прайс-листе пока нет услуг для этого врача. Добавьте их в разделе «Управление → Услуги»."
   },
   "chart": {
-    "completed": "Завершено",
-    "inProgress": "В процессе"
+    "treated": "Лечение проведено"
   },
   "list": {
     "title": "Лечение",
     "columnPatient": "Пациент",
     "columnDoctor": "Врач",
-    "columnVisit": "Визит",
-    "columnPaid": "Оплачено",
     "empty": "Пока нет лечений",
     "emptyDescription": "Лечение добавляется на странице пациента.",
     "summary": "{{from}}–{{to}} из {{count}}",
@@ -92,7 +74,6 @@
   },
   "filters": {
     "patientResults": "Найденные пациенты",
-    "patientById": "Пациент #{{id}}",
     "patientClear": "Убрать фильтр по пациенту",
     "searching": "Поиск…",
     "searchFailed": "Не удалось выполнить поиск. Попробуйте ещё раз.",
@@ -101,16 +82,23 @@
     "doctorAll": "Все врачи",
     "typeLabel": "Фильтр по виду лечения",
     "typeAll": "Все виды лечения",
-    "debtLabel": "Фильтр по задолженности",
-    "debtAll": "Задолженность: все",
-    "debtWith": "Есть долг",
-    "debtWithout": "Без долга",
     "statusLabel": "Фильтр по статусу",
     "statusAll": "Статус: все",
-    "statusInProgress": "В процессе",
-    "statusCompleted": "Завершено",
     "noMatch": "Подходящих лечений нет",
     "noMatchDescription": "Попробуйте изменить фильтры.",
-    "clear": "Сбросить фильтры"
+    "clear": "Сбросить фильтры",
+    "patientLoading": "Пациент"
+  },
+  "status": {
+    "done": "Выполнено",
+    "voided": "Аннулировано"
+  },
+  "void": {
+    "title": "Аннулировать процедуру",
+    "description": "«{{type}}», зуб {{tooth}}. Запись останется в истории с пометкой и не будет учитываться в счёте.",
+    "reason": "Причина",
+    "confirm": "Аннулировать",
+    "failed": "Не удалось аннулировать процедуру. Попробуйте ещё раз.",
+    "forbidden": "У вас нет права аннулировать процедуры."
   }
 }

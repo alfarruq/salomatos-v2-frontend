@@ -1,4 +1,4 @@
-import { isDoseForm, isFrequency, isMealRelation, mealTakesMinutes } from './medication'
+import { isDoseForm, isFrequency, isMealRelation } from './medication'
 import type { Medicine } from './types'
 
 /** The `t` this needs — narrow on purpose, so tests can pass a stand-in. */
@@ -24,12 +24,9 @@ export function formatSchedule(medicine: Medicine, t: Translate): string {
   return [frequency, formatMeal(medicine, t)].filter(Boolean).join(' · ')
 }
 
-function formatMeal({ meal, minutes }: Medicine, t: Translate): string | null {
+function formatMeal({ meal }: Medicine, t: Translate): string | null {
   if (!isMealRelation(meal)) return meal
   if (meal === 'none') return null
-  if (mealTakesMinutes(meal) && minutes !== null && minutes > 0) {
-    return t(`recipes:meal.${meal}Minutes`, { minutes })
-  }
   return t(`recipes:meal.${meal}`)
 }
 

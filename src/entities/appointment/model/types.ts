@@ -1,65 +1,61 @@
 import type { CalendarDate } from '@/shared/lib/calendarDate'
 
-/** Integer, not a UUID — ADR-013. */
-export type AppointmentId = number
+/** UUID. */
+export type AppointmentId = string
+
+/** `Appointment.Status` on the backend, in the order a visit moves through them. */
+export const APPOINTMENT_STATUSES = [
+  'scheduled',
+  'confirmed',
+  'arrived',
+  'in_chair',
+  'completed',
+  'no_show',
+  'cancelled',
+] as const
+
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 
 /**
- * `Treatment.Status` and `Patient`'s own status already share this pair
- * (`entities/patient/model/types.ts`) — confirmed to be the same two values
- * here rather than a separate enum.
- */
-export type AppointmentStatus = 'in_progress' | 'completed'
-
-/**
- * A scheduled visit.
+ * A booked visit (`AppointmentSerializer`).
  *
- * `patientId` is null for a walk-in who is not yet a registered patient —
- * `fullName`/`phoneNumber` are the source of truth for the visit either way
- * (the backend accepts both alongside `patient` on write), and are filled
- * in from the linked patient only as a convenience when one is picked.
- *
- * Confirmed against a real response: unlike `doctor_type` elsewhere, this
- * endpoint sends both the id (`patient_id`/`doctor_id`) and the name
- * (`patient`/`doctor`) directly, so no id-from-name guessing is needed here.
- * `fullName` is read from `patient` — there is no separate `full_name` field
- * on read, only on write — see `model/schema.ts` for the walk-in caveat.
+ * The server stores `start_at`/`end_at` as UTC instants. `date` and `time` are
+ * the same start on the clinic's wall clock (§14), derived once at the
+ * boundary so the calendar never converts zones itself.
  */
 export interface Appointment {
   id: AppointmentId
+  clinicName: string
+  patientId: string
+  /** The patient's name, as the server sends it beside the id. */
   fullName: string
+  /** Not part of the appointment response; kept for screens that show one when they have it. */
   phoneNumber: string | null
-  patientId: number | null
-  doctorId: number | null
+  doctorId: string
   doctorName: string | null
-  /**
-   * A name, same shape as `doctorName` — but only ever seen `null` so far,
-   * so the id-vs-name split is unconfirmed for this one. Not part of the
-   * writable form yet (§ schema.ts).
-   */
+  chairId: string | null
+  serviceId: string | null
+  /** Filled in by screens that hold the price list; the response carries only the id. */
   treatmentTypeName: string | null
+  startAt: string
+  endAt: string
   date: CalendarDate
-  /** `HH:mm`. A wall-clock pair like `AppointmentSlot` — see that type for why. */
+  /** `HH:mm`, clinic time. */
   time: string
+  durationMinutes: number
   notes: string | null
   status: AppointmentStatus
 }
 
-/**
- * Which slice of the calendar the list endpoint answers for. `all` sends no
- * `date` query parameter at all — confirmed with the person requesting it,
- * not guessed — rather than a literal `?date=all` shortcut.
- */
+/** Which slice of the calendar to load. `all` loads every appointment, page by page. */
 export type AppointmentView = 'day' | 'week' | 'all'
 
 export interface AppointmentFilters {
   view: AppointmentView
-  /**
-   * The day being viewed (day view) or a day inside the viewed week (week
-   * view); unused for `all`. Not sent as `?date=week` at all once it has a
-   * real value — see `api/queries.ts` for why day navigation needs an actual
-   * date and the server's own `day`/`week` shortcuts do not carry one.
-   */
+  /** The day being viewed, or a day inside the viewed week; unused for `all`. */
   date: CalendarDate
-  /** Sent as `?doctor_id=`; absent means every doctor. Combines with any view. */
-  doctorId?: number
+  /** A doctor's staff id; absent means every doctor. */
+  doctorId?: string
+  /** A patient id; absent means every patient. */
+  patientId?: string
 }

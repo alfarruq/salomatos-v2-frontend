@@ -21,8 +21,8 @@ import { useCreateRecipe } from '../model/useCreateRecipe'
 import { MedicineRowFields } from './MedicineRowFields'
 
 export interface RecipeEditorProps {
-  clinicId: number
-  patientId: number
+  clinicId: string
+  patientId: string
   /** Shown read-only: the prescription is for the patient whose page opened it. */
   patientName: string
   open: boolean
@@ -62,7 +62,7 @@ export function RecipeEditor({
   }
 
   function handleSave() {
-    mutate(toRecipePayload({ patientId, doctorId: Number(doctorId), notes, rows: namedRows }), {
+    mutate(toRecipePayload({ patientId, doctorId, notes, rows: namedRows }), {
       onSuccess: () => {
         toast.success(t('recipes:editor.saved'))
         onOpenChange(false)
@@ -84,7 +84,6 @@ export function RecipeEditor({
     t('recipes:editor.frequencyLabel'),
     t('recipes:editor.durationLabel'),
     t('recipes:editor.mealLabel'),
-    t('recipes:editor.minutesLabel'),
   ]
 
   const body = doctorsQuery.isPending ? (
@@ -104,7 +103,7 @@ export function RecipeEditor({
           <Select
             onValueChange={setDoctorId}
             options={doctorsQuery.data.map((doctor) => ({
-              value: String(doctor.id),
+              value: doctor.id,
               label:
                 doctor.doctorTypeName === null
                   ? doctor.fullName

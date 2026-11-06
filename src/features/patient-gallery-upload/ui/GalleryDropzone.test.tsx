@@ -10,22 +10,31 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { accessTokenFor, MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { MOCK_PATIENTS } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { GalleryDropzone } from './GalleryDropzone'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
-const CLINIC_ID = MOCK_USERS.clinic.id
-/** Vali Aliyev — present in `MOCK_PATIENT_DETAILS`, what the real `user` field resolves against. */
-const PATIENT_ID = 101
+const CLINIC_ID = 'clinic:test'
+const PATIENT_ID = MOCK_PATIENTS[0]?.id ?? ''
+
+const ATTACHMENT = {
+  id: '00000000-0000-4000-8013-000000000001',
+  patient: PATIENT_ID,
+  kind: 'photo',
+  tooth: null,
+  content_type: 'image/png',
+  size_bytes: 5,
+  created_at: '2026-08-20T09:15:00Z',
+}
 
 function png(name: string): File {
   return new NodeFile(['pixel'], name, { type: 'image/png' }) as unknown as File
@@ -50,7 +59,7 @@ function renderDropzone() {
 }
 
 describe('GalleryDropzone', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('owner'))
 
   it('shows the drop prompt and the browse hint', async () => {
     renderDropzone()
@@ -59,13 +68,13 @@ describe('GalleryDropzone', () => {
     expect(screen.getByText('yoki tanlash uchun bosing')).toBeInTheDocument()
   })
 
-  it('sends the patient id and the file to the confirmed endpoint', async () => {
+  it('sends the patient id and the file as multipart', async () => {
     const onRequest = vi.fn()
     server.use(
-      http.post('/api/v1/clinic/galleries/', async ({ request }) => {
+      http.post('/api/v1/attachments/', async ({ request }) => {
         const form = await request.formData()
-        onRequest(form.get('user'), form.get('image'))
-        return HttpResponse.json({ id: 999, image: '/media/gallery/tooth.png', created_at: null })
+        onRequest(form.get('patient'), form.get('file'))
+        return HttpResponse.json(ATTACHMENT, { status: 201 })
       }),
     )
 
@@ -77,8 +86,8 @@ describe('GalleryDropzone', () => {
     await userEvent.upload(input, png('tooth.png'))
 
     await waitFor(() => expect(onRequest).toHaveBeenCalledTimes(1))
-    const [user, image] = onRequest.mock.calls[0] as [string, unknown]
-    expect(user).toBe(String(PATIENT_ID))
+    const [patient, image] = onRequest.mock.calls[0] as [string, unknown]
+    expect(patient).toBe(PATIENT_ID)
     // Not asserting the file's own identity past this point: jsdom's FormData
     // and undici's multipart parser (what MSW's `request.formData()` uses)
     // are different File/Blob realms, so a file attached here survives the
@@ -93,9 +102,9 @@ describe('GalleryDropzone', () => {
   it('never reaches the server for a file that is not an image', async () => {
     const onRequest = vi.fn()
     server.use(
-      http.post('/api/v1/clinic/galleries/', () => {
+      http.post('/api/v1/attachments/', () => {
         onRequest()
-        return HttpResponse.json({ id: 999, image: null, created_at: null })
+        return HttpResponse.json(ATTACHMENT, { status: 201 })
       }),
     )
 
@@ -116,7 +125,7 @@ describe('GalleryDropzone', () => {
   })
 
   it('recovers to the idle prompt after a failed upload', async () => {
-    server.use(http.post('/api/v1/clinic/galleries/', () => HttpResponse.json({}, { status: 400 })))
+    server.use(http.post('/api/v1/attachments/', () => HttpResponse.json({}, { status: 400 })))
 
     const { container } = renderDropzone()
     await screen.findByText('Rasmlarni shu yerga tashlang')

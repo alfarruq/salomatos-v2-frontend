@@ -6,7 +6,6 @@
     "services": "Services",
     "clinic": "Clinic",
     "doctorTypes": "Doctor types",
-    "sms": "SMS",
     "admins": "Admins"
   },
   "doctor": {
@@ -68,10 +67,11 @@
     "opensAt": "{{day}} opening time",
     "closesAt": "{{day}} closing time",
     "closed": "Closed",
-    "setupTitle": "Set up your clinic",
-    "setupDescription": "This is shown once. Name, phone number and address are required.",
     "createFailed": "Could not save the clinic. Please try again.",
-    "editUnavailable": "Editing isn't available yet — ask the development team about it."
+    "editUnavailable": "Editing isn't available yet — ask the development team about it.",
+    "editTitle": "Branch profile",
+    "editDescription": "Name, phone and address print on prescriptions.",
+    "saved": "Saved"
   },
   "doctorType": {
     "name": "Name",
@@ -88,32 +88,6 @@
     "deleteTitle": "Delete doctor type",
     "deleteDescription": "Delete “{{name}}”? Doctors and services using it keep their other details.",
     "deleteFailed": "Could not delete the type. Please try again."
-  },
-  "sms": {
-    "balanceTitle": "SMS balance",
-    "pricePerSms": "1 SMS: {{price}}",
-    "estimatedSms_one": "enough for about {{count}} SMS",
-    "estimatedSms_other": "enough for about {{count}} SMS",
-    "balanceLow": "Your balance is running low. Top it up so reminders don't stop.",
-    "balanceEmpty": "Your balance is empty, so reminders are not being sent.",
-    "enabled": "Send SMS reminders to patients",
-    "enabledHint": "Turning this off keeps your chosen settings.",
-    "whenTitle": "When to send",
-    "whenHint": "Choose up to {{max}}. Each SMS is charged separately.",
-    "offsetHours_one": "{{count}} hour before the appointment",
-    "offsetHours_other": "{{count}} hours before the appointment",
-    "offsetDays_one": "{{count}} day before the appointment",
-    "offsetDays_other": "{{count}} days before the appointment",
-    "sendOnCreate": "Send a confirmation SMS as soon as an appointment is booked",
-    "previewTitle": "Sample SMS",
-    "previewHint": "The text holds only the date, time and clinic details. No patient name or medical information is included.",
-    "saved": "SMS settings saved",
-    "saveFailed": "Couldn't save the settings. Please try again.",
-    "unavailable": "SMS service isn't connected yet",
-    "unavailableDescription": "Once it's live, your balance and reminder settings will appear here.",
-    "previewModeTitle": "Preview mode",
-    "previewModeBody": "The SMS service isn't connected yet. Figures are samples and settings aren't saved.",
-    "sampleText": "Clinic: your appointment is on 21.10 at 14:30. Tel: +998 71 200 00 00"
   },
   "administrator": {
     "fullName": "Full name",

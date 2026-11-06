@@ -14,7 +14,7 @@ import { PatientStatusBadge } from './PatientStatusBadge'
  * Suspense because namespaces load on demand (§12.1) — the first render of a
  * screen using `patients` suspends while its chunk arrives.
  */
-function renderBadge(status: PatientStatus | null) {
+function renderBadge(status: PatientStatus) {
   render(
     <I18nextProvider i18n={createI18n('uz-Latn')}>
       <Suspense fallback={null}>
@@ -25,23 +25,15 @@ function renderBadge(status: PatientStatus | null) {
 }
 
 describe('PatientStatusBadge', () => {
-  it('names an in-progress treatment in the active language', async () => {
-    renderBadge('in_progress')
+  it('names an active card in the active language', async () => {
+    renderBadge('active')
 
-    expect(await screen.findByText('Davolanmoqda')).toBeInTheDocument()
+    expect(await screen.findByText('Faol')).toBeInTheDocument()
   })
 
-  it('names a finished one', async () => {
-    renderBadge('completed')
+  it('names an archived one', async () => {
+    renderBadge('archived')
 
-    expect(await screen.findByText('Tugallangan')).toBeInTheDocument()
-  })
-
-  it('says so when there is no treatment rather than rendering an empty badge', async () => {
-    // `get_status` returns null for a patient with nothing on record, which is
-    // most newly registered patients.
-    renderBadge(null)
-
-    expect(await screen.findByText("Davolanish yo'q")).toBeInTheDocument()
+    expect(await screen.findByText('Arxivda')).toBeInTheDocument()
   })
 })

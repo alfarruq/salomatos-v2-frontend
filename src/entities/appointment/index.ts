@@ -12,13 +12,14 @@ export {
   toAppointmentForm,
   toAppointmentPayload,
 } from './model/formSchema'
-export { appointmentListSchema, appointmentSchema, toAppointment } from './model/schema'
-export type {
-  Appointment,
-  AppointmentFilters,
-  AppointmentId,
-  AppointmentStatus,
-  AppointmentView,
+export { appointmentPageSchema, appointmentSchema, toAppointment } from './model/schema'
+export {
+  APPOINTMENT_STATUSES,
+  type Appointment,
+  type AppointmentFilters,
+  type AppointmentId,
+  type AppointmentStatus,
+  type AppointmentView,
 } from './model/types'
 export {
   AppointmentFormFields,

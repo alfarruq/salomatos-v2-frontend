@@ -1,41 +1,32 @@
-import type { Treatment, TreatmentStatus } from '@/entities/treatment'
+import type { Treatment } from '@/entities/treatment'
 
 export interface ToothSummary {
-  /** FDI → colour status. */
-  values: Record<string, TreatmentStatus>
+  /** FDI → colour status. Only teeth with recorded work appear. */
+  values: Record<string, 'done'>
   /** FDI → the treatment types done on it, real backend names, no repeats. */
   names: Record<string, string[]>
   /** FDI → that tooth's most recent treatment, opened on click. */
   latest: Record<string, Treatment>
 }
 
-/** Later start date wins; on a tie (or no date) the newer record, by id. */
+/** The later instant wins; UTC ISO strings compare correctly as strings. */
 function isNewer(candidate: Treatment, current: Treatment): boolean {
-  const a = candidate.startDate ?? ''
-  const b = current.startDate ?? ''
-  if (a !== b) return a > b // ISO calendar dates compare correctly as strings
-  return candidate.id > current.id
+  return candidate.performedAt > current.performedAt
 }
 
 /**
- * One pass over the treatments, building all three maps.
- *
- * "In progress" dominates: one unfinished treatment keeps the tooth amber,
- * whatever order the server lists them in. A missing status counts as
- * unfinished — green has to mean the clinic recorded every one as done.
+ * One pass over the treatments, building all three maps. A voided line is a
+ * mistake, not work on the tooth, so it is left out entirely.
  */
 export function summarizeTeeth(treatments: readonly Treatment[]): ToothSummary {
-  const values: Record<string, TreatmentStatus> = {}
+  const values: Record<string, 'done'> = {}
   const names: Record<string, string[]> = {}
   const latest: Record<string, Treatment> = {}
 
   for (const treatment of treatments) {
-    if (treatment.toothNumber === null) continue
+    if (treatment.toothNumber === null || treatment.status === 'voided') continue
     const tooth = String(treatment.toothNumber)
-
-    if (values[tooth] !== 'in_progress') {
-      values[tooth] = treatment.status === 'completed' ? 'completed' : 'in_progress'
-    }
+    values[tooth] = 'done'
 
     const label = treatment.treatmentTypeName
     if (label !== null && label !== '') {

@@ -1,142 +1,77 @@
 import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
+import { MOCK_SERVICES, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { toTreatmentTypePayload } from '../model/formSchema'
 import { fetchTreatmentTypes, treatmentTypeKeys } from './queries'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
-/** A one-page envelope — the shape every test but the pagination one needs. */
-function onePage(results: unknown[]) {
-  return { count: results.length, next: null, previous: null, results }
-}
-
 describe('treatmentTypeKeys', () => {
-  it('puts the clinic inside every key', () => {
-    expect(treatmentTypeKeys.list(1)).toEqual(['clinics', 1, 'treatment-types', 'list'])
-    expect(treatmentTypeKeys.list(1)).not.toEqual(treatmentTypeKeys.list(2))
+  it('puts the tenant scope inside every key', () => {
+    expect(treatmentTypeKeys.list('clinic:a')).toEqual([
+      'clinics',
+      'clinic:a',
+      'treatment-types',
+      'list',
+    ])
+    expect(treatmentTypeKeys.list('clinic:a')).not.toEqual(treatmentTypeKeys.list('clinic:b'))
   })
 })
 
 describe('fetchTreatmentTypes', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('owner'))
 
-  it('reads the one page the fixture has', async () => {
+  it('reads the price list, with money parsed from decimal strings', async () => {
     const services = await fetchTreatmentTypes()
 
     expect(services).toHaveLength(3)
     expect(services[0]).toEqual({
-      id: 7,
-      name: 'Implantatsiya',
-      price: 4_000_000,
-      doctorTypeName: 'Stomatolog',
+      id: MOCK_SERVICES[0]?.id,
+      code: 'T01',
+      name: 'Plomba',
+      price: 350_000,
+      doctorTypeId: mockId(5, 1),
+      durationMinutes: 45,
+      isActive: true,
     })
   })
 
   it('follows `next` until it is null, rather than stopping at page one', async () => {
-    // A clinic with more services than fit on one page — this is exactly the
-    // shape that a plain-array assumption silently truncated in production.
+    const row = (n: number) => ({ id: mockId(6, 90 + n), name: `Service ${n}`, price: '1000.00' })
     server.use(
-      http.get('/api/v1/clinic/treatment-types/', ({ request }) => {
+      http.get('/api/v1/services/', ({ request }) => {
         const page = new URL(request.url).searchParams.get('page')
-        if (page === '2') {
-          return HttpResponse.json({
-            count: 3,
-            next: null,
-            previous: '/api/v1/clinic/treatment-types/',
-            results: [{ id: 2, name: 'Tozalash', price: 250_000, doctor_type: null }],
-          })
-        }
-        return HttpResponse.json({
-          count: 3,
-          next: '/api/v1/clinic/treatment-types/?page=2',
-          previous: null,
-          results: [{ id: 1, name: 'Implantatsiya', price: 4_000_000, doctor_type: 'Stomatolog' }],
-        })
+        return HttpResponse.json(
+          page === '2'
+            ? { count: 2, next: null, previous: '/api/v1/services/', results: [row(2)] }
+            : { count: 2, next: '/api/v1/services/?page=2', previous: null, results: [row(1)] },
+        )
       }),
     )
 
     const services = await fetchTreatmentTypes()
 
-    expect(services.map((service) => service.id)).toEqual([1, 2])
-  })
-
-  it('reads the assigned doctor type as a name, like the doctors endpoint', async () => {
-    const services = await fetchTreatmentTypes()
-
-    expect(services[1]?.doctorTypeName).toBe('Ortodont')
-  })
-
-  it('trusts DRF to emit null for an unassigned doctor type', async () => {
-    const services = await fetchTreatmentTypes()
-
-    expect(services[2]?.doctorTypeName).toBeNull()
-  })
-
-  it('survives a serializer that stopped sending an optional field', async () => {
-    server.use(
-      http.get('/api/v1/clinic/treatment-types/', () =>
-        HttpResponse.json(onePage([{ id: 1, name: 'Konsultatsiya' }])),
-      ),
-    )
-
-    const services = await fetchTreatmentTypes()
-
-    expect(services[0]?.doctorTypeName).toBeNull()
-  })
-
-  it('keeps "no price" distinct from free', async () => {
-    const services = await fetchTreatmentTypes()
-
-    // Quoted per case. Rendering it as 0 so'm would be a quote nobody gave.
-    expect(services[2]?.price).toBeNull()
-  })
-
-  it('takes a price whichever way the server types it', async () => {
-    server.use(
-      http.get('/api/v1/clinic/treatment-types/', () =>
-        HttpResponse.json(onePage([{ id: 1, name: 'Tozalash', price: '250000' }])),
-      ),
-    )
-
-    expect((await fetchTreatmentTypes())[0]?.price).toBe(250_000)
-  })
-
-  it('refuses a row with no name, which nothing could render', async () => {
-    server.use(
-      http.get('/api/v1/clinic/treatment-types/', () =>
-        HttpResponse.json(onePage([{ id: 1, price: 10 }])),
-      ),
-    )
-
-    await expect(fetchTreatmentTypes()).rejects.toThrow()
+    expect(services.map((service) => service.name)).toEqual(['Service 1', 'Service 2'])
   })
 })
 
 describe('toTreatmentTypePayload', () => {
-  it('sends null for an unset price, not zero', () => {
-    // The clinic has not decided a price; it has not decided the work is free.
-    expect(toTreatmentTypePayload({ name: 'Konsultatsiya', price: '', doctorTypeId: '' })).toEqual({
-      name: 'Konsultatsiya',
-      price: null,
-      doctor_type: null,
-    })
+  it('sends the price as the decimal string DRF expects and the specialty as an id', () => {
+    expect(
+      toTreatmentTypePayload({ name: 'Plomba', price: '350000', doctorTypeId: mockId(5, 1) }),
+    ).toEqual({ name: 'Plomba', price: '350000', specialty: mockId(5, 1) })
   })
 
-  it('sends a number, not the string the input held', () => {
+  it('sends no specialty as null', () => {
     expect(
-      toTreatmentTypePayload({ name: 'Tozalash', price: '250000', doctorTypeId: '5' }),
-    ).toEqual({
-      name: 'Tozalash',
-      price: 250_000,
-      doctor_type: 5,
-    })
+      toTreatmentTypePayload({ name: 'Plomba', price: '1', doctorTypeId: '' }).specialty,
+    ).toBeNull()
   })
 })

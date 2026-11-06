@@ -6,10 +6,15 @@ export interface AppointmentStatusBadgeProps {
   status: AppointmentStatus
 }
 
-/** Same tone mapping as `PatientStatusBadge` — the two share this enum. */
+/** Red is reserved for deletion (§13), so a no-show is a warning, not danger. */
 const tones: Record<AppointmentStatus, BadgeTone> = {
-  in_progress: 'accent',
+  scheduled: 'neutral',
+  confirmed: 'accent',
+  arrived: 'accent',
+  in_chair: 'accent',
   completed: 'success',
+  no_show: 'warning',
+  cancelled: 'neutral',
 }
 
 /** Passive by design — an entity renders, it does not act (§3.2). */

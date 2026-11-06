@@ -9,7 +9,6 @@ import {
   type Frequency,
   MEAL_RELATIONS,
   type MealRelation,
-  mealTakesMinutes,
 } from '@/entities/recipe'
 import { Button, Input, Select } from '@/shared/ui'
 import { fillFromCatalog } from '../model/payload'
@@ -26,7 +25,7 @@ export interface MedicineRowFieldsProps {
   onRemove: () => void
 }
 
-/** Integers only — the server refuses anything else for dose, duration and minutes. */
+/** Integers only — the server refuses anything else for dose and duration. */
 const digitsOnly = (value: string) => value.replace(/\D/g, '')
 
 const numberInputClass = 'w-14 shrink-0 text-center'
@@ -115,23 +114,6 @@ export function MedicineRowFields({
           size="sm"
           value={row.meal}
         />
-      </td>
-      <td className="px-2 py-2">
-        {/* "With food" and "regardless" have no offset to give. */}
-        {mealTakesMinutes(row.meal) ? (
-          <Input
-            aria-label={t('editor.minutesLabel')}
-            className={numberInputClass}
-            inputMode="numeric"
-            onChange={(event) => update({ minutes: digitsOnly(event.target.value) })}
-            size="sm"
-            value={row.minutes}
-          />
-        ) : (
-          <span aria-hidden="true" className="block w-14 text-center text-text-tertiary">
-            —
-          </span>
-        )}
       </td>
       <td className="px-2 py-2">
         <Button

@@ -6,11 +6,11 @@ import { treatmentKeys } from '@/entities/treatment'
 import { httpClient } from '@/shared/api/httpClient'
 
 async function deleteDoctor(doctorId: DoctorId): Promise<void> {
-  await httpClient<void>(`v1/clinic/doctors/${doctorId}/`, { method: 'DELETE' })
+  await httpClient<void>(`v1/staff/${doctorId}/`, { method: 'DELETE' })
 }
 
 /** ⛔ No optimistic update (§6.5): a refused delete should not vanish the record first. */
-export function useDeleteDoctor(clinicId: number) {
+export function useDeleteDoctor(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -15,16 +15,26 @@ function token(payload: unknown): string {
 
 describe('readJwtPayload', () => {
   it('reads the claim simplejwt actually emits', () => {
-    expect(readJwtPayload(token({ token_type: 'access', user_id: 42 }))).toEqual({ userId: 42 })
+    expect(
+      readJwtPayload(
+        token({ token_type: 'access', user_id: '7f1c2a8e-0b3d-4c5e-9f61-2a3b4c5d6e7f' }),
+      ),
+    ).toEqual({
+      userId: '7f1c2a8e-0b3d-4c5e-9f61-2a3b4c5d6e7f',
+    })
   })
 
   it('decodes base64url without padding', () => {
     // A payload whose base64 needs padding exercises the `padEnd` branch; a
     // non-ASCII claim exercises the UTF-8 decode.
-    const value = token({ user_id: 7, name: "Dilnoza O'g'li", note: 'ы' })
+    const value = token({
+      user_id: '7f1c2a8e-0b3d-4c5e-9f61-2a3b4c5d6e7f',
+      name: "Dilnoza O'g'li",
+      note: 'ы',
+    })
 
     expect(value).not.toContain('=')
-    expect(readJwtPayload(value)).toEqual({ userId: 7 })
+    expect(readJwtPayload(value)).toEqual({ userId: '7f1c2a8e-0b3d-4c5e-9f61-2a3b4c5d6e7f' })
   })
 
   it('returns null rather than throwing on anything unreadable', () => {
@@ -35,24 +45,11 @@ describe('readJwtPayload', () => {
     expect(readJwtPayload('a.!!!not-base64!!!.c')).toBeNull()
   })
 
-  it('accepts a claim the server sent as a string', () => {
-    /*
-     * simplejwt writes `user_id` straight from the pk and stringifies it in
-     * some versions. Rejecting the string form meant the session could not be
-     * built at all — and from the login form that looked like a wrong
-     * password, which is how it went unnoticed.
-     */
-    expect(readJwtPayload(token({ user_id: '42' }))).toEqual({ userId: 42 })
-  })
-
   it('refuses a payload without a usable user id', () => {
     expect(readJwtPayload(token({ token_type: 'access' }))).toBeNull()
     expect(readJwtPayload(token(null))).toBeNull()
-    // Numeric, but not a whole number — not an id.
-    expect(readJwtPayload(token({ user_id: 4.2 }))).toBeNull()
-    expect(readJwtPayload(token({ user_id: '4.2' }))).toBeNull()
-    expect(readJwtPayload(token({ user_id: 'abc' }))).toBeNull()
-    // `Number('')` is 0, and an empty claim is not user zero.
+    // The backend's ids are UUID strings; a number is not one of its tokens.
+    expect(readJwtPayload(token({ user_id: 42 }))).toBeNull()
     expect(readJwtPayload(token({ user_id: '' }))).toBeNull()
     expect(readJwtPayload(token({ user_id: '  ' }))).toBeNull()
   })

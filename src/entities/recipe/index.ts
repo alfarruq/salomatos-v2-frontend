@@ -12,7 +12,6 @@ export {
   isMealRelation,
   MEAL_RELATIONS,
   type MealRelation,
-  mealTakesMinutes,
 } from './model/medication'
-export { recipeListSchema, recipeSchema, toRecipe } from './model/schema'
+export { recipePageSchema, recipeSchema, toRecipe } from './model/schema'
 export type { Medicine, Recipe } from './model/types'

@@ -1,26 +1,28 @@
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import {
   type Appointment,
   AppointmentFormFields,
   type AppointmentFormInput,
   type AppointmentPatientResult,
+  type AppointmentTreatmentTypeProps,
   appointmentFormFieldOf,
   appointmentFormSchema,
   toAppointmentForm,
 } from '@/entities/appointment'
 import { doctorQueries } from '@/entities/doctor'
 import { defaultPatientFilters, patientQueries } from '@/entities/patient'
+import { servicesForSpecialty, treatmentTypeQueries } from '@/entities/treatment-type'
 import { ApiError } from '@/shared/api/errors'
 import { useDebounce } from '@/shared/lib/useDebounce'
 import { Alert, Button, Dialog } from '@/shared/ui'
 import { useUpdateAppointment } from '../model/useUpdateAppointment'
 
 export interface EditAppointmentDialogProps {
-  clinicId: number
+  clinicId: string
   appointment: Appointment
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -54,15 +56,27 @@ export function EditAppointmentDialog({
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: String(doctor.id),
+    value: doctor.id,
     label: doctor.fullName,
   }))
 
+  const treatmentTypesQuery = useQuery(treatmentTypeQueries.list(clinicId))
+  const doctorId = useWatch({ control: form.control, name: 'doctorId' })
+  const specialty =
+    doctorsQuery.data?.find((doctor) => doctor.id === doctorId)?.doctorTypeId ?? null
+  const services = servicesForSpecialty(treatmentTypesQuery.data ?? [], specialty)
+  const treatmentType: AppointmentTreatmentTypeProps = {
+    options: services.map((type) => ({ value: type.id, label: type.name })),
+    emptyHint:
+      doctorId === ''
+        ? t('appointments:form.chooseDoctorFirst')
+        : services.length === 0 && treatmentTypesQuery.isSuccess
+          ? t('appointments:form.noServices')
+          : null,
+  }
+
   const [patientTerm, setPatientTerm] = useState('')
   const debouncedPatientTerm = useDebounce(patientTerm, PATIENT_SEARCH_DEBOUNCE_MS)
-  // Seeded from the appointment already linked — `fullName` is shared between
-  // a walk-in and a linked patient either way, so it is a safe starting label
-  // even though `patientId` itself may not have round-tripped (see the entity).
   const [linkedPatient, setLinkedPatient] = useState<AppointmentPatientResult | null>(
     appointment.patientId === null
       ? null
@@ -97,9 +111,8 @@ export function EditAppointmentDialog({
   const handleSelectPatient = (patient: AppointmentPatientResult) => {
     setLinkedPatient(patient)
     setPatientTerm('')
-    form.setValue('patientId', String(patient.id), { shouldDirty: true })
+    form.setValue('patientId', patient.id, { shouldDirty: true })
     form.setValue('fullName', patient.fullName, { shouldDirty: true })
-    form.setValue('phoneNumber', patient.phoneNumber ?? '', { shouldDirty: true })
   }
 
   const handleUnlinkPatient = () => {
@@ -112,10 +125,6 @@ export function EditAppointmentDialog({
       {
         appointmentId: appointment.id,
         input: values,
-        // See `useUpdateAppointment`: an unresolved prefill must only be
-        // saved when the person actually used the field.
-        includePatientId: Boolean(form.formState.dirtyFields.patientId),
-        includeDoctorId: Boolean(form.formState.dirtyFields.doctorId),
       },
       {
         onSuccess: () => onOpenChange(false),
@@ -177,6 +186,7 @@ export function EditAppointmentDialog({
             onUnlink: handleUnlinkPatient,
           }}
           showStatus
+          treatmentType={treatmentType}
         />
       </form>
     </Dialog>

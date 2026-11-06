@@ -22,7 +22,8 @@ export interface JwtPayload {
    * clinic *is* a user row (`User.clinic` points at a `superadmin` account),
    * so a clinic login's own id is the scope its data hangs off.
    */
-  userId: number
+  /** simplejwt's `user_id` claim: the user's UUID. */
+  userId: string
 }
 
 function decodePayloadSegment(segment: string): unknown {
@@ -69,14 +70,9 @@ export function readJwtPayload(token: string): JwtPayload | null {
    * `"abc"` are rejected rather than coerced into a cache key.
    */
   const claim = (decoded as Record<string, unknown>)['user_id']
-  if (typeof claim !== 'number' && typeof claim !== 'string') return null
+  if (typeof claim !== 'string' || claim.trim() === '') return null
 
-  const userId = Number(claim)
-  if (!Number.isInteger(userId)) return null
-  // `Number('')` is 0, and an empty claim is not user zero.
-  if (typeof claim === 'string' && claim.trim() === '') return null
-
-  return { userId }
+  return { userId: claim }
 }
 
 /**

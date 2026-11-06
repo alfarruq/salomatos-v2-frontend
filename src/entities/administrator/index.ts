@@ -6,7 +6,7 @@ export {
   emptyAdministratorForm,
   toAdministratorPayload,
 } from './model/formSchema'
-export { administratorListSchema, administratorSchema, toAdministrator } from './model/schema'
+export { administratorPageSchema, administratorSchema, toAdministrator } from './model/schema'
 export type { Administrator, AdministratorId } from './model/types'
 export {
   AdministratorFormFields,

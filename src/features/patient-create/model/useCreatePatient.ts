@@ -4,14 +4,14 @@ import {
   type PatientFormInput,
   type PatientListItem,
   patientKeys,
-  patientListItemSchema,
+  patientSchema,
   toPatientListItem,
   toPatientPayload,
 } from '@/entities/patient'
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createPatient(input: PatientFormInput): Promise<PatientListItem> {
-  const raw = await httpClient<unknown>('v1/clinic/patients/', {
+  const raw = await httpClient<unknown>('v1/patients/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toPatientPayload(input)),
@@ -19,7 +19,7 @@ async function createPatient(input: PatientFormInput): Promise<PatientListItem> 
 
   // `PatientService.create_patient` answers with the *list* serializer, not the
   // detail one — so the new row can go straight into a list without a refetch.
-  return toPatientListItem(v.parse(patientListItemSchema, raw))
+  return toPatientListItem(v.parse(patientSchema, raw))
 }
 
 /**
@@ -30,7 +30,7 @@ async function createPatient(input: PatientFormInput): Promise<PatientListItem> 
  * be refused after the row is already on screen. Showing a patient who does not
  * exist, in a medical record system, is worse than a second of waiting.
  */
-export function useCreatePatient(clinicId: number) {
+export function useCreatePatient(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -4,9 +4,10 @@ export {
   treatmentKeys,
   treatmentQueries,
 } from './api/queries'
-export { toTreatment, treatmentListSchema, treatmentSchema } from './model/schema'
+export { toTreatment, treatmentPageSchema, treatmentSchema } from './model/schema'
 export {
   defaultTreatmentListFilters,
+  type ToothSurface,
   type Treatment,
   type TreatmentListFilters,
   type TreatmentStatus,

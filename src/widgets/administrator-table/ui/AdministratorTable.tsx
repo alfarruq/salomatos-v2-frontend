@@ -22,7 +22,7 @@ import {
 } from '@/shared/ui'
 
 export interface AdministratorTableProps {
-  clinicId: number
+  clinicId: string
 }
 
 /** Shown when the server had nothing to send for a cell. */

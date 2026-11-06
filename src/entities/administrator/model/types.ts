@@ -1,5 +1,5 @@
 /** Integer, not a UUID — ADR-013. */
-export type AdministratorId = number
+export type AdministratorId = string
 
 /**
  * A clinic admin (receptionist) account: a `User` row with `role='admin'`
@@ -12,4 +12,5 @@ export interface Administrator {
   username: string | null
   phoneNumber: string | null
   email: string | null
+  isActive: boolean
 }

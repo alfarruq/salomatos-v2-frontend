@@ -12,17 +12,17 @@ import { delay, HttpResponse, http, type JsonBodyType } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { permissionsForRole, useSessionStore } from '@/entities/session'
-import { accessTokenFor, MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { fetchSession, useSessionStore } from '@/entities/session'
+import { mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { DashboardToday } from './DashboardToday'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
   useSessionStore.getState().clear()
   vi.useRealTimers()
 })
@@ -32,47 +32,64 @@ afterAll(() => server.close())
 const NOW = new Date('2026-10-09T05:00:00Z')
 const TODAY = '2026-10-09'
 
+const SARDOR = mockId(4, 4)
+const NODIRA = mockId(4, 5)
+
+/** `time` is Tashkent wall clock; the server sends UTC, five hours earlier. */
 const row = (
-  id: number,
+  n: number,
   time: string,
-  patientId: number | null,
   name: string,
-  status: 'in_progress' | 'completed',
-  doctorId = 2,
-) => ({
-  id,
-  patient_id: patientId,
-  patient: name,
-  phone_number: null,
-  doctor_id: doctorId,
-  doctor: doctorId === 2 ? 'Sardor Usmonov' : 'Malika Yusupova',
-  treatment_type: null,
-  date: TODAY,
-  time: `${time}:00`,
-  notes: null,
-  status,
-})
-
-const DAY = [
-  row(1, '09:00', 101, 'Vali Aliyev', 'completed'),
-  row(3, '11:00', null, 'Yangi Mijoz', 'in_progress'),
-  row(2, '10:30', 102, 'Nodira Karimova', 'in_progress'),
-  // Yesterday's row the server should not have sent — it must not be counted.
-  { ...row(4, '12:00', 103, 'Kecha', 'in_progress'), date: '2026-10-08' },
-]
-
-function serve(body: JsonBodyType) {
-  server.use(http.get('/api/v1/calendars/appointments/', () => HttpResponse.json(body)))
+  status: 'scheduled' | 'completed',
+  doctor = SARDOR,
+  date = TODAY,
+) => {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number)
+  const start = new Date(`${date}T00:00:00Z`)
+  start.setUTCHours(hours - 5, minutes)
+  return {
+    id: mockId(8, n),
+    clinic_name: 'Chilonzor',
+    patient: mockId(7, n),
+    patient_name: name,
+    doctor,
+    doctor_name: doctor === SARDOR ? 'Sardor Usmonov' : 'Nodira Karimova',
+    chair: null,
+    service: null,
+    start_at: start.toISOString(),
+    end_at: new Date(start.getTime() + 30 * 60_000).toISOString(),
+    status,
+    notes: '',
+  }
 }
 
-function renderDashboard(doctorId: number | null = null) {
+const DAY = [
+  row(1, '09:00', 'Vali Aliyev', 'completed'),
+  row(3, '11:00', 'Yangi Mijoz', 'scheduled'),
+  row(2, '10:30', 'Gulnora Yusupova', 'scheduled'),
+  // Yesterday's row the server should not have sent — it must not be counted.
+  row(4, '12:00', 'Kecha', 'scheduled', SARDOR, '2026-10-08'),
+]
+
+const page = (results: unknown[]) => ({
+  count: results.length,
+  next: null,
+  previous: null,
+  results,
+})
+
+function serve(body: JsonBodyType) {
+  server.use(http.get('/api/v1/appointments/', () => HttpResponse.json(body)))
+}
+
+function renderDashboard(doctorId: string | null = null) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   const rootRoute = createRootRoute()
   const indexRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/',
-    component: () => <DashboardToday clinicId={MOCK_USERS.clinic.id} doctorId={doctorId} />,
+    component: () => <DashboardToday clinicId="clinic:test" doctorId={doctorId} />,
   })
   const patientRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -101,24 +118,17 @@ function renderDashboard(doctorId: number | null = null) {
 }
 
 describe('DashboardToday', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(NOW)
-    setAccessToken(accessTokenFor('clinic'))
-    useSessionStore.getState().setSession({
-      userId: MOCK_USERS.clinic.id,
-      clinicId: MOCK_USERS.clinic.id,
-      fullName: 'Klinika',
-      phoneNumber: null,
-      email: null,
-      role: 'superadmin',
-      permissions: permissionsForRole('superadmin'),
-    })
+    signInAs('admin')
+    // `<Can>` reads the store, which the app fills from this same request.
+    useSessionStore.getState().setSession(await fetchSession())
   })
 
   it('shows a skeleton while the day loads', async () => {
     server.use(
-      http.get('/api/v1/calendars/appointments/', async () => {
+      http.get('/api/v1/appointments/', async () => {
         await delay('infinite')
         return HttpResponse.json([])
       }),
@@ -130,7 +140,7 @@ describe('DashboardToday', () => {
   })
 
   it('lists today in time order and counts from that same list', async () => {
-    serve({ count: DAY.length, next: null, previous: null, results: DAY })
+    serve(page(DAY))
     renderDashboard()
 
     const list = await screen.findByRole('list', { name: 'Bugungi navbat' })
@@ -138,7 +148,7 @@ describe('DashboardToday', () => {
       .getAllByRole('listitem')
       .map((item) => item.textContent)
     expect(names[0]).toContain('Vali Aliyev')
-    expect(names[1]).toContain('Nodira Karimova')
+    expect(names[1]).toContain('Gulnora Yusupova')
     expect(names[2]).toContain('Yangi Mijoz')
     expect(screen.queryByText('Kecha')).not.toBeInTheDocument()
 
@@ -149,35 +159,27 @@ describe('DashboardToday', () => {
   })
 
   it('highlights the next open appointment, not the completed or past one', async () => {
-    serve(DAY)
+    serve(page(DAY))
     renderDashboard()
 
     const next = (await screen.findByText('Navbatdagi')).closest('[data-next]') as HTMLElement
-    expect(next).toHaveTextContent('Nodira Karimova')
+    expect(next).toHaveTextContent('Gulnora Yusupova')
     expect(next).toHaveTextContent('10:30')
   })
 
   it("opens the patient's page from a row", async () => {
-    serve(DAY)
+    serve(page(DAY))
     const { router } = renderDashboard()
 
-    await userEvent.click(await screen.findByRole('link', { name: /Nodira Karimova/ }))
+    await userEvent.click(await screen.findByRole('link', { name: /Gulnora Yusupova/ }))
 
-    expect(await screen.findByText('patient page 102')).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/patients/102')
-  })
-
-  it('leaves a walk-in without a patient record as plain text', async () => {
-    serve(DAY)
-    renderDashboard()
-
-    await screen.findByRole('list', { name: 'Bugungi navbat' })
-    expect(screen.queryByRole('link', { name: /Yangi Mijoz/ })).not.toBeInTheDocument()
+    expect(await screen.findByText(`patient page ${mockId(7, 2)}`)).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe(`/patients/${mockId(7, 2)}`)
   })
 
   it("narrows to one doctor's queue", async () => {
-    serve([...DAY, row(5, '13:00', 104, 'Boshqa shifokor bemori', 'in_progress', 4)])
-    renderDashboard(4)
+    serve(page([...DAY, row(5, '13:00', 'Boshqa shifokor bemori', 'scheduled', NODIRA)]))
+    renderDashboard(NODIRA)
 
     const list = await screen.findByRole('list', { name: 'Bugungi navbat' })
     expect(within(list).getAllByRole('listitem')).toHaveLength(1)
@@ -185,7 +187,7 @@ describe('DashboardToday', () => {
   })
 
   it('offers to book when nobody is booked today', async () => {
-    serve([])
+    serve(page([]))
     renderDashboard()
 
     expect(await screen.findByRole('heading', { name: "Bugun qabul yo'q" })).toBeInTheDocument()
@@ -194,7 +196,7 @@ describe('DashboardToday', () => {
 
   it('says so when the day cannot be loaded', async () => {
     server.use(
-      http.get('/api/v1/calendars/appointments/', () =>
+      http.get('/api/v1/appointments/', () =>
         HttpResponse.json({ message: 'boom' }, { status: 500 }),
       ),
     )

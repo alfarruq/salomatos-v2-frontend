@@ -1,101 +1,61 @@
 import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { ApiError } from '@/shared/api/errors'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { doctorKeys, fetchDoctors } from './queries'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
 describe('doctorKeys', () => {
-  it('puts the clinic inside every key', () => {
-    // §6.2 — without it, a second account on the same machine would be served
-    // the first one's staff list out of memory.
-    expect(doctorKeys.list(1)).toEqual(['clinics', 1, 'doctors', 'list'])
-    expect(doctorKeys.list(1)).not.toEqual(doctorKeys.list(2))
+  it('puts the tenant scope inside every key', () => {
+    expect(doctorKeys.list('clinic:a')).toEqual(['clinics', 'clinic:a', 'doctors', 'list'])
+    expect(doctorKeys.list('clinic:a')).not.toEqual(doctorKeys.list('clinic:b'))
   })
 })
 
 describe('fetchDoctors', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('owner'))
 
-  it('reads a plain array, because this endpoint does not paginate', async () => {
-    /*
-     * The published schema shows a single object here — `swagger_auto_schema`
-     * was given the serializer without `many=True`. The Python returns a list.
-     * Patients paginate; doctors do not.
-     */
+  it('lists only the doctors among the staff', async () => {
     const doctors = await fetchDoctors()
 
-    expect(doctors).toHaveLength(2)
-    expect(doctors[0]?.fullName).toBe('Sardor Usmonov')
-  })
-
-  it('carries a doctor with nothing but a name', async () => {
-    const doctors = await fetchDoctors()
-
-    expect(doctors[1]?.fullName).toBe('Malika Yusupova')
-    expect(doctors[1]?.phoneNumber).toBeNull()
-    expect(doctors[1]?.doctorTypeName).toBeNull()
-  })
-
-  it('reads the assigned type as a name, not the id it was set with', async () => {
-    // `doctor_type` on this endpoint has no `source` — it is the foreign
-    // key's own `__str__`, i.e. its name.
-    const doctors = await fetchDoctors()
-
+    expect(doctors.map((doctor) => doctor.fullName)).toEqual(['Sardor Usmonov', 'Nodira Karimova'])
     expect(doctors[0]?.doctorTypeName).toBe('Stomatolog')
   })
 
-  it('trusts DRF to emit null for an unassigned type, whatever the schema claims', async () => {
-    /*
-     * The published schema marks `doctor_type` required and non-nullable —
-     * drf-yasg cannot see that the field has no `source` and is really a
-     * possibly-empty foreign key. DRF's base `Serializer.to_representation`
-     * emits `null` for a `None` attribute regardless of what the field
-     * declares, so this is what a real unassigned doctor looks like.
-     */
+  it('follows the pagination to the last page', async () => {
+    let calls = 0
     server.use(
-      http.get('/api/v1/clinic/doctors/', () =>
-        HttpResponse.json([
-          { id: 9, full_name: 'Nodir Qodirov', phone_number: null, email: null, doctor_type: null },
-        ]),
-      ),
+      http.get('/api/v1/staff/', ({ request }) => {
+        calls += 1
+        const page = new URL(request.url).searchParams.get('page')
+        const row = (n: number) => ({
+          id: `00000000-0000-4000-8099-00000000000${n}`,
+          full_name: `Doctor ${n}`,
+          role: 'doctor',
+        })
+        return HttpResponse.json(
+          page === '2'
+            ? { count: 2, next: null, previous: '/api/v1/staff/', results: [row(2)] }
+            : { count: 2, next: '/api/v1/staff/?page=2', previous: null, results: [row(1)] },
+        )
+      }),
     )
 
     const doctors = await fetchDoctors()
 
-    expect(doctors[0]?.doctorTypeName).toBeNull()
+    expect(calls).toBe(2)
+    expect(doctors.map((doctor) => doctor.fullName)).toEqual(['Doctor 1', 'Doctor 2'])
   })
 
-  it('survives a serializer that stopped sending an optional field', async () => {
-    server.use(
-      http.get('/api/v1/clinic/doctors/', () =>
-        HttpResponse.json([{ id: 9, full_name: 'Nodir Qodirov' }]),
-      ),
-    )
-
-    const doctors = await fetchDoctors()
-
-    expect(doctors[0]?.fullName).toBe('Nodir Qodirov')
-    expect(doctors[0]?.email).toBeNull()
-    expect(doctors[0]?.doctorTypeName).toBeNull()
-  })
-
-  it('refuses a row with no name, which nothing could render', async () => {
-    server.use(http.get('/api/v1/clinic/doctors/', () => HttpResponse.json([{ id: 9 }])))
-
-    await expect(fetchDoctors()).rejects.toThrow()
-  })
-
-  it('needs a token', async () => {
-    clearAccessToken()
+  it('refuses without a token', async () => {
+    signOut()
 
     await expect(fetchDoctors()).rejects.toBeInstanceOf(ApiError)
   })

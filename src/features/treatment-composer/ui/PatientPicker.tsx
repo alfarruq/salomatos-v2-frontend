@@ -9,13 +9,13 @@ import { Button, Field, Input } from '@/shared/ui'
 const PATIENT_SEARCH_DEBOUNCE_MS = 300
 
 export interface PickedPatient {
-  id: number
+  id: string
   fullName: string
   phoneNumber: string | null
 }
 
 export interface PatientPickerProps {
-  clinicId: number
+  clinicId: string
   value: PickedPatient | null
   onChange: (patient: PickedPatient | null) => void
   isDisabled?: boolean

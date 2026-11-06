@@ -15,26 +15,18 @@ const SECTIONS = [
   { to: '/manage/admins', labelKey: 'admin:nav.admins' },
   { to: '/manage/services', labelKey: 'admin:nav.services' },
   { to: '/manage/clinic', labelKey: 'admin:nav.clinic' },
-  { to: '/manage/sms', labelKey: 'admin:nav.sms' },
 ] as const
 
 /**
- * Clinic administration, for the clinic account only.
+ * Branch administration: staff, specialties, the price list, the profile.
  *
- * ⚠️ UX, not security (§9.1) — and on this backend not even a reflection of
- * it: `DEFAULT_PERMISSION_CLASSES` is `IsAuthenticated` alone, so the server
- * lets any signed-in account call these endpoints. What actually limits the
- * damage is that every list is filtered by `clinic=request.user`, which for a
- * doctor's own token returns nothing. Closing it properly is server-side.
+ * UX only (§3): every endpoint behind it checks its own permission on the
+ * server. This guard just keeps a doctor from landing on screens they cannot use.
  */
 export const Route = createFileRoute('/_auth/manage')({
   beforeLoad: ({ context }) => {
-    /*
-     * `clinic:manage` belongs to `superadmin` alone (ADR-012). A doctor or a
-     * receptionist reaching this URL is sent back to the dashboard rather than
-     * shown an empty shell they cannot use.
-     */
-    if (!context.session.permissions.has('clinic:manage')) {
+    // Owners and branch admins manage staff; a doctor is sent back rather than shown an empty shell.
+    if (!context.session.permissions.has('staff:manage')) {
       throw redirect({ to: '/dashboard' })
     }
   },

@@ -2,13 +2,13 @@ import { queryOptions } from '@tanstack/react-query'
 import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
 import { cachePolicy } from '@/shared/config/cache'
-import { clinicListSchema, toClinic } from '../model/schema'
+import { clinicSchema, toClinic } from '../model/schema'
 import type { Clinic } from '../model/types'
 
 /** §6.2 — `clinicId` is inside every key, without exception. */
 export const clinicKeys = {
-  scope: (clinicId: number) => ['clinics', clinicId, 'profile'] as const,
-  mine: (clinicId: number) => [...clinicKeys.scope(clinicId), 'mine'] as const,
+  scope: (clinicId: string) => ['clinics', clinicId, 'profile'] as const,
+  mine: (clinicId: string) => [...clinicKeys.scope(clinicId), 'mine'] as const,
 }
 
 /**
@@ -23,14 +23,14 @@ export const clinicKeys = {
  * there is no way to `PATCH` or `DELETE` it. Once created, a clinic's profile
  * can only be created — not edited — until the server adds one.
  */
-export async function fetchClinic(signal?: AbortSignal): Promise<Clinic | null> {
+/** The branch picked by `X-Clinic-Id`. Every branch has a profile, so this is never empty. */
+export async function fetchClinic(signal?: AbortSignal): Promise<Clinic> {
   const raw = await httpClient<unknown>('v1/clinic/', signal === undefined ? {} : { signal })
-  const rows = v.parse(clinicListSchema, raw)
-  return rows[0] === undefined ? null : toClinic(rows[0])
+  return toClinic(v.parse(clinicSchema, raw))
 }
 
 export const clinicQueries = {
-  mine: (clinicId: number) =>
+  mine: (clinicId: string) =>
     queryOptions({
       queryKey: clinicKeys.mine(clinicId),
       queryFn: ({ signal }) => fetchClinic(signal),

@@ -24,7 +24,7 @@ import {
 } from '@/shared/ui'
 
 export interface DoctorTableProps {
-  clinicId: number
+  clinicId: string
 }
 
 /** Shown when the server had nothing to send for a cell. */

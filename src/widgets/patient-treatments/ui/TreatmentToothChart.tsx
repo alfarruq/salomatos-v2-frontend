@@ -14,12 +14,9 @@ import { summarizeTeeth } from '../model/toothSummary'
 import { TreatmentDetailDialog } from './TreatmentDetailDialog'
 
 export interface TreatmentToothChartProps {
-  clinicId: number
-  patientId: number
-  onEdit: (treatment: Treatment) => void
-  onComplete: (treatment: Treatment) => void
-  onDelete: (treatment: Treatment) => void
-  onTakePayment: (treatment: Treatment) => void
+  clinicId: string
+  patientId: string
+  onVoid: (treatment: Treatment) => void
 }
 
 interface HoverState {
@@ -29,18 +26,11 @@ interface HoverState {
 }
 
 /**
- * The patient's teeth coloured by their treatments: green when every one on
- * the tooth is done, amber while any is still open. Reads the same query as
- * the history table, so both tabs share one request and one cache entry.
+ * The patient's teeth, marked where work has been recorded. Reads the same
+ * query as the history table, so both tabs share one request and one cache
+ * entry.
  */
-export function TreatmentToothChart({
-  clinicId,
-  patientId,
-  onEdit,
-  onComplete,
-  onDelete,
-  onTakePayment,
-}: TreatmentToothChartProps) {
+export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentToothChartProps) {
   const { t } = useTranslation(['treatments', 'patients', 'common'])
   const query = useQuery(treatmentQueries.list(clinicId, patientId))
   const containerRef = useRef<HTMLDivElement>(null)
@@ -62,16 +52,10 @@ export function TreatmentToothChart({
   // Theme tokens, not hex: both are redefined for dark mode in theme.css.
   const statuses: ToothStatusDef[] = [
     {
-      id: 'completed',
+      id: 'done',
       fillClassName: 'fill-success/30',
       strokeClassName: 'stroke-success',
-      label: t('treatments:chart.completed'),
-    },
-    {
-      id: 'in_progress',
-      fillClassName: 'fill-warning/30',
-      strokeClassName: 'stroke-warning',
-      label: t('treatments:chart.inProgress'),
+      label: t('treatments:chart.treated'),
     },
   ]
 
@@ -116,11 +100,7 @@ export function TreatmentToothChart({
         <ul className="flex flex-wrap items-center gap-4 text-caption text-text-secondary">
           <li className="flex items-center gap-2">
             <span aria-hidden="true" className="size-2.5 rounded-full bg-success" />
-            {t('treatments:chart.completed')}
-          </li>
-          <li className="flex items-center gap-2">
-            <span aria-hidden="true" className="size-2.5 rounded-full bg-warning" />
-            {t('treatments:chart.inProgress')}
+            {t('treatments:chart.treated')}
           </li>
         </ul>
       </div>
@@ -153,23 +133,11 @@ export function TreatmentToothChart({
 
       {detailTreatment === null ? null : (
         <TreatmentDetailDialog
-          onComplete={() => {
-            onComplete(detailTreatment)
-            setDetailTreatment(null)
-          }}
-          onDelete={() => {
-            onDelete(detailTreatment)
-            setDetailTreatment(null)
-          }}
-          onEdit={() => {
-            onEdit(detailTreatment)
-            setDetailTreatment(null)
-          }}
           onOpenChange={(open) => {
             if (!open) setDetailTreatment(null)
           }}
-          onTakePayment={() => {
-            onTakePayment(detailTreatment)
+          onVoid={() => {
+            onVoid(detailTreatment)
             setDetailTreatment(null)
           }}
           open

@@ -11,7 +11,7 @@ import {
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createDoctorType(input: DoctorTypeFormInput): Promise<DoctorType> {
-  const raw = await httpClient<unknown>('v1/clinic/doctors/types/', {
+  const raw = await httpClient<unknown>('v1/specialties/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toDoctorTypePayload(input)),
@@ -22,7 +22,7 @@ async function createDoctorType(input: DoctorTypeFormInput): Promise<DoctorType>
 }
 
 /** ⛔ No optimistic update (§6.5): the server assigns the id. */
-export function useCreateDoctorType(clinicId: number) {
+export function useCreateDoctorType(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({

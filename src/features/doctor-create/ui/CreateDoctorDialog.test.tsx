@@ -1,20 +1,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { accessTokenFor } from '@/shared/api/mocks/fixtures'
+import { mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
-import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
+import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
 import { CreateDoctorDialog } from './CreateDoctorDialog'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
-  clearAccessToken()
+  signOut()
 })
 afterAll(() => server.close())
 
@@ -29,7 +28,12 @@ function renderDialog(onCreated = vi.fn()) {
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
-          <CreateDoctorDialog clinicId={1} onCreated={onCreated} onOpenChange={onOpenChange} open />
+          <CreateDoctorDialog
+            clinicId="clinic:test"
+            onCreated={onCreated}
+            onOpenChange={onOpenChange}
+            open
+          />
         </Suspense>
       </I18nextProvider>
     </QueryClientProvider>,
@@ -38,8 +42,18 @@ function renderDialog(onCreated = vi.fn()) {
   return { onCreated, onOpenChange }
 }
 
+function captureStaffPost(): { body: unknown } {
+  const captured: { body: unknown } = { body: undefined }
+  server.events.on('request:start', async ({ request }) => {
+    if (request.method === 'POST' && request.url.endsWith('/api/v1/staff/')) {
+      captured.body = await request.clone().json()
+    }
+  })
+  return captured
+}
+
 describe('CreateDoctorDialog', () => {
-  beforeEach(() => setAccessToken(accessTokenFor('clinic')))
+  beforeEach(() => signInAs('admin'))
 
   it('opens with "Stomatolog" preselected, most clinics being dental', async () => {
     renderDialog()
@@ -50,13 +64,7 @@ describe('CreateDoctorDialog', () => {
   })
 
   it('sends the preselected type without the person touching the select', async () => {
-    let sentBody: unknown
-    server.use(
-      http.post('/api/v1/clinic/doctors/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({ id: 900, full_name: 'Test', phone_number: null, email: null })
-      }),
-    )
+    const sent = captureStaffPost()
 
     renderDialog()
 
@@ -69,17 +77,13 @@ describe('CreateDoctorDialog', () => {
     await userEvent.type(screen.getByLabelText('Parol'), 'maxfiy-parol')
     await userEvent.click(screen.getByRole('button', { name: "Shifokor qo'shish" }))
 
-    await waitFor(() => expect(sentBody).toMatchObject({ doctor_type: 5 }))
+    await waitFor(() =>
+      expect(sent.body).toMatchObject({ role: 'doctor', specialty: mockId(5, 1) }),
+    )
   })
 
   it('sends whatever type the person actually picks instead', async () => {
-    let sentBody: unknown
-    server.use(
-      http.post('/api/v1/clinic/doctors/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({ id: 900, full_name: 'Test', phone_number: null, email: null })
-      }),
-    )
+    const sent = captureStaffPost()
 
     renderDialog()
 
@@ -95,7 +99,7 @@ describe('CreateDoctorDialog', () => {
     await userEvent.type(screen.getByLabelText('Parol'), 'maxfiy-parol')
     await userEvent.click(screen.getByRole('button', { name: "Shifokor qo'shish" }))
 
-    await waitFor(() => expect(sentBody).toMatchObject({ doctor_type: 6 }))
+    await waitFor(() => expect(sent.body).toMatchObject({ specialty: mockId(5, 2) }))
   })
 
   it('resets to the default rather than to unassigned, so a second doctor gets one too', async () => {
@@ -121,13 +125,7 @@ describe('CreateDoctorDialog', () => {
   })
 
   it('sends the login and password the doctor will sign in with', async () => {
-    let sentBody: unknown
-    server.use(
-      http.post('/api/v1/clinic/doctors/', async ({ request }) => {
-        sentBody = await request.json()
-        return HttpResponse.json({ id: 900, full_name: 'Test', phone_number: null, email: null })
-      }),
-    )
+    const sent = captureStaffPost()
 
     renderDialog()
 
@@ -138,7 +136,7 @@ describe('CreateDoctorDialog', () => {
     await userEvent.click(screen.getByRole('button', { name: "Shifokor qo'shish" }))
 
     await waitFor(() =>
-      expect(sentBody).toMatchObject({ username: 'yangi.shifokor', password: 'maxfiy-parol' }),
+      expect(sent.body).toMatchObject({ username: 'yangi.shifokor', password: 'maxfiy-parol' }),
     )
   })
 

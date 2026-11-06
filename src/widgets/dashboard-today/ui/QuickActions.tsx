@@ -18,11 +18,11 @@ const MAX_RESULTS = 5
 
 interface NewPatientTreatment {
   patientId: PatientId
-  doctorId: number | null
+  doctorId: string | null
 }
 
 export interface QuickActionsProps {
-  clinicId: number
+  clinicId: string
   today: string
   /** The empty queue's own button opens the same dialog, so its state lives with the caller. */
   isAppointmentOpen: boolean
@@ -45,16 +45,16 @@ export function QuickActions({
   // Set when "add a treatment" was ticked in the new-patient form (§4: the two
   // features meet here, not inside each other).
   const [treatmentFor, setTreatmentFor] = useState<NewPatientTreatment | null>(null)
-  const canAddTreatment = useCan('medical-record:write')
+  const canAddTreatment = useCan('procedure:manage')
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-      <Can permission="patient:read">
+      <Can permission="patient:view">
         <PatientQuickSearch clinicId={clinicId} />
       </Can>
 
       <div className="flex flex-wrap gap-2">
-        <Can permission="appointment:write">
+        <Can permission="appointment:manage">
           <Button
             iconLeft={<CalendarPlus aria-hidden="true" className="size-4" />}
             isFloatingOnPhone
@@ -70,7 +70,7 @@ export function QuickActions({
             open={isAppointmentOpen}
           />
         </Can>
-        <Can permission="patient:write">
+        <Can permission="patient:manage">
           <Button
             iconLeft={<UserPlus aria-hidden="true" className="size-4" />}
             onClick={() => setPatientOpen(true)}
@@ -95,14 +95,12 @@ export function QuickActions({
       {treatmentFor === null ? null : (
         <TreatmentComposer
           clinicId={clinicId}
-          // A patient created a moment ago has no visits yet.
-          nextVisitNumber={1}
           onOpenChange={(open) => {
             if (!open) setTreatmentFor(null)
           }}
           open
           patientId={treatmentFor.patientId}
-          {...(treatmentFor.doctorId === null ? {} : { initialDoctorId: treatmentFor.doctorId })}
+          initialDoctorId={treatmentFor.doctorId}
         />
       )}
     </div>
@@ -113,7 +111,7 @@ export function QuickActions({
  * ⛔ The term lives in `usePatientSearch`'s state and nowhere else — never the
  * URL (§3). Results link by id only.
  */
-function PatientQuickSearch({ clinicId }: { clinicId: number }) {
+function PatientQuickSearch({ clinicId }: { clinicId: string }) {
   const { t } = useTranslation('dashboard')
   const search = usePatientSearch()
   const term = search.debouncedTerm.trim()

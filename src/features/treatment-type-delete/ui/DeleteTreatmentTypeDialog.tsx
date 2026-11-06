@@ -6,7 +6,7 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useDeleteTreatmentType } from '../model/useDeleteTreatmentType'
 
 export interface DeleteTreatmentTypeDialogProps {
-  clinicId: number
+  clinicId: string
   service: TreatmentType
   open: boolean
   onOpenChange: (open: boolean) => void

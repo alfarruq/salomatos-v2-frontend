@@ -23,7 +23,7 @@ const searchSchema = v.object({
    * attacker-controlled, and rendering arbitrary text from a search parameter
    * is how a login page ends up displaying someone else's instructions.
    */
-  denied: v.optional(v.picklist(['patient'])),
+  denied: v.optional(v.picklist(['no_clinic'])),
 })
 
 export const Route = createFileRoute('/login')({
@@ -64,15 +64,11 @@ function LoginPage() {
           <p className="text-callout text-text-secondary">{t('login.subtitle')}</p>
         </div>
 
-        {/*
-         * Informational, not an error: the credentials were correct. This
-         * application is for clinic staff, and a patient's own records live
-         * in the Telegram bot.
-         */}
-        {search.denied === 'patient' ? (
+        {/* Informational, not an error: the credentials were correct. */}
+        {search.denied === 'no_clinic' ? (
           <div className="mb-6">
-            <Alert title={t('login.patientDenied')} tone="info">
-              {t('login.patientDeniedBody')}
+            <Alert title={t('login.noClinic')} tone="info">
+              {t('login.noClinicBody')}
             </Alert>
           </div>
         ) : null}

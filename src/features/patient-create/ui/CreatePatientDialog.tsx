@@ -19,7 +19,7 @@ import { Alert, Button, Checkbox, Dialog } from '@/shared/ui'
 import { useCreatePatient } from '../model/useCreatePatient'
 
 export interface CreatePatientDialogProps {
-  clinicId: number
+  clinicId: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreated?: (patient: PatientListItem, followUp: CreatePatientFollowUp) => void
@@ -37,7 +37,7 @@ export interface CreatePatientDialogProps {
 export interface CreatePatientFollowUp {
   addTreatment: boolean
   /** The doctor picked in the form, so the next dialog can start on them. */
-  doctorId: number | null
+  doctorId: string | null
 }
 
 export function CreatePatientDialog({
@@ -93,14 +93,14 @@ export function CreatePatientDialog({
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: String(doctor.id),
+    value: doctor.id,
     label: doctor.fullName,
   }))
 
   const handleSubmit = form.handleSubmit((values) =>
     mutate(values, {
       onSuccess: (patient) => {
-        const doctorId = values.doctorId === '' ? null : Number(values.doctorId)
+        const doctorId = values.doctorId === '' ? null : values.doctorId
         form.reset(emptyPatientForm)
         onOpenChange(false)
         // The create response's id, never a list lookup: the new row may not

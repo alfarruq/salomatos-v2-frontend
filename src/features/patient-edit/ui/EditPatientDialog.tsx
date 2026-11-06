@@ -17,13 +17,18 @@ import { Alert, Button, Dialog } from '@/shared/ui'
 import { useUpdatePatient } from '../model/useUpdatePatient'
 
 export interface EditPatientDialogProps {
-  clinicId: number
-  /**
-   * A `Pick`, not the full `Patient`: the table passes a `PatientListItem`
-   * row directly, and the detail page passes a `Patient` — both carry every
-   * field this dialog reads.
-   */
-  patient: Pick<Patient, 'id' | 'fullName' | 'phoneNumber' | 'birthDate' | 'address' | 'office'>
+  clinicId: string
+  patient: Pick<
+    Patient,
+    | 'id'
+    | 'fullName'
+    | 'phoneNumber'
+    | 'birthDate'
+    | 'address'
+    | 'gender'
+    | 'notes'
+    | 'primaryDoctorId'
+  >
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved?: () => void
@@ -63,7 +68,7 @@ export function EditPatientDialog({
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: String(doctor.id),
+    value: doctor.id,
     label: doctor.fullName,
   }))
 
@@ -72,7 +77,6 @@ export function EditPatientDialog({
       {
         patientId: patient.id,
         input: values,
-        includeDoctorId: Boolean(form.formState.dirtyFields.doctorId),
       },
       {
         onSuccess: () => {

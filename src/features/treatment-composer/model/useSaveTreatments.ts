@@ -1,65 +1,32 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import * as v from 'valibot'
-import { patientKeys } from '@/entities/patient'
-import { treatmentKeys, treatmentListSchema, treatmentSchema } from '@/entities/treatment'
+import { treatmentKeys, treatmentSchema } from '@/entities/treatment'
 import { httpClient } from '@/shared/api/httpClient'
-import { clinicNow } from '@/shared/lib/datetime'
-import { toExistingTreatmentPayload, toNewTreatmentPayload } from './formSchema'
+import { toNewTreatmentPayload } from './formSchema'
 import type { ComposerFields, TreatmentRow } from './types'
 
 export interface SaveTreatmentsInput {
-  patientId: number
+  patientId: string
   rows: TreatmentRow[]
   fields: ComposerFields
-  startDate: string
-  visitNumber: number
-  touched: { doctor: boolean; treatmentType: boolean }
 }
 
+/**
+ * One `POST procedures/` per row, in order. Sequential rather than parallel so
+ * that a refusal stops the rest: the person sees which rows landed instead of
+ * an unknown subset.
+ */
 async function saveTreatments(input: SaveTreatmentsInput): Promise<void> {
-  // The clinic's day, not the browser's (§14).
-  const today = clinicNow().date
-  const existingRow = input.rows.find((row) => row.existingTreatmentId !== null)
-  const newRows = input.rows.filter((row) => row.existingTreatmentId === null)
-
-  const requests: Promise<unknown>[] = []
-
-  if (existingRow !== undefined && existingRow.existingTreatmentId !== null) {
-    const payload = toExistingTreatmentPayload(existingRow, input.fields, input.touched, {
-      startDate: input.startDate,
-      today,
+  for (const row of input.rows) {
+    const payload = toNewTreatmentPayload(row, input.fields, input.patientId)
+    if (payload === null) continue
+    const raw = await httpClient<unknown>('v1/procedures/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     })
-    requests.push(
-      httpClient<unknown>(`v1/clinic/treatments/${existingRow.existingTreatmentId}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).then((raw) => v.parse(treatmentSchema, raw)),
-    )
+    v.parse(treatmentSchema, raw)
   }
-
-  const newPayloads = newRows
-    .map((row) =>
-      toNewTreatmentPayload(row, input.fields, {
-        patientId: input.patientId,
-        startDate: input.startDate,
-        visitNumber: input.visitNumber,
-        today,
-      }),
-    )
-    .filter((payload) => payload !== null)
-
-  if (newPayloads.length > 0) {
-    requests.push(
-      httpClient<unknown>('v1/clinic/treatments/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPayloads),
-      }).then((raw) => v.parse(treatmentListSchema, raw)),
-    )
-  }
-
-  await Promise.all(requests)
 }
 
 /**
@@ -67,15 +34,16 @@ async function saveTreatments(input: SaveTreatmentsInput): Promise<void> {
  * clinician relies on — showing a save the server then refused would mean
  * acting on a record that was never there.
  */
-export function useSaveTreatments(clinicId: number) {
+export function useSaveTreatments(clinicId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: saveTreatments,
-    onSuccess: () => {
+    retry: false,
+    // Settled, not success: a run that failed half-way still wrote its first rows.
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: treatmentKeys.scope(clinicId) })
-      // The card's totals and tooth chart are derived from these rows server-side.
-      void queryClient.invalidateQueries({ queryKey: patientKeys.scope(clinicId) })
+      void queryClient.invalidateQueries({ queryKey: ['clinics', clinicId, 'balances'] })
     },
   })
 }
