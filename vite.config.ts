@@ -40,25 +40,18 @@ export default defineConfig({
      * §1.2 — production is same-origin behind nginx. The dev proxy reproduces
      * that shape so no CORS or absolute-URL handling ever enters the code.
      *
-     * The default is the deployed backend, because that is the only thing
-     * that tells the truth about the contract. Every mismatch found so far was
-     * invisible until a request reached a real server: the mocks agreed with
-     * the client because one reading of the code produced both.
-     *
-     * Point it elsewhere when a Django is running locally:
+     * The default is a Django running locally. This repo must never reach the
+     * v1 production server (it serves a live clinic), so there is no remote
+     * default. Point it elsewhere explicitly when needed:
      *
      *   API_PROXY_TARGET=http://localhost:8000 pnpm dev
-     *
-     * ⚠️ The default target serves production data. Use the app to work, not
-     * to browse records, and not with a screen recorder running (§13.4).
      */
     proxy: {
       '/api': {
-        target: process.env['API_PROXY_TARGET'] ?? 'https://salomatos.uz',
+        target: process.env['API_PROXY_TARGET'] ?? 'http://localhost:8000',
         // Django checks Host against ALLOWED_HOSTS; forwarding localhost:5173
         // as the Host header would be rejected.
         changeOrigin: true,
-        secure: true,
       },
     },
   },
