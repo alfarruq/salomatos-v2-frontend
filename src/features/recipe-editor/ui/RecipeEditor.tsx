@@ -1,11 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
-import { useActsOnlyAs } from '@/entities/session'
+import { Can, useActsOnlyAs } from '@/entities/session'
+import { requestVoiceDraft, type VoiceDraft, VoicePanel, voiceKeys } from '@/entities/voice-draft'
 import { ApiError } from '@/shared/api/errors'
 import {
+  Alert,
   Button,
   Dialog,
   ErrorState,
@@ -16,7 +18,7 @@ import {
   Textarea,
   toast,
 } from '@/shared/ui'
-import { isRowComplete, newMedicineRow, toRecipePayload } from '../model/payload'
+import { fromVoiceMedicine, isRowComplete, newMedicineRow, toRecipePayload } from '../model/payload'
 import type { MedicineRow } from '../model/types'
 import { useCreateRecipe } from '../model/useCreateRecipe'
 import { MedicineRowFields } from './MedicineRowFields'
@@ -42,9 +44,17 @@ export function RecipeEditor({
   open,
   onOpenChange,
 }: RecipeEditorProps) {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'common', 'voice'])
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const { mutate, isPending } = useCreateRecipe(clinicId)
+  const queryClient = useQueryClient()
+  // Every call is billed and writes nothing, so it is never retried.
+  const voice = useMutation({
+    mutationFn: requestVoiceDraft,
+    retry: false,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: voiceKeys.status(clinicId) }),
+  })
+  const [voiceNote, setVoiceNote] = useState<string | null>(null)
 
   // A doctor writes prescriptions in their own name only.
   const onlyMe = useActsOnlyAs('patient:view_all')
@@ -57,6 +67,16 @@ export function RecipeEditor({
   const namedRows = rows.filter((row) => row.name.trim() !== '')
   const incompleteRows = namedRows.filter((row) => !isRowComplete(row))
   const canSave = doctorId !== '' && namedRows.length > 0 && incompleteRows.length === 0
+
+  /** Dictated medicines join the list; empty rows left from the start make way for them. */
+  function applyVoiceDraft(draft: VoiceDraft) {
+    const dictated = draft.medicines.filter((item) => item.medicine !== '').map(fromVoiceMedicine)
+    if (dictated.length > 0) {
+      setRows((current) => [...current.filter((row) => row.name.trim() !== ''), ...dictated])
+    }
+    if (draft.notes !== '' && notes.trim() === '') setNotes(draft.notes)
+    setVoiceNote(dictated.length > 0 ? t('voice:result.filled') : t('voice:result.empty'))
+  }
 
   function handleAddRow() {
     const row = newMedicineRow()
@@ -98,6 +118,19 @@ export function RecipeEditor({
     <ErrorState description={t('common:error.pageBody')} title={t('common:error.pageTitle')} />
   ) : (
     <div className="flex flex-col gap-6">
+      <Can permission="voice:use">
+        <VoicePanel
+          clinicId={clinicId}
+          error={voice.error}
+          hint={t('voice:hint.prescription')}
+          isPending={voice.isPending}
+          onSubmit={(text) =>
+            voice.mutate({ form: 'prescription', text, patientId }, { onSuccess: applyVoiceDraft })
+          }
+        >
+          {voiceNote === null ? null : <Alert title={voiceNote} tone="info" />}
+        </VoicePanel>
+      </Can>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t('recipes:editor.patientLabel')}>
           <Input readOnly value={patientName} />

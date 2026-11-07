@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { MEDICATION_CATALOG } from './catalog'
-import { fillFromCatalog, newMedicineRow, toMedicinePayload, toRecipePayload } from './payload'
+import {
+  fillFromCatalog,
+  fromVoiceMedicine,
+  isRowComplete,
+  newMedicineRow,
+  toMedicinePayload,
+  toRecipePayload,
+} from './payload'
 
 describe('toMedicinePayload', () => {
   it('sends the fields PrescriptionItemSerializer takes', () => {
@@ -80,5 +87,46 @@ describe('MEDICATION_CATALOG', () => {
   it('has unique names — cmdk keys items by them', () => {
     const names = MEDICATION_CATALOG.map((medicine) => medicine.name)
     expect(new Set(names).size).toBe(names.length)
+  })
+})
+
+describe('fromVoiceMedicine', () => {
+  const dictated = {
+    medicine: 'Amoxicillin 500 mg',
+    dose: '1',
+    form: 'capsule',
+    timesPerDay: 3,
+    durationDays: 7,
+    mealRelation: 'after' as const,
+    instructions: '',
+  }
+
+  it('maps a fully dictated medicine onto a complete row', () => {
+    const row = fromVoiceMedicine(dictated)
+    expect(row).toMatchObject({
+      name: 'Amoxicillin 500 mg',
+      dose: '1',
+      form: 'capsule',
+      frequency: 'tid',
+      meal: 'after',
+      durationAmount: '7',
+      durationUnit: 'days',
+    })
+    expect(isRowComplete(row)).toBe(true)
+  })
+
+  it('leaves an unsaid dose or duration empty so the doctor must finish the row', () => {
+    const row = fromVoiceMedicine({
+      ...dictated,
+      dose: '500 mg',
+      durationDays: null,
+      form: 'pill',
+      mealRelation: 'any',
+    })
+    expect(row.dose).toBe('')
+    expect(row.durationAmount).toBe('')
+    expect(row.form).toBe('tablet')
+    expect(row.meal).toBe('none')
+    expect(isRowComplete(row)).toBe(false)
   })
 })

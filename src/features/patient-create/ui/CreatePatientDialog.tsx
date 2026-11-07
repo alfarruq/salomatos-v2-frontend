@@ -1,5 +1,5 @@
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -12,7 +12,8 @@ import {
   patientFormFieldOf,
   patientFormSchema,
 } from '@/entities/patient'
-import { useActsOnlyAs } from '@/entities/session'
+import { Can, useActsOnlyAs } from '@/entities/session'
+import { requestVoiceDraft, type VoiceDraft, VoicePanel, voiceKeys } from '@/entities/voice-draft'
 import { ApiError } from '@/shared/api/errors'
 import { toTypedDate } from '@/shared/lib/calendarDate'
 import { clinicNow } from '@/shared/lib/datetime'
@@ -49,7 +50,7 @@ export function CreatePatientDialog({
   offerTreatment = false,
   initialValues,
 }: CreatePatientDialogProps) {
-  const { t } = useTranslation(['patients', 'common'])
+  const { t } = useTranslation(['patients', 'common', 'voice'])
   // Off on every opening: a treatment is a deliberate step, not a default.
   const [addTreatment, setAddTreatment] = useState(false)
   const willAddTreatment = offerTreatment && addTreatment
@@ -91,6 +92,48 @@ export function CreatePatientDialog({
   }, [open, initialValues, form])
 
   const { mutate, isPending } = useCreatePatient(clinicId)
+
+  const queryClient = useQueryClient()
+  // Every call is billed and writes nothing, so it is never retried.
+  const voice = useMutation({
+    mutationFn: requestVoiceDraft,
+    retry: false,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: voiceKeys.status(clinicId) }),
+  })
+  const [voiceNote, setVoiceNote] = useState<string | null>(null)
+  const resetVoice = voice.reset
+
+  useEffect(() => {
+    if (open) {
+      resetVoice()
+      setVoiceNote(null)
+    }
+  }, [open, resetVoice])
+
+  /** Fills only what was dictated; anything typed by hand for an unsaid field stays. */
+  function applyVoiceDraft(draft: VoiceDraft) {
+    const fields = draft.patientFields
+    const options = { shouldDirty: true, shouldValidate: true } as const
+    let filled = 0
+    const text = (
+      name: 'fullName' | 'phoneNumber' | 'birthDate' | 'address' | 'notes',
+      value: string,
+    ) => {
+      if (value === '') return
+      form.setValue(name, value, options)
+      filled += 1
+    }
+    text('fullName', fields?.fullName ?? '')
+    text('phoneNumber', fields?.phoneNumber ?? '')
+    text('birthDate', fields?.birthDate ? toTypedDate(fields.birthDate) : '')
+    text('address', fields?.address ?? '')
+    text('notes', draft.notes)
+    if (fields !== null && fields.gender !== '') {
+      form.setValue('gender', fields.gender, options)
+      filled += 1
+    }
+    setVoiceNote(filled > 0 ? t('voice:result.filled') : t('voice:result.empty'))
+  }
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   // A doctor registers patients to themselves; the server refuses anyone else.
@@ -163,6 +206,19 @@ export function CreatePatientDialog({
     >
       <form className="flex flex-col gap-4" id={FORM_ID} noValidate onSubmit={handleSubmit}>
         {rootError ? <Alert title={rootError} tone="danger" /> : null}
+        <Can permission="voice:use">
+          <VoicePanel
+            clinicId={clinicId}
+            error={voice.error}
+            hint={t('voice:hint.patient')}
+            isPending={voice.isPending}
+            onSubmit={(text) =>
+              voice.mutate({ form: 'patient', text }, { onSuccess: applyVoiceDraft })
+            }
+          >
+            {voiceNote === null ? null : <Alert title={voiceNote} tone="info" />}
+          </VoicePanel>
+        </Can>
         <PatientFormFields doctorOptions={doctorOptions} form={form} isDisabled={isPending} />
         {offerTreatment ? (
           <Checkbox

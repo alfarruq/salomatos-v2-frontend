@@ -1444,6 +1444,13 @@ export const handlers = [
     },
   ),
 
+  // Off in the mock: a draft needs the real model, and a fake one would mislead.
+  http.get('/api/v1/voice/status/', ({ request }) => {
+    const scope = guard(request, 'voice:use')
+    if (scope instanceof Response) return scope
+    return HttpResponse.json({ enabled: false, used_this_month: 0, monthly_limit: 1500 })
+  }),
+
   http.get('/api/v1/me/earnings/', ({ request }) => {
     // Not a read in all-branches mode: a doctor's month belongs to one branch.
     const scope = guard(request, 'payroll:view_own')
