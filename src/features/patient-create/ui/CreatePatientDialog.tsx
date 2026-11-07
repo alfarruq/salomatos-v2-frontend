@@ -12,6 +12,7 @@ import {
   patientFormFieldOf,
   patientFormSchema,
 } from '@/entities/patient'
+import { useActsOnlyAs } from '@/entities/session'
 import { ApiError } from '@/shared/api/errors'
 import { toTypedDate } from '@/shared/lib/calendarDate'
 import { clinicNow } from '@/shared/lib/datetime'
@@ -92,10 +93,17 @@ export function CreatePatientDialog({
   const { mutate, isPending } = useCreatePatient(clinicId)
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: doctor.id,
-    label: doctor.fullName,
-  }))
+  // A doctor registers patients to themselves; the server refuses anyone else.
+  const onlyMe = useActsOnlyAs('patient:view_all')
+  const doctorOptions = (doctorsQuery.data ?? [])
+    .filter((doctor) => onlyMe === null || doctor.id === onlyMe)
+    .map((doctor) => ({ value: doctor.id, label: doctor.fullName }))
+
+  useEffect(() => {
+    if (open && onlyMe !== null && form.getValues('doctorId') === '') {
+      form.setValue('doctorId', onlyMe)
+    }
+  }, [open, onlyMe, form])
 
   const handleSubmit = form.handleSubmit((values) =>
     mutate(values, {

@@ -12,6 +12,7 @@ import {
   patientFormSchema,
   toPatientForm,
 } from '@/entities/patient'
+import { useActsOnlyAs } from '@/entities/session'
 import { ApiError } from '@/shared/api/errors'
 import { Alert, Button, Dialog } from '@/shared/ui'
 import { useUpdatePatient } from '../model/useUpdatePatient'
@@ -67,10 +68,13 @@ export function EditPatientDialog({
   const { mutate, isPending } = useUpdatePatient(clinicId)
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: doctor.id,
-    label: doctor.fullName,
-  }))
+  // A doctor may keep the current doctor or take the patient, never hand them on.
+  const onlyMe = useActsOnlyAs('patient:view_all')
+  const doctorOptions = (doctorsQuery.data ?? [])
+    .filter(
+      (doctor) => onlyMe === null || doctor.id === onlyMe || doctor.id === patient.primaryDoctorId,
+    )
+    .map((doctor) => ({ value: doctor.id, label: doctor.fullName }))
 
   const handleSubmit = form.handleSubmit((values) =>
     mutate(

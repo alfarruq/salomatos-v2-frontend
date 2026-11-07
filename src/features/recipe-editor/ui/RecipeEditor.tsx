@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
+import { useActsOnlyAs } from '@/entities/session'
 import { ApiError } from '@/shared/api/errors'
 import {
   Button,
@@ -45,7 +46,9 @@ export function RecipeEditor({
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const { mutate, isPending } = useCreateRecipe(clinicId)
 
-  const [doctorId, setDoctorId] = useState('')
+  // A doctor writes prescriptions in their own name only.
+  const onlyMe = useActsOnlyAs('patient:view_all')
+  const [doctorId, setDoctorId] = useState(onlyMe ?? '')
   // One empty row to start with: there is no prescription without a medicine.
   const [rows, setRows] = useState<MedicineRow[]>(() => [newMedicineRow()])
   const [newRowId, setNewRowId] = useState<string | null>(null)
@@ -102,13 +105,15 @@ export function RecipeEditor({
         <Field isRequired label={t('recipes:editor.doctorLabel')}>
           <Select
             onValueChange={setDoctorId}
-            options={doctorsQuery.data.map((doctor) => ({
-              value: doctor.id,
-              label:
-                doctor.doctorTypeName === null
-                  ? doctor.fullName
-                  : `${doctor.fullName} · ${doctor.doctorTypeName}`,
-            }))}
+            options={doctorsQuery.data
+              .filter((doctor) => onlyMe === null || doctor.id === onlyMe)
+              .map((doctor) => ({
+                value: doctor.id,
+                label:
+                  doctor.doctorTypeName === null
+                    ? doctor.fullName
+                    : `${doctor.fullName} · ${doctor.doctorTypeName}`,
+              }))}
             placeholder={t('recipes:editor.doctorPlaceholder')}
             {...(doctorId === '' ? {} : { value: doctorId })}
           />

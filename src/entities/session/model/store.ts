@@ -55,3 +55,17 @@ export const useSessionStore = create<SessionState>((set) => ({
 export function useCan(permission: Permission): boolean {
   return useSessionStore((state) => state.session?.permissions.has(permission) ?? false)
 }
+
+/**
+ * The caller's own doctor id when they may only act as themselves — a doctor
+ * without `permission` (e.g. `appointment:view_all`) — else null. Doctor
+ * pickers use it to offer that one doctor, preselected, instead of a list the
+ * server would refuse every other entry of. UX only, like `useCan`.
+ */
+export function useActsOnlyAs(permission: Permission): string | null {
+  return useSessionStore((state) => {
+    const session = state.session
+    if (session === null || session.permissions.has(permission)) return null
+    return session.membershipId
+  })
+}
