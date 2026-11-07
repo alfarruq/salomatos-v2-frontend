@@ -1,0 +1,33 @@
+{
+  "title": "Mening daromadim",
+  "subtitle": "Shu oy topgan daromadingiz va bemorlar to'lovini kutayotgan summa.",
+  "terms": "Sizning shartingiz:",
+  "error": "Daromadni yuklab bo'lmadi",
+  "totals": {
+    "earned": "Tugallangan",
+    "earnedHint": "Oylik va to'langan ishlardan ulushingiz",
+    "pending": "Jarayonda",
+    "pendingHint": "Bemorlar to'laganda sizga tegadigan ulush",
+    "paid": "Sizga to'langan",
+    "balance": "To'lanishi kerak"
+  },
+  "lines": {
+    "title": "Muolajalaringiz",
+    "description": "Shu oydagi ishlar va hali to'lanmagan avvalgi ishlar.",
+    "filter": "Holat",
+    "empty": "Muolajalar yo'q",
+    "emptyDescription": "Bu oy uchun hech narsa yo'q.",
+    "date": "Sana",
+    "patient": "Bemor",
+    "service": "Xizmat",
+    "tooth": "Tish",
+    "total": "Narxi",
+    "unpaid": "To'lanmagan",
+    "status": "Holat"
+  },
+  "status": {
+    "all": "Barchasi",
+    "completed": "Tugallangan (to'langan)",
+    "in_progress": "Jarayonda"
+  }
+}

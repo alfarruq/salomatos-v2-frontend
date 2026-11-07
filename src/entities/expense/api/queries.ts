@@ -7,12 +7,14 @@ import type { ReportRange } from '@/shared/lib/report'
 import {
   compensationSchema,
   dueMonthSchema,
+  earningsSchema,
   expensePageSchema,
   expenseSummarySchema,
   payrollSchema,
   recurringExpenseSchema,
   toCompensation,
   toDueMonth,
+  toEarnings,
   toExpensePage,
   toExpenseSummary,
   toPayroll,
@@ -22,6 +24,7 @@ import type {
   CalendarMonth,
   Compensation,
   DueMonth,
+  Earnings,
   ExpenseFilters,
   ExpensePage,
   ExpenseSummary,
@@ -52,6 +55,9 @@ export const expenseKeys = {
 
   compensation: (clinicId: string, doctorId: string) =>
     [...expenseKeys.scope(clinicId), 'compensation', doctorId] as const,
+
+  myEarnings: (clinicId: string, month: CalendarMonth) =>
+    [...expenseKeys.scope(clinicId), 'my-earnings', month] as const,
 }
 
 function withSignal(signal: AbortSignal | undefined) {
@@ -116,6 +122,18 @@ export async function fetchCompensationHistory(
   return rows.map(toCompensation)
 }
 
+/** The caller's own month: the server picks the doctor from the session, never from the URL. */
+export async function fetchMyEarnings(
+  month: CalendarMonth,
+  signal?: AbortSignal,
+): Promise<Earnings> {
+  const raw: unknown = await httpClient(
+    `v1/me/earnings/?${new URLSearchParams({ month })}`,
+    withSignal(signal),
+  )
+  return toEarnings(v.parse(earningsSchema, raw))
+}
+
 export const expenseQueries = {
   list: (clinicId: string, filters: ExpenseFilters) =>
     queryOptions({
@@ -154,6 +172,14 @@ export const expenseQueries = {
     queryOptions({
       queryKey: expenseKeys.payroll(clinicId, month),
       queryFn: ({ signal }) => fetchPayroll(month, signal),
+      ...cachePolicy.financial,
+      placeholderData: keepPreviousData,
+    }),
+
+  myEarnings: (clinicId: string, month: CalendarMonth) =>
+    queryOptions({
+      queryKey: expenseKeys.myEarnings(clinicId, month),
+      queryFn: ({ signal }) => fetchMyEarnings(month, signal),
       ...cachePolicy.financial,
       placeholderData: keepPreviousData,
     }),

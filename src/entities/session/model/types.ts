@@ -38,11 +38,14 @@ export const PERMISSIONS = [
   'payment:manage',
   'payment:void',
   'report:view',
+  'statistics:view',
+  'statistics:view_all',
   'expense:view',
   'expense:manage',
   'expense:void',
   'payroll:view',
   'payroll:manage',
+  'payroll:view_own',
   'audit:view',
 ] as const
 

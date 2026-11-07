@@ -70,5 +70,11 @@
     "title": "Muolajalar",
     "completed": "Yakunlangan",
     "plansAccepted": "Qabul qilingan rejalar"
+  },
+  "doctorFilter": {
+    "label": "Shifokor",
+    "all": "Barcha shifokorlar",
+    "selected": "Tanlangan shifokor",
+    "ownOnly": "Faqat sizning ko'rsatkichlaringiz"
   }
 }

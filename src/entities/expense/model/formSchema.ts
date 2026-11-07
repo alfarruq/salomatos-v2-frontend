@@ -264,18 +264,28 @@ export function payDueFormFieldOf(serverField: string): keyof PayDueFormInput | 
 
 const PERCENT = /^\d{1,3}([.,]\d{1,2})?$/
 
-/** A doctor's new pay terms. A percent, a fixed salary, or both — never neither. */
-export const compensationFormSchema = v.pipe(
+const percentNumber = (value: string): number => Number(value.replace(',', '.') || 0)
+
+/**
+ * A doctor's pay agreement: a monthly salary, a percent of their work, or both.
+ *
+ * Each half has its own switch, because clinics agree one, the other or both and
+ * the form should say which, rather than read meaning into an empty input. A
+ * switched-on half needs a value above zero; both off means "no terms yet".
+ */
+export const payTermsSchema = v.pipe(
   v.object({
+    percentOn: v.boolean(),
     /** Text, so "32,5" typed on a Russian keyboard reads as 32.5. */
     percent: v.pipe(
       v.string(),
       v.trim(),
       v.check(
-        (value) => value === '' || (PERCENT.test(value) && Number(value.replace(',', '.')) <= 100),
+        (value) => value === '' || (PERCENT.test(value) && percentNumber(value) <= 100),
         'validation.invalid',
       ),
     ),
+    fixedOn: v.boolean(),
     fixed: v.pipe(
       v.string(),
       v.trim(),
@@ -286,15 +296,82 @@ export const compensationFormSchema = v.pipe(
       ),
     ),
     base: v.picklist(COMPENSATION_BASES),
+  }),
+  v.forward(
+    v.partialCheck(
+      [['percentOn'], ['percent']],
+      (input) => !input.percentOn || percentNumber(input.percent) > 0,
+      'validation.required',
+    ),
+    ['percent'],
+  ),
+  v.forward(
+    v.partialCheck(
+      [['fixedOn'], ['fixed']],
+      (input) => !input.fixedOn || Number(input.fixed || 0) > 0,
+      'validation.required',
+    ),
+    ['fixed'],
+  ),
+)
+
+export type PayTermsInput = v.InferOutput<typeof payTermsSchema>
+
+/** What the form needs from existing terms: a `Compensation` or a staff row's current terms. */
+export type PayTermsSource = Pick<Compensation, 'percent' | 'fixed' | 'base'>
+
+export const emptyPayTerms: PayTermsInput = {
+  percentOn: false,
+  percent: '',
+  fixedOn: false,
+  fixed: '',
+  base: 'collected',
+}
+
+export function toPayTerms(current: PayTermsSource | null): PayTermsInput {
+  if (current === null) return emptyPayTerms
+  return {
+    percentOn: current.percent > 0,
+    percent: current.percent === 0 ? '' : String(current.percent),
+    fixedOn: current.fixed > 0,
+    fixed: current.fixed === 0 ? '' : String(current.fixed),
+    base: current.base,
+  }
+}
+
+export interface PayTermsPayload {
+  percent: number
+  fixed: number
+  base: CompensationBase
+}
+
+/** `null` when both halves are off: there is nothing to agree yet. */
+export function toPayTermsPayload(input: PayTermsInput): PayTermsPayload | null {
+  if (!input.percentOn && !input.fixedOn) return null
+  return {
+    // A switched-off half is sent as 0, whatever is still typed in it.
+    percent: input.percentOn ? percentNumber(input.percent) : 0,
+    fixed: input.fixedOn ? Number(input.fixed || 0) : 0,
+    base: input.base,
+  }
+}
+
+/** New terms for an existing doctor, from a month on. Unlike hiring, "none" is not a change. */
+export const compensationFormSchema = v.pipe(
+  v.object({
+    pay: payTermsSchema,
     effectiveFrom: v.pipe(v.string(), v.regex(CALENDAR_MONTH, 'validation.invalid')),
   }),
   v.forward(
     v.partialCheck(
-      [['percent'], ['fixed']],
-      (input) => Number(input.percent.replace(',', '.') || 0) > 0 || Number(input.fixed || 0) > 0,
+      [
+        ['pay', 'percentOn'],
+        ['pay', 'fixedOn'],
+      ],
+      (input) => input.pay.percentOn || input.pay.fixedOn,
       'validation.required',
     ),
-    ['percent'],
+    ['pay', 'percent'],
   ),
 )
 
@@ -302,40 +379,31 @@ export type CompensationFormInput = v.InferOutput<typeof compensationFormSchema>
 
 /** The current terms as the starting point, from the given month on. */
 export function toCompensationForm(
-  current: Compensation | null,
+  current: PayTermsSource | null,
   effectiveFrom: string,
 ): CompensationFormInput {
-  return {
-    percent: current === null || current.percent === 0 ? '' : String(current.percent),
-    fixed: current === null || current.fixed === 0 ? '' : String(current.fixed),
-    base: current?.base ?? 'collected',
-    effectiveFrom,
-  }
+  return { pay: toPayTerms(current), effectiveFrom }
 }
 
-export interface CompensationPayload {
-  percent: number
-  fixed: number
-  base: CompensationBase
+export interface CompensationPayload extends PayTermsPayload {
   effective_from: string
 }
 
 export function toCompensationPayload(input: CompensationFormInput): CompensationPayload {
-  return {
-    percent: Number(input.percent.replace(',', '.') || 0),
-    fixed: Number(input.fixed || 0),
-    base: input.base,
-    effective_from: input.effectiveFrom,
-  }
+  // The schema refuses both halves off, so the fallback is never sent.
+  const pay = toPayTermsPayload(input.pay) ?? { percent: 0, fixed: 0, base: input.pay.base }
+  return { ...pay, effective_from: input.effectiveFrom }
 }
 
-const COMPENSATION_SERVER_FIELDS: Record<string, keyof CompensationFormInput> = {
-  percent: 'percent',
-  fixed: 'fixed',
-  base: 'base',
+type CompensationField = 'pay.percent' | 'pay.fixed' | 'pay.base' | 'effectiveFrom'
+
+const COMPENSATION_SERVER_FIELDS: Record<string, CompensationField> = {
+  percent: 'pay.percent',
+  fixed: 'pay.fixed',
+  base: 'pay.base',
   effective_from: 'effectiveFrom',
 }
 
-export function compensationFormFieldOf(serverField: string): keyof CompensationFormInput | 'root' {
+export function compensationFormFieldOf(serverField: string): CompensationField | 'root' {
   return COMPENSATION_SERVER_FIELDS[serverField] ?? 'root'
 }

@@ -199,7 +199,12 @@ export interface PayrollRow {
   billed: number
   /** What the percent is taken from: collected or billed. */
   baseAmount: number
+  /** Earned this month: work done and, on collected terms, paid for. */
   accrued: number
+  /** The doctor's work still unpaid by patients at month end. */
+  pending: number
+  /** The share `pending` turns into once patients pay; 0 on billed terms. */
+  pendingShare: number
   /** Owed (or overpaid, when negative) from earlier months. */
   opening: number
   paid: number
@@ -210,5 +215,32 @@ export interface PayrollRow {
 export interface Payroll {
   month: CalendarMonth
   rows: PayrollRow[]
-  totals: { accrued: number; paid: number; balance: number }
+  totals: { accrued: number; pendingShare: number; paid: number; balance: number }
+}
+
+/** Fully paid by the patient, or still waiting on them. */
+export const EARNINGS_STATUSES = ['completed', 'in_progress'] as const
+
+export type EarningsStatus = (typeof EARNINGS_STATUSES)[number]
+
+/** One procedure of a doctor's month, with how much of it the patient has paid. */
+export interface EarningsLine {
+  procedureId: string
+  /** UTC ISO-8601; shown in the clinic's zone. */
+  performedAt: string
+  patientId: string
+  patientName: string | null
+  serviceName: string
+  tooth: number | null
+  total: number
+  paid: number
+  unpaid: number
+  status: EarningsStatus
+}
+
+/** A doctor's own month: the payroll row the owner sees, and the work behind it. */
+export interface Earnings {
+  month: CalendarMonth
+  summary: PayrollRow
+  lines: EarningsLine[]
 }

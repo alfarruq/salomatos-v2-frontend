@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { formatSom } from '@/shared/lib/money'
-import type { Compensation } from '../model/types'
+import type { PayTermsSource } from '../model/formSchema'
 
 /** A doctor's terms in one line: "Oklad 2,000,000 so'm + 15% tushumdan". */
-export function CompensationTerms({ compensation }: { compensation: Compensation | null }) {
+export function CompensationTerms({ compensation }: { compensation: PayTermsSource | null }) {
   const { t, i18n } = useTranslation(['expenses', 'common'])
   if (compensation === null) return <>{t('expenses:payroll.terms.none')}</>
 

@@ -189,7 +189,8 @@
     "totals": {
       "accrued": "Hisoblangan",
       "paid": "Berilgan",
-      "balance": "Berilishi kerak"
+      "balance": "Berilishi kerak",
+      "pendingShare": "Jarayonda"
     },
     "table": {
       "title": "Shifokorlar bo'yicha",
@@ -202,7 +203,8 @@
       "accruedPaid": "Hisoblangan {{accrued}} · berilgan {{paid}}",
       "opening": "Oldingi oylardan: {{amount}}",
       "balanceShort": "Qoldiq: {{amount}}",
-      "billedCollected": "bajarilgan {{billed}} · to'langan {{collected}}"
+      "billedCollected": "bajarilgan {{billed}} · to'langan {{collected}}",
+      "pending": "Jarayonda: {{amount}}"
     },
     "terms": {
       "none": "Shart belgilanmagan",
@@ -230,7 +232,11 @@
       "failed": "Shartni saqlab bo'lmadi. Qayta urinib ko'ring.",
       "history": "Shartlar tarixi",
       "noHistory": "Hali shart belgilanmagan.",
-      "since": "{{month}}dan:"
+      "since": "{{month}}dan:",
+      "salaryOn": "Oylik maosh",
+      "percentOn": "Davolash ishlaridan foiz",
+      "noneYet": "Maosh sharti hali belgilanmagan. Keyinroq shifokorlar ro'yxatida belgilash mumkin.",
+      "hiringHint": "Oylik, foiz yoki ikkalasi. Shu oydan boshlab amal qiladi."
     },
     "pay": {
       "open": "To'lov",

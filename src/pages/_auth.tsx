@@ -10,6 +10,7 @@ import {
 import {
   BarChart3,
   CalendarDays,
+  HandCoins,
   House,
   LogOut,
   type LucideIcon,
@@ -198,10 +199,16 @@ function AuthenticatedLayout() {
               <SidebarLink icon={CalendarDays} label={t('nav.appointments')} to="/appointments" />
             </li>
           </Can>
-          {/* Clinic-wide figures are for whoever runs the clinic, not for one doctor's chair. */}
-          <Can permission="report:view">
+          {/* The owner sees every doctor; a doctor sees their own figures; the desk none. */}
+          <Can permission="statistics:view">
             <li>
               <SidebarLink icon={BarChart3} label={t('nav.statistics')} to="/statistics" />
+            </li>
+          </Can>
+          {/* A doctor's own pay; the owner reads everyone's under finance. */}
+          <Can permission="payroll:view_own">
+            <li>
+              <SidebarLink icon={HandCoins} label={t('nav.earnings')} to="/earnings" />
             </li>
           </Can>
           <Can permission="payment:view">
@@ -209,7 +216,7 @@ function AuthenticatedLayout() {
               <SidebarLink icon={Wallet} label={t('nav.billing')} to="/finance" />
             </li>
           </Can>
-          {/* Staff, services and settings: owners and branch admins. */}
+          {/* Staff, services, pay terms and settings: the owner's alone. */}
           <Can permission="staff:manage">
             <li>
               <SidebarLink icon={Settings} label={t('nav.admin')} to="/manage" />

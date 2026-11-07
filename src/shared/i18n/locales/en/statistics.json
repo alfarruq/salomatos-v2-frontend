@@ -70,5 +70,11 @@
     "title": "Treatments",
     "completed": "Completed",
     "plansAccepted": "Plans accepted"
+  },
+  "doctorFilter": {
+    "label": "Doctor",
+    "all": "All doctors",
+    "selected": "Selected doctor",
+    "ownOnly": "Your own figures only"
   }
 }

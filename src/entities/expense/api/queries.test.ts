@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { httpClient } from '@/shared/api/httpClient'
-import { MOCK_USERS } from '@/shared/api/mocks/fixtures'
+import { MOCK_USERS, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { clinicNow } from '@/shared/lib/datetime'
@@ -11,6 +11,7 @@ import {
   fetchDueMonth,
   fetchExpenseSummary,
   fetchExpenses,
+  fetchMyEarnings,
   fetchPayroll,
 } from './queries'
 
@@ -22,6 +23,8 @@ afterEach(() => {
 afterAll(() => server.close())
 
 const DOCTOR = MOCK_USERS.doctor.memberships[0].id
+// The seeded filling's patient.
+const MOCK_PATIENT = mockId(7, 1)
 const today = () => clinicNow().date
 const thisMonth = () => today().slice(0, 7)
 
@@ -200,5 +203,57 @@ describe('payroll', () => {
   it('is refused to a branch admin', async () => {
     signInAs('admin')
     await expect(fetchPayroll(thisMonth())).rejects.toMatchObject({ kind: 'forbidden' })
+  })
+})
+
+describe('my earnings', () => {
+  // The seed: a 350,000 filling on 10 Aug 2026, of which the patient paid 150,000.
+  const august = '2026-08'
+
+  beforeEach(async () => {
+    signInAs('owner')
+    await post('v1/compensations/', {
+      doctor: DOCTOR,
+      percent: 40,
+      fixed: 0,
+      base: 'collected',
+      effective_from: august,
+    })
+  })
+
+  it('splits the month into earned and still waiting on the patient', async () => {
+    const row = (await fetchPayroll(august)).rows.find((entry) => entry.doctorId === DOCTOR)
+    expect(row).toMatchObject({ accrued: 60_000, pending: 200_000, pendingShare: 80_000 })
+
+    signInAs('doctor')
+    const mine = await fetchMyEarnings(august)
+    expect(mine.summary).toMatchObject({ doctorId: DOCTOR, accrued: 60_000, pendingShare: 80_000 })
+    expect(mine.lines).toEqual([
+      expect.objectContaining({
+        patientName: 'Aziza Karimova',
+        total: 350_000,
+        paid: 150_000,
+        unpaid: 200_000,
+        status: 'in_progress',
+      }),
+    ])
+  })
+
+  it('carries unpaid work forward until the patient pays it off', async () => {
+    signInAs('doctor')
+    const owed = await fetchMyEarnings(thisMonth())
+    expect(owed.lines.map((line) => line.status)).toEqual(['in_progress'])
+
+    signInAs('owner')
+    await post('v1/payments/', { patient: MOCK_PATIENT, amount: 200_000, method: 'cash' })
+    signInAs('doctor')
+    // Settled this month, so August's filling no longer waits on anyone.
+    expect((await fetchMyEarnings(thisMonth())).lines).toEqual([])
+  })
+
+  it("is the doctor's own: the owner and the desk read pay elsewhere", async () => {
+    await expect(fetchMyEarnings(august)).rejects.toMatchObject({ kind: 'forbidden' })
+    signInAs('admin')
+    await expect(fetchMyEarnings(august)).rejects.toMatchObject({ kind: 'forbidden' })
   })
 })

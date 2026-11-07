@@ -153,8 +153,16 @@ describe('authentication flow', () => {
     expect(screen.queryByRole('heading', { name: 'Boshqaruv' })).not.toBeInTheDocument()
   })
 
-  it('lets a branch admin into administration', async () => {
+  it("keeps a branch admin out of administration too: staff and pay are the owner's", async () => {
     signedIn('admin')
+    renderApp('/manage/doctors')
+
+    expect(await screen.findByRole('heading', { name: 'Boshqaruv paneli' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Boshqaruv' })).not.toBeInTheDocument()
+  })
+
+  it('lets the owner into administration', async () => {
+    signedIn('owner')
     renderApp('/manage/doctors')
 
     expect(await screen.findByRole('heading', { name: 'Boshqaruv' })).toBeInTheDocument()

@@ -31,7 +31,8 @@
     "username": "Login",
     "password": "Password",
     "newPassword": "New password",
-    "passwordKeep": "Leave empty to keep the current password."
+    "passwordKeep": "Leave empty to keep the current password.",
+    "pay": "Pay terms"
   },
   "service": {
     "name": "Service",

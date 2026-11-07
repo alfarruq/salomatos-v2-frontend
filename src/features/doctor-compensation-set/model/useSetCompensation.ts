@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import * as v from 'valibot'
+import { doctorKeys } from '@/entities/doctor'
 import {
   type Compensation,
   type CompensationPayload,
@@ -33,6 +34,8 @@ export function useSetCompensation(clinicId: string) {
     retry: false,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: expenseKeys.scope(clinicId) })
+      // The staff list shows each doctor's current terms too.
+      void queryClient.invalidateQueries({ queryKey: doctorKeys.scope(clinicId) })
     },
   })
 }

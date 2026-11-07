@@ -33,7 +33,8 @@
     "appointments": "Appointments",
     "statistics": "Statistics",
     "billing": "Finance",
-    "admin": "Administration"
+    "admin": "Administration",
+    "earnings": "My earnings"
   },
   "language": {
     "label": "Language",

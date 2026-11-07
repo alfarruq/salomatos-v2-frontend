@@ -7,9 +7,11 @@ import {
   emptyExpenseForm,
   emptyRecurringForm,
   expenseFormSchema,
+  payTermsSchema,
   recurringFormSchema,
   toCompensationPayload,
   toExpensePayload,
+  toPayTermsPayload,
   toRecurringPayload,
 } from './formSchema'
 
@@ -85,13 +87,8 @@ describe('recurringFormSchema', () => {
 })
 
 describe('compensationFormSchema', () => {
-  const terms = {
-    percent: '32,5',
-    fixed: '',
-    base: 'collected',
-    deductLab: true,
-    effectiveFrom: '2026-10',
-  }
+  const pay = { percentOn: true, percent: '32,5', fixedOn: false, fixed: '', base: 'collected' }
+  const terms = { pay, effectiveFrom: '2026-10' }
 
   it('reads a comma decimal and sends numbers', () => {
     const result = v.safeParse(compensationFormSchema, terms)
@@ -102,10 +99,45 @@ describe('compensationFormSchema', () => {
   })
 
   it('needs a percent or a salary, and a percent within 100', () => {
-    expect(v.safeParse(compensationFormSchema, { ...terms, percent: '' }).success).toBe(false)
-    expect(v.safeParse(compensationFormSchema, { ...terms, percent: '120' }).success).toBe(false)
+    const off = { ...pay, percentOn: false }
+    expect(v.safeParse(compensationFormSchema, { ...terms, pay: off }).success).toBe(false)
     expect(
-      v.safeParse(compensationFormSchema, { ...terms, percent: '', fixed: '3000000' }).success,
-    ).toBe(true)
+      v.safeParse(compensationFormSchema, { ...terms, pay: { ...pay, percent: '' } }).success,
+    ).toBe(false)
+    expect(
+      v.safeParse(compensationFormSchema, { ...terms, pay: { ...pay, percent: '120' } }).success,
+    ).toBe(false)
+    const salary = { ...off, fixedOn: true, fixed: '3000000' }
+    expect(v.safeParse(compensationFormSchema, { ...terms, pay: salary }).success).toBe(true)
+  })
+})
+
+describe('payTermsSchema', () => {
+  const both = {
+    percentOn: true,
+    percent: '40',
+    fixedOn: true,
+    fixed: '2000000',
+    base: 'collected',
+  }
+
+  it('covers salary only, percent only and both', () => {
+    const parse = (input: object) => {
+      const result = v.safeParse(payTermsSchema, input)
+      return result.success ? toPayTermsPayload(result.output) : 'invalid'
+    }
+    expect(parse(both)).toEqual({ percent: 40, fixed: 2000000, base: 'collected' })
+    expect(parse({ ...both, percentOn: false })).toEqual({
+      percent: 0,
+      fixed: 2000000,
+      base: 'collected',
+    })
+    expect(parse({ ...both, fixedOn: false })).toEqual({ percent: 40, fixed: 0, base: 'collected' })
+    expect(parse({ ...both, percentOn: false, fixedOn: false })).toBeNull()
+  })
+
+  it('needs a value in a half that is switched on', () => {
+    expect(v.safeParse(payTermsSchema, { ...both, fixed: '' }).success).toBe(false)
+    expect(v.safeParse(payTermsSchema, { ...both, fixedOn: false, fixed: '' }).success).toBe(true)
   })
 })

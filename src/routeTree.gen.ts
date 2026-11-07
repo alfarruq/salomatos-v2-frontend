@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './pages/index'
 import { Route as AuthRouteImport } from './pages/_auth'
 import { Route as LoginRouteImport } from './pages/login'
 import { Route as AuthDashboardRouteImport } from './pages/_auth/dashboard'
+import { Route as AuthEarningsRouteImport } from './pages/_auth/earnings'
 import { Route as AuthFinanceRouteImport } from './pages/_auth/finance'
 import { Route as AuthManageRouteImport } from './pages/_auth/manage'
 import { Route as AuthAppointmentsIndexRouteImport } from './pages/_auth/appointments/index'
@@ -49,6 +50,11 @@ const LoginRoute = LoginRouteImport.update({
 const AuthDashboardRoute = AuthDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthEarningsRoute = AuthEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthFinanceRoute = AuthFinanceRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthDashboardRoute
+  '/earnings': typeof AuthEarningsRoute
   '/finance': typeof AuthFinanceRouteWithChildren
   '/manage': typeof AuthManageRouteWithChildren
   '/finance/debtors': typeof AuthFinanceDebtorsRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthDashboardRoute
+  '/earnings': typeof AuthEarningsRoute
   '/finance/debtors': typeof AuthFinanceDebtorsRoute
   '/finance/expenses': typeof AuthFinanceExpensesRoute
   '/finance/payroll': typeof AuthFinancePayrollRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
+  '/_auth/earnings': typeof AuthEarningsRoute
   '/_auth/finance': typeof AuthFinanceRouteWithChildren
   '/_auth/manage': typeof AuthManageRouteWithChildren
   '/_auth/finance/debtors': typeof AuthFinanceDebtorsRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/earnings'
     | '/finance'
     | '/manage'
     | '/finance/debtors'
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/earnings'
     | '/finance/debtors'
     | '/finance/expenses'
     | '/finance/payroll'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/login'
     | '/_auth/dashboard'
+    | '/_auth/earnings'
     | '/_auth/finance'
     | '/_auth/manage'
     | '/_auth/finance/debtors'
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthDashboardRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/earnings': {
+      id: '/_auth/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof AuthEarningsRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/finance': {
@@ -491,6 +510,7 @@ const AuthManageRouteWithChildren = AuthManageRoute._addFileChildren(
 
 interface AuthRouteChildren {
   AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthEarningsRoute: typeof AuthEarningsRoute
   AuthFinanceRoute: typeof AuthFinanceRouteWithChildren
   AuthManageRoute: typeof AuthManageRouteWithChildren
   AuthPatientsPatientIdRoute: typeof AuthPatientsPatientIdRoute
@@ -502,6 +522,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthDashboardRoute: AuthDashboardRoute,
+  AuthEarningsRoute: AuthEarningsRoute,
   AuthFinanceRoute: AuthFinanceRouteWithChildren,
   AuthManageRoute: AuthManageRouteWithChildren,
   AuthPatientsPatientIdRoute: AuthPatientsPatientIdRoute,

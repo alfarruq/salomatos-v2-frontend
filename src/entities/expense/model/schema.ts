@@ -5,6 +5,8 @@ import {
   COMPENSATION_BASES,
   type Compensation,
   type DueMonth,
+  EARNINGS_STATUSES,
+  type Earnings,
   EXPENSE_CATEGORIES,
   EXPENSE_METHODS,
   type Expense,
@@ -12,6 +14,7 @@ import {
   type ExpenseSummary,
   type ExpenseTotals,
   type Payroll,
+  type PayrollRow,
   RECURRING_CATEGORIES,
   type RecurringExpense,
 } from './types'
@@ -240,47 +243,105 @@ export function toCompensation(response: CompensationResponse): Compensation {
   }
 }
 
+const payrollRowSchema = v.object({
+  doctor: id,
+  doctor_name: v.string(),
+  clinic_name: v.optional(v.string(), ''),
+  is_active: v.optional(v.boolean(), true),
+  compensation: v.nullable(compensationSchema),
+  billed: money,
+  collected: money,
+  base_amount: money,
+  accrued: money,
+  pending: v.optional(money, 0),
+  pending_share: v.optional(money, 0),
+  // Signed: negative when a doctor was paid ahead.
+  opening: money,
+  paid: money,
+  balance: money,
+})
+
 export const payrollSchema = v.object({
   month,
-  rows: v.array(
-    v.object({
-      doctor: id,
-      doctor_name: v.string(),
-      clinic_name: v.optional(v.string(), ''),
-      is_active: v.optional(v.boolean(), true),
-      compensation: v.nullable(compensationSchema),
-      billed: money,
-      collected: money,
-      base_amount: money,
-      accrued: money,
-      // Signed: negative when a doctor was paid ahead.
-      opening: money,
-      paid: money,
-      balance: money,
-    }),
-  ),
-  totals: v.object({ accrued: money, paid: money, balance: money }),
+  rows: v.array(payrollRowSchema),
+  totals: v.object({
+    accrued: money,
+    pending_share: v.optional(money, 0),
+    paid: money,
+    balance: money,
+  }),
 })
 
 export type PayrollResponse = v.InferOutput<typeof payrollSchema>
 
+function toPayrollRow(row: v.InferOutput<typeof payrollRowSchema>): PayrollRow {
+  return {
+    doctorId: row.doctor,
+    doctorName: row.doctor_name,
+    clinicName: row.clinic_name,
+    isActive: row.is_active,
+    compensation: row.compensation === null ? null : toCompensation(row.compensation),
+    collected: row.collected,
+    billed: row.billed,
+    baseAmount: row.base_amount,
+    accrued: row.accrued,
+    pending: row.pending,
+    pendingShare: row.pending_share,
+    opening: row.opening,
+    paid: row.paid,
+    balance: row.balance,
+  }
+}
+
 export function toPayroll(response: PayrollResponse): Payroll {
   return {
     month: response.month,
-    totals: response.totals,
-    rows: response.rows.map((row) => ({
-      doctorId: row.doctor,
-      doctorName: row.doctor_name,
-      clinicName: row.clinic_name,
-      isActive: row.is_active,
-      compensation: row.compensation === null ? null : toCompensation(row.compensation),
-      collected: row.collected,
-      billed: row.billed,
-      baseAmount: row.base_amount,
-      accrued: row.accrued,
-      opening: row.opening,
-      paid: row.paid,
-      balance: row.balance,
+    totals: {
+      accrued: response.totals.accrued,
+      pendingShare: response.totals.pending_share,
+      paid: response.totals.paid,
+      balance: response.totals.balance,
+    },
+    rows: response.rows.map(toPayrollRow),
+  }
+}
+
+/** `GET /api/v1/me/earnings/?month`: the signed-in doctor's own month. */
+export const earningsSchema = v.object({
+  month,
+  summary: payrollRowSchema,
+  lines: v.array(
+    v.object({
+      procedure: id,
+      performed_at: v.string(),
+      patient: id,
+      // Null for a patient this doctor may no longer open.
+      patient_name: v.nullable(v.string()),
+      service_name: v.string(),
+      tooth: v.nullable(v.number()),
+      total: money,
+      paid: money,
+      unpaid: money,
+      status: v.picklist(EARNINGS_STATUSES),
+    }),
+  ),
+})
+
+export function toEarnings(response: v.InferOutput<typeof earningsSchema>): Earnings {
+  return {
+    month: response.month,
+    summary: toPayrollRow(response.summary),
+    lines: response.lines.map((line) => ({
+      procedureId: line.procedure,
+      performedAt: line.performed_at,
+      patientId: line.patient,
+      patientName: line.patient_name,
+      serviceName: line.service_name,
+      tooth: line.tooth,
+      total: line.total,
+      paid: line.paid,
+      unpaid: line.unpaid,
+      status: line.status,
     })),
   }
 }

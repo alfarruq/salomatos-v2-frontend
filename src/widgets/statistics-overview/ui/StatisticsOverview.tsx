@@ -26,18 +26,46 @@ export interface StatisticsOverviewProps {
   showBranch: boolean
   period: StatsPeriod
   onPeriodChange: (period: StatsPeriod) => void
+  /** Owners only (`statistics:view_all`): narrow every figure to one doctor. */
+  canFilterByDoctor: boolean
+  doctorId: string | null
+  onDoctorChange: (doctorId: string | null) => void
 }
+
+/** The "everyone" choice; a real id is a UUID, so it cannot collide. */
+const ALL_DOCTORS = 'all'
 
 export function StatisticsOverview({
   clinicId,
   showBranch,
   period,
   onPeriodChange,
+  canFilterByDoctor,
+  doctorId,
+  onDoctorChange,
 }: StatisticsOverviewProps) {
   const { t } = useTranslation('statistics')
   // The clinic's day, not the browser's (§14): "last 7 days" ends there.
   const range = rangeOf(period, clinicNow().date)
-  const query = useQuery(statsQueries.overview(clinicId, range))
+  const filter = canFilterByDoctor ? doctorId : null
+  const query = useQuery(statsQueries.overview(clinicId, range, filter))
+  /*
+   * The choices are the doctors who worked in the period, read from the
+   * unfiltered overview: it works in all-branches mode, where the staff list
+   * does not, and is usually cached already from the default view.
+   */
+  const everyone = useQuery({
+    ...statsQueries.overview(clinicId, range),
+    enabled: canFilterByDoctor,
+  })
+  const doctorOptions = (everyone.data?.doctors ?? []).map((row) => ({
+    value: row.doctorId,
+    label: showBranch ? `${row.doctorName} · ${row.clinicName}` : row.doctorName,
+  }))
+  // A doctor picked earlier who has no work in this period still needs a label.
+  if (filter !== null && !doctorOptions.some((option) => option.value === filter)) {
+    doctorOptions.push({ value: filter, label: t('doctorFilter.selected') })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,6 +78,18 @@ export function StatisticsOverview({
           size="sm"
           value={period}
         />
+        {canFilterByDoctor ? (
+          <Select
+            aria-label={t('doctorFilter.label')}
+            className="w-auto shrink-0"
+            onValueChange={(value) => onDoctorChange(value === ALL_DOCTORS ? null : value)}
+            options={[{ value: ALL_DOCTORS, label: t('doctorFilter.all') }, ...doctorOptions]}
+            size="sm"
+            value={filter ?? ALL_DOCTORS}
+          />
+        ) : (
+          <p className="text-callout text-text-secondary">{t('doctorFilter.ownOnly')}</p>
+        )}
       </div>
 
       <QueryBoundary
