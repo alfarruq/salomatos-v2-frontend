@@ -23,6 +23,7 @@ import { Can, useCan } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { treatmentQueries } from '@/entities/treatment'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
+import { BotAccessPanel } from '@/features/bot-access-manage'
 import { ArchivePatientDialog } from '@/features/patient-archive'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { GalleryDropzone } from '@/features/patient-gallery-upload'
@@ -53,7 +54,7 @@ export const Route = createFileRoute('/_auth/patients/$patientId')({
 })
 
 function PatientDetailPage() {
-  const { t } = useTranslation(['patients', 'common'])
+  const { t } = useTranslation(['patients', 'common', 'bot'])
   const { patientId } = Route.useParams()
   const { clinicId } = Route.useRouteContext()
   const navigate = useNavigate()
@@ -191,6 +192,18 @@ function PatientDetailPage() {
               />
               <Can permission="payment:view">
                 <PatientBilling clinicId={clinicId} patientId={patient.id} />
+              </Can>
+              <Can permission="patient:bot_access">
+                <Card className="flex flex-col gap-3 p-4 sm:p-6">
+                  <div className="flex flex-col gap-1">
+                    <h2 className="text-headline text-text">{t('bot:title')}</h2>
+                    <p className="text-caption text-text-secondary">{t('bot:hint')}</p>
+                  </div>
+                  <BotAccessPanel
+                    clinicId={clinicId}
+                    target={{ kind: 'patient', id: patient.id }}
+                  />
+                </Card>
               </Can>
             </div>
             <PatientTabs

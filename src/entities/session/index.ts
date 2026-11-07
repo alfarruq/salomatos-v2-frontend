@@ -1,7 +1,7 @@
 export { fetchSession, sessionKeys, sessionQueries, useSession } from './api/queries'
 export { readOnly } from './model/permissions'
 export { type MeResponse, meResponseSchema, parseSession, toSession } from './model/sessionSchema'
-export { useCan, useSessionStore } from './model/store'
+export { useActsOnlyAs, useCan, useSessionStore } from './model/store'
 export type { ClinicMembership, OwnedOrganization, Permission, Role, Session } from './model/types'
 export { PERMISSIONS } from './model/types'
 export { Can, type CanProps } from './ui/Can'

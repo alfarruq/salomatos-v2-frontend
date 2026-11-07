@@ -6,7 +6,8 @@
     "services": "Хизматлар",
     "clinic": "Клиника",
     "doctorTypes": "Шифокор турлари",
-    "admins": "Админлар"
+    "admins": "Админлар",
+    "bot": "Телеграм бот"
   },
   "doctor": {
     "fullName": "Ф. И. Ш.",

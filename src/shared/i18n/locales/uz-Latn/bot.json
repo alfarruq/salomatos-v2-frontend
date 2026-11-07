@@ -1,0 +1,25 @@
+{
+  "title": "Telegram bot",
+  "hint": "Shu login va parol bilan Telegram botga kiriladi.",
+  "login": "Login",
+  "password": "Parol",
+  "passwordUnavailable": "Ko'rinmaydi — yangi parol bering",
+  "copy": "Nusxalash",
+  "copied": "Nusxalandi",
+  "copyFailed": "Nusxalab bo'lmadi",
+  "linked": "Botga kirgan",
+  "notLinked": "Hali botga kirmagan",
+  "error": "Bot loginini yuklab bo'lmadi",
+  "open": "Bot logini",
+  "mine": "Mening bot loginim",
+  "mineHint": "Bot har kuni 20:00 da kunlik hisobotni, doktorlarga 07:00 da kunlik uchrashuvlarni yuboradi.",
+  "reset": {
+    "open": "Yangi parol",
+    "title": "Yangi parol berilsinmi?",
+    "description": "Eski parol ishlamay qoladi va Telegram'dagi hozirgi kirish yopiladi.",
+    "confirm": "Yangi parol berish",
+    "success": "Yangi parol berildi",
+    "error": "Yangi parol berib bo'lmadi"
+  },
+  "show": "Login va parolni ko'rsatish"
+}

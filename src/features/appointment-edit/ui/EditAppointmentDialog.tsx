@@ -15,6 +15,7 @@ import {
 } from '@/entities/appointment'
 import { doctorQueries } from '@/entities/doctor'
 import { defaultPatientFilters, patientQueries } from '@/entities/patient'
+import { useActsOnlyAs } from '@/entities/session'
 import { servicesForSpecialty, treatmentTypeQueries } from '@/entities/treatment-type'
 import { ApiError } from '@/shared/api/errors'
 import { useDebounce } from '@/shared/lib/useDebounce'
@@ -55,10 +56,11 @@ export function EditAppointmentDialog({
   const { mutate, isPending } = useUpdateAppointment(clinicId)
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: doctor.id,
-    label: doctor.fullName,
-  }))
+  // A doctor's own calendar only: the server refuses moving a visit to a colleague.
+  const onlyMe = useActsOnlyAs('appointment:view_all')
+  const doctorOptions = (doctorsQuery.data ?? [])
+    .filter((doctor) => onlyMe === null || doctor.id === onlyMe)
+    .map((doctor) => ({ value: doctor.id, label: doctor.fullName }))
 
   const treatmentTypesQuery = useQuery(treatmentTypeQueries.list(clinicId))
   const doctorId = useWatch({ control: form.control, name: 'doctorId' })

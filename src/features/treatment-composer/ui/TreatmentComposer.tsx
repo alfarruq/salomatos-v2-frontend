@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
+import { useActsOnlyAs } from '@/entities/session'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
 import { ApiError } from '@/shared/api/errors'
@@ -48,6 +49,8 @@ export function TreatmentComposer({
   const { t } = useTranslation(['treatments', 'common'])
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
+  // A doctor records only their own work; the server refuses a colleague's name.
+  const onlyMe = useActsOnlyAs('patient:view_all')
   const treatmentTypesQuery = useQuery(treatmentTypeQueries.list(clinicId))
 
   if (doctorsQuery.isPending || treatmentTypesQuery.isPending) {
@@ -72,8 +75,12 @@ export function TreatmentComposer({
   return (
     <TreatmentComposerForm
       clinicId={clinicId}
-      doctors={doctorsQuery.data}
-      initialDoctorId={initialDoctorId ?? null}
+      doctors={
+        onlyMe === null
+          ? doctorsQuery.data
+          : doctorsQuery.data.filter((doctor) => doctor.id === onlyMe)
+      }
+      initialDoctorId={onlyMe ?? initialDoctorId ?? null}
       onOpenChange={onOpenChange}
       open={open}
       patientId={patientId}

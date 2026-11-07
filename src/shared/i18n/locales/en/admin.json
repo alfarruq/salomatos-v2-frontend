@@ -6,7 +6,8 @@
     "services": "Services",
     "clinic": "Clinic",
     "doctorTypes": "Doctor types",
-    "admins": "Admins"
+    "admins": "Admins",
+    "bot": "Telegram bot"
   },
   "doctor": {
     "fullName": "Full name",

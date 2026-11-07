@@ -14,6 +14,7 @@ import {
 } from '@/entities/appointment'
 import { doctorQueries } from '@/entities/doctor'
 import { defaultPatientFilters, patientQueries } from '@/entities/patient'
+import { useActsOnlyAs } from '@/entities/session'
 import { servicesForSpecialty, treatmentTypeQueries } from '@/entities/treatment-type'
 import { ApiError } from '@/shared/api/errors'
 import type { CalendarDate } from '@/shared/lib/calendarDate'
@@ -86,10 +87,17 @@ export function CreateAppointmentDialog({
   const { mutate, isPending } = useCreateAppointment(clinicId)
 
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
-    value: doctor.id,
-    label: doctor.fullName,
-  }))
+  // A doctor books only their own calendar; the front desk books anyone's.
+  const onlyMe = useActsOnlyAs('appointment:view_all')
+  const doctorOptions = (doctorsQuery.data ?? [])
+    .filter((doctor) => onlyMe === null || doctor.id === onlyMe)
+    .map((doctor) => ({ value: doctor.id, label: doctor.fullName }))
+
+  useEffect(() => {
+    if (open && onlyMe !== null && form.getValues('doctorId') === '') {
+      form.setValue('doctorId', onlyMe)
+    }
+  }, [open, onlyMe, form])
 
   /*
    * Same rule as `features/treatment-composer`: the doctor's specialty narrows
