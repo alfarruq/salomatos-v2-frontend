@@ -6,7 +6,8 @@
     "services": "Услуги",
     "clinic": "Клиника",
     "doctorTypes": "Типы врачей",
-    "admins": "Администраторы"
+    "admins": "Администраторы",
+    "bot": "Telegram-бот"
   },
   "doctor": {
     "fullName": "Ф. И. О.",

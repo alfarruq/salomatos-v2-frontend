@@ -1,0 +1,24 @@
+{
+  "title": "Telegram bot",
+  "hint": "This login and password sign in to the Telegram bot.",
+  "login": "Login",
+  "password": "Password",
+  "passwordUnavailable": "Unavailable — issue a new password",
+  "copy": "Copy",
+  "copied": "Copied",
+  "copyFailed": "Could not copy",
+  "linked": "Signed in to the bot",
+  "notLinked": "Not signed in yet",
+  "error": "Could not load the bot login",
+  "open": "Bot login",
+  "mine": "My bot login",
+  "mineHint": "Every day the bot sends the daily report at 20:00, and doctors their day's appointments at 07:00.",
+  "reset": {
+    "open": "New password",
+    "title": "Issue a new password?",
+    "description": "The old password stops working and the current Telegram sign-in is closed.",
+    "confirm": "Issue new password",
+    "success": "New password issued",
+    "error": "Could not issue a new password"
+  }
+}

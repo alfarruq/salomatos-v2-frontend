@@ -54,6 +54,7 @@ const OWNER_PERMISSIONS = [
   'patient:view_all',
   'patient:manage',
   'patient:archive',
+  'patient:bot_access',
   'appointment:view',
   'appointment:view_all',
   'appointment:manage',
@@ -103,6 +104,7 @@ const DOCTOR_PERMISSIONS = [
   'procedure:view',
   'procedure:manage',
   'payment:view',
+  'patient:bot_access',
   // Their own figures only: the server narrows both to the caller.
   'statistics:view',
   'payroll:view_own',

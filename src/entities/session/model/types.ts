@@ -17,6 +17,7 @@ export const PERMISSIONS = [
   'patient:view_all',
   'patient:manage',
   'patient:archive',
+  'patient:bot_access',
   'appointment:view',
   'appointment:view_all',
   'appointment:manage',

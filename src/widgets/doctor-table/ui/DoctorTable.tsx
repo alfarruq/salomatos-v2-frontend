@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { Pencil, Trash2, Wallet } from 'lucide-react'
+import { KeyRound, Pencil, Trash2, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
 import { CompensationTerms } from '@/entities/expense'
 import { useCan } from '@/entities/session'
+import { BotAccessDialog } from '@/features/bot-access-manage'
 import { CompensationDialog } from '@/features/doctor-compensation-set'
 import { CreateDoctorDialog } from '@/features/doctor-create'
 import { DeleteDoctorDialog } from '@/features/doctor-delete'
@@ -42,7 +43,7 @@ const EMPTY = '—'
  * the list fits on a screen.
  */
 export function DoctorTable({ clinicId }: DoctorTableProps) {
-  const { t } = useTranslation(['admin', 'common', 'expenses'])
+  const { t } = useTranslation(['admin', 'common', 'expenses', 'bot'])
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Doctor | null>(null)
   const [settingPay, setSettingPay] = useState<Doctor | null>(null)
@@ -50,6 +51,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
   const seesPay = useCan('payroll:view')
   const managesPay = useCan('payroll:manage')
   const [deleting, setDeleting] = useState<Doctor | null>(null)
+  const [showingBot, setShowingBot] = useState<Doctor | null>(null)
 
   const query = useQuery(doctorQueries.list(clinicId))
 
@@ -133,6 +135,14 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
                         </Button>
                       ) : null}
                       <Button
+                        aria-label={`${t('bot:open')} — ${doctor.fullName}`}
+                        onClick={() => setShowingBot(doctor)}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        <KeyRound aria-hidden="true" className="size-4" />
+                      </Button>
+                      <Button
                         aria-label={`${t('common:action.edit')} — ${doctor.fullName}`}
                         onClick={() => setEditing(doctor)}
                         size="sm"
@@ -177,6 +187,18 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
             if (!open) setSettingPay(null)
           }}
           open
+        />
+      )}
+
+      {showingBot === null ? null : (
+        <BotAccessDialog
+          clinicId={clinicId}
+          name={showingBot.fullName}
+          onOpenChange={(open) => {
+            if (!open) setShowingBot(null)
+          }}
+          open
+          target={{ kind: 'staff', id: showingBot.id }}
         />
       )}
 
