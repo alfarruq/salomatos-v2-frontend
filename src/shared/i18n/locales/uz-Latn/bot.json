@@ -20,5 +20,6 @@
     "confirm": "Yangi parol berish",
     "success": "Yangi parol berildi",
     "error": "Yangi parol berib bo'lmadi"
-  }
+  },
+  "show": "Login va parolni ko'rsatish"
 }

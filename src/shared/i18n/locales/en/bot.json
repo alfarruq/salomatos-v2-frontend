@@ -20,5 +20,6 @@
     "confirm": "Issue new password",
     "success": "New password issued",
     "error": "Could not issue a new password"
-  }
+  },
+  "show": "Show login and password"
 }

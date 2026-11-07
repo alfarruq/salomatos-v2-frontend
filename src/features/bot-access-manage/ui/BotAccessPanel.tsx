@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { KeyRound } from 'lucide-react'
+import { Eye, KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BotAccessDetails, type BotAccessTarget, botAccessQueries } from '@/entities/bot-access'
@@ -19,7 +19,10 @@ export interface BotAccessPanelProps {
 export function BotAccessPanel({ clinicId, target }: BotAccessPanelProps) {
   const { t } = useTranslation(['bot', 'common'])
   const [isConfirmOpen, setConfirmOpen] = useState(false)
-  const query = useQuery(botAccessQueries.detail(clinicId, target))
+  // Fetched on request only: every read is audited on the server, and a
+  // password should not sit on screen for anyone walking past the desk.
+  const [isRevealed, setRevealed] = useState(false)
+  const query = useQuery({ ...botAccessQueries.detail(clinicId, target), enabled: isRevealed })
   const reset = useResetBotAccess(clinicId)
 
   const confirmReset = () => {
@@ -27,6 +30,7 @@ export function BotAccessPanel({ clinicId, target }: BotAccessPanelProps) {
     reset.mutate(target, {
       onSuccess: () => {
         setConfirmOpen(false)
+        setRevealed(true)
         toast.success(t('bot:reset.success'))
       },
       onError: () => toast.error(t('bot:reset.error')),
@@ -35,26 +39,41 @@ export function BotAccessPanel({ clinicId, target }: BotAccessPanelProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <QueryBoundary
-        error={({ retry }) => (
-          <ErrorState
-            description={t('common:error.pageBody')}
-            retryLabel={t('common:action.retry')}
-            title={t('bot:error')}
-            {...(retry === undefined ? {} : { onRetry: retry })}
-          />
-        )}
-        isEmpty={() => false}
-        loading={
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-10 w-40" />
-            <Skeleton className="h-10 w-40" />
-          </div>
-        }
-        query={query}
-      >
-        {(access) => <BotAccessDetails access={access} />}
-      </QueryBoundary>
+      {isRevealed ? null : (
+        <div>
+          <Button
+            iconLeft={<Eye aria-hidden="true" className="size-4" />}
+            onClick={() => setRevealed(true)}
+            size="sm"
+            variant="secondary"
+          >
+            {t('bot:show')}
+          </Button>
+        </div>
+      )}
+
+      {isRevealed ? (
+        <QueryBoundary
+          error={({ retry }) => (
+            <ErrorState
+              description={t('common:error.pageBody')}
+              retryLabel={t('common:action.retry')}
+              title={t('bot:error')}
+              {...(retry === undefined ? {} : { onRetry: retry })}
+            />
+          )}
+          isEmpty={() => false}
+          loading={
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-10 w-40" />
+              <Skeleton className="h-10 w-40" />
+            </div>
+          }
+          query={query}
+        >
+          {(access) => <BotAccessDetails access={access} />}
+        </QueryBoundary>
+      ) : null}
 
       {target.kind === 'mine' ? null : (
         <div>
