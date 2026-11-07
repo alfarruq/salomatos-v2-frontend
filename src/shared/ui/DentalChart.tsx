@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import type { KeyboardEvent, MouseEvent } from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { springs, useMotionDisabled, useTransition } from '@/shared/lib/motion'
 
@@ -31,6 +31,18 @@ export interface ToothStatusDef {
   strokeClassName: string
   /** Shown in the native tooltip and the aria-label. */
   label?: string
+  /**
+   * Diagonal stripes over the fill, drawn with `strokeClassName`. A state told
+   * apart by colour alone is lost on a colour-blind reader, so a second state
+   * of the same chart should carry a pattern.
+   */
+  hatched?: boolean
+  /** A small badge at the tooth's centre: a tick for finished work, a clock for work under way. */
+  marker?: 'check' | 'clock'
+  /** Fill utility of the marker's disc, e.g. `"fill-success"`. Required with `marker`. */
+  markerClassName?: string
+  /** Fill/text utility for the FDI number of a tooth in this state, e.g. `"fill-success"`. */
+  numberClassName?: string
 }
 
 export interface ToothMeta {
@@ -63,6 +75,8 @@ export interface DentalChartProps {
   hiddenTeeth?: FDI[]
   showNumbers?: boolean
   showQuadrantLines?: boolean
+  /** Writes `labels.upper` / `labels.lower` inside each arch. Arch layout only. */
+  showJawLabels?: boolean
   /**
    * Caps how wide the chart may grow, so it stays readable instead of
    * stretching across a large screen. Any CSS length; default 440px.
@@ -375,6 +389,8 @@ interface ToothProps {
   labels: DentalChartLabels
   /** Mount stagger order. */
   order: number
+  /** `url(#…)` of this status's stripe pattern, when it has one. */
+  hatchFill?: string
   onClick?: DentalChartProps['onToothClick']
   onHover?: DentalChartProps['onToothHover']
 }
@@ -389,6 +405,7 @@ function Tooth({
   showNumber,
   labels,
   order,
+  hatchFill,
   onClick,
   onHover,
 }: ToothProps) {
@@ -491,6 +508,10 @@ function Tooth({
           transition={crownTransition}
         />
 
+        {hatchFill === undefined ? null : (
+          <path className="pointer-events-none" d={shape.outline} fill={hatchFill} />
+        )}
+
         {/* Surface fissures — same stroke as the crown's own outline. */}
         <path
           className={cn('pointer-events-none fill-none opacity-55', strokeClassName)}
@@ -498,6 +519,23 @@ function Tooth({
           strokeLinecap="round"
           strokeWidth={0.9}
         />
+
+        {status?.marker === undefined ? null : (
+          <g className="pointer-events-none" transform={`rotate(${-transform.angle})`}>
+            <circle className={status.markerClassName} r={4.4} />
+            <path
+              className="fill-none stroke-surface"
+              d={
+                status.marker === 'check'
+                  ? 'M -2 0 L -0.6 1.4 L 2.1 -1.4'
+                  : 'M 0 -2.3 L 0 0 L 1.6 1'
+              }
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.2}
+            />
+          </g>
+        )}
 
         {/* Invisible hit area — guarantees a comfortable touch target. */}
         <rect
@@ -512,7 +550,12 @@ function Tooth({
       {/* FDI number — outside the arc and always upright. */}
       {showNumber && (
         <text
-          className="pointer-events-none fill-text-tertiary text-[9px] tabular-nums select-none"
+          className={cn(
+            'pointer-events-none text-[9px] tabular-nums select-none',
+            status?.numberClassName === undefined
+              ? 'fill-text-tertiary'
+              : cn(status.numberClassName, 'font-semibold'),
+          )}
           dominantBaseline="middle"
           textAnchor="middle"
           x={transform.labelX}
@@ -537,12 +580,16 @@ export function DentalChart({
   hiddenTeeth = [],
   showNumbers = true,
   showQuadrantLines = true,
+  showJawLabels = false,
   maxWidth = 440,
   onToothClick,
   onToothHover,
   className,
 }: DentalChartProps) {
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses])
+  // Pattern ids are document-global; two charts on one page must not share them.
+  const patternPrefix = useId().replace(/:/g, '')
+  const hatchedStatuses = statuses.filter((s) => s.hatched === true)
 
   const selected = useMemo(() => new Set(selectedTeeth), [selectedTeeth])
   const disabled = useMemo(() => new Set(disabledTeeth), [disabledTeeth])
@@ -561,6 +608,34 @@ export function DentalChart({
       style={maxWidth === 'none' ? undefined : { maxWidth }}
       viewBox={`0 0 ${VIEWBOX.width} ${VIEWBOX.height}`}
     >
+      {hatchedStatuses.length === 0 ? null : (
+        <defs>
+          {hatchedStatuses.map((s) => (
+            <pattern
+              height={3.2}
+              id={`${patternPrefix}-${s.id}`}
+              key={s.id}
+              patternTransform="rotate(45)"
+              patternUnits="userSpaceOnUse"
+              width={3.2}
+            >
+              <line className={s.strokeClassName} strokeWidth={1.1} x1={0} x2={0} y1={0} y2={3.2} />
+            </pattern>
+          ))}
+        </defs>
+      )}
+
+      {showJawLabels && layout === 'arch' ? (
+        <g className="pointer-events-none fill-text-tertiary text-[7px] tracking-wider uppercase select-none">
+          <text textAnchor="middle" x={ARCH.cx} y={ARCH.upperCy - 14}>
+            {labels.upper}
+          </text>
+          <text textAnchor="middle" x={ARCH.cx} y={ARCH.lowerCy + 18}>
+            {labels.lower}
+          </text>
+        </g>
+      ) : null}
+
       {/* Quadrant separators: vertical midline plus the inter-jaw line. */}
       {showQuadrantLines && (
         <g className="text-border-strong" strokeDasharray="3 4" strokeWidth={1}>
@@ -596,6 +671,9 @@ export function DentalChart({
             {...(onToothHover === undefined ? {} : { onHover: onToothHover })}
             {...(status === undefined ? {} : { status })}
             {...(statusId === undefined ? {} : { statusId })}
+            {...(status?.hatched === true
+              ? { hatchFill: `url(#${patternPrefix}-${status.id})` }
+              : {})}
           />
         )
       })}

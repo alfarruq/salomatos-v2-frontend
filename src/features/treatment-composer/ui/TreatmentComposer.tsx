@@ -184,6 +184,7 @@ function TreatmentComposerForm({
         treatmentTypeName: type.name,
         unitPrice: String(type.price),
         discountPercent: '',
+        inProgress: false,
       },
     ])
   }

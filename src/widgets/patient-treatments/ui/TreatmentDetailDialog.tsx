@@ -2,15 +2,18 @@ import { useTranslation } from 'react-i18next'
 import { Can } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { TreatmentStatusBadge } from '@/entities/treatment'
+import { CompleteTreatmentButton } from '@/features/treatment-complete'
 import { formatFixedDate } from '@/shared/lib/calendarDate'
 import { formatSom } from '@/shared/lib/money'
 import { Button, Card, Dialog } from '@/shared/ui'
 
 export interface TreatmentDetailDialogProps {
+  clinicId: string
   treatment: Treatment
   open: boolean
   onOpenChange: (open: boolean) => void
   onVoid: () => void
+  onCompleted: () => void
 }
 
 /** Shown when the server had nothing to send for a field. */
@@ -21,10 +24,12 @@ const EMPTY = '—'
  * table and from a tooth on the chart.
  */
 export function TreatmentDetailDialog({
+  clinicId,
   treatment,
   open,
   onOpenChange,
   onVoid,
+  onCompleted,
 }: TreatmentDetailDialogProps) {
   const { t, i18n } = useTranslation(['treatments', 'common'])
   const money = (amount: number) => formatSom(amount, i18n.language, t('common:currency.som'))
@@ -32,13 +37,24 @@ export function TreatmentDetailDialog({
   return (
     <Dialog
       footer={
-        treatment.status === 'done' ? (
-          <Can permission="procedure:void">
-            <Button onClick={onVoid} variant="secondary">
-              {t('treatments:void.confirm')}
-            </Button>
-          </Can>
-        ) : null
+        treatment.status === 'voided' ? null : (
+          <>
+            <Can permission="procedure:void">
+              <Button onClick={onVoid} variant="secondary">
+                {t('treatments:void.confirm')}
+              </Button>
+            </Can>
+            {treatment.status === 'inProgress' ? (
+              <Can permission="procedure:manage">
+                <CompleteTreatmentButton
+                  clinicId={clinicId}
+                  onCompleted={onCompleted}
+                  treatmentId={treatment.id}
+                />
+              </Can>
+            ) : null}
+          </>
+        )
       }
       onOpenChange={onOpenChange}
       open={open}

@@ -1115,13 +1115,26 @@ export const handlers = [
 
   voidAction('procedures', 'procedures', 'procedure:void'),
 
+  // `ProcedureViewSet.complete`: multi-visit work is finished; the charge is untouched.
+  http.post('/api/v1/procedures/:id/complete/', ({ request, params }) => {
+    const scope = guard(request, 'procedure:manage')
+    if (scope instanceof Response) return scope
+    const row = findRow('procedures', params.id, scope)
+    if (row === null) return notFound()
+    if (row.voided_at !== null || row.status === 'completed') {
+      return HttpResponse.json({ detail: 'Already completed.' }, { status: 400 })
+    }
+    Object.assign(row, { status: 'completed', completed_at: new Date().toISOString() })
+    return HttpResponse.json(row)
+  }),
+
   ...resource(
     'procedures',
     'procedures',
     { view: 'procedure:view', manage: 'procedure:manage' },
     {
       filter: (row, params) =>
-        byParam(row, params, 'patient', 'doctor', 'service') &&
+        byParam(row, params, 'patient', 'doctor', 'service', 'status') &&
         (!params.has('voided') || (params.get('voided') === 'true') === (row.voided_at !== null)),
       create: (body, scope) => {
         const missing = required(body, ['patient', 'service'])
@@ -1150,6 +1163,9 @@ export const handlers = [
           service_name: service?.name ?? '',
           patient_name: patientNameOf(body.patient),
           performed_at: body.performed_at ?? new Date().toISOString(),
+          status: body.status ?? 'completed',
+          completed_at:
+            body.status === 'in_progress' ? null : (body.performed_at ?? new Date().toISOString()),
           voided_at: null,
           void_reason: '',
         }

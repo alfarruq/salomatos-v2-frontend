@@ -9,6 +9,7 @@ export interface NewTreatmentPayload {
   tooth: number | null
   unit_price: string
   discount_percent: string
+  status: 'in_progress' | 'completed'
   notes: string
 }
 
@@ -41,6 +42,7 @@ export function toNewTreatmentPayload(
     tooth: row.toothNumber,
     unit_price: String(priceOf(row)),
     discount_percent: String(discountOf(row)),
+    status: row.inProgress ? 'in_progress' : 'completed',
     notes: fields.notes,
   }
 }

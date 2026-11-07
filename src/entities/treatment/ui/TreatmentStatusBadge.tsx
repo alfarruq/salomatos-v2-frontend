@@ -8,6 +8,7 @@ export interface TreatmentStatusBadgeProps {
 
 const tones: Record<TreatmentStatus, BadgeTone> = {
   done: 'success',
+  inProgress: 'warning',
   voided: 'neutral',
 }
 

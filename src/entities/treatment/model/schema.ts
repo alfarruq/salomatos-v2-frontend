@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { pageSchema } from '@/shared/api/pagination'
 import { clinicDayOf } from '@/shared/lib/datetime'
-import type { ToothSurface, Treatment } from './types'
+import type { ToothSurface, Treatment, TreatmentStatus } from './types'
 
 const optionalText = v.pipe(
   v.optional(v.nullable(v.string()), null),
@@ -38,6 +38,8 @@ export const treatmentSchema = v.object({
   discount_percent: v.optional(money, '0'),
   total: money,
   performed_at: v.pipe(v.string(), v.isoTimestamp()),
+  status: v.optional(v.picklist(['in_progress', 'completed']), 'completed'),
+  completed_at: v.optional(v.nullable(v.string()), null),
   notes: optionalText,
   voided_at: v.optional(v.nullable(v.string()), null),
   void_reason: optionalText,
@@ -46,6 +48,12 @@ export const treatmentSchema = v.object({
 export const treatmentPageSchema = pageSchema(treatmentSchema)
 
 export type TreatmentResponse = v.InferOutput<typeof treatmentSchema>
+
+/** Voided wins: a voided line is a mistake, whatever stage the work had reached. */
+function statusOf(response: TreatmentResponse): TreatmentStatus {
+  if (response.voided_at !== null) return 'voided'
+  return response.status === 'in_progress' ? 'inProgress' : 'done'
+}
 
 export function toTreatment(response: TreatmentResponse): Treatment {
   return {
@@ -65,7 +73,8 @@ export function toTreatment(response: TreatmentResponse): Treatment {
     performedAt: response.performed_at,
     startDate: clinicDayOf(response.performed_at),
     notes: response.notes,
-    status: response.voided_at === null ? 'done' : 'voided',
+    status: statusOf(response),
+    completedAt: response.completed_at,
     voidReason: response.void_reason,
   }
 }

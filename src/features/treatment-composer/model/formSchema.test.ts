@@ -11,6 +11,7 @@ const row: TreatmentRow = {
   treatmentTypeName: 'Implantatsiya',
   unitPrice: '1,200,000',
   discountPercent: '10',
+  inProgress: false,
 }
 
 describe('toNewTreatmentPayload', () => {
@@ -22,6 +23,7 @@ describe('toNewTreatmentPayload', () => {
       tooth: 16,
       unit_price: '1200000',
       discount_percent: '10',
+      status: 'completed',
       notes: 'Izoh',
     })
   })

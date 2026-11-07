@@ -58,10 +58,16 @@
     "patientNoResults": "Bunday bemor topilmadi",
     "rowDiscount": "Chegirma, %",
     "rowTotal": "Jami",
-    "noServices": "Narxlar ro'yxatida bu shifokor uchun hali xizmat yo'q. Ularni «Boshqaruv → Xizmatlar» bo'limida qo'shing."
+    "noServices": "Narxlar ro'yxatida bu shifokor uchun hali xizmat yo'q. Ularni «Boshqaruv → Xizmatlar» bo'limida qo'shing.",
+    "rowInProgress": "Jarayonda",
+    "rowStage": "Holat"
   },
   "chart": {
-    "treated": "Davolangan"
+    "treated": "Davolangan",
+    "inProgress": "Jarayonda",
+    "untouched": "Ishlanmagan",
+    "patientRight": "Bemorning o'ng tomoni",
+    "patientLeft": "Bemorning chap tomoni"
   },
   "list": {
     "title": "Muolajalar",
@@ -91,7 +97,8 @@
   },
   "status": {
     "done": "Bajarildi",
-    "voided": "Yaroqsiz"
+    "voided": "Yaroqsiz",
+    "inProgress": "Jarayonda"
   },
   "void": {
     "title": "Muolajani yaroqsiz deb belgilash",
@@ -100,5 +107,11 @@
     "confirm": "Yaroqsiz deb belgilash",
     "failed": "Muolajani yaroqsiz deb belgilab bo'lmadi. Qayta urinib ko'ring.",
     "forbidden": "Muolajani yaroqsiz deb belgilashga ruxsatingiz yo'q."
+  },
+  "complete": {
+    "confirm": "Tugallash",
+    "done": "Muolaja tugallandi",
+    "failed": "Muolajani tugallab bo'lmadi. Qayta urinib ko'ring.",
+    "forbidden": "Faqat o'zingiz kiritgan muolajani tugallay olasiz."
   }
 }
