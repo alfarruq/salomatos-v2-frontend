@@ -11,12 +11,15 @@ import {
   type ToothStatusDef,
 } from '@/shared/ui'
 import { summarizeTeeth } from '../model/toothSummary'
+import { ToothHistoryPanel } from './ToothHistoryPanel'
 import { TreatmentDetailDialog } from './TreatmentDetailDialog'
 
 export interface TreatmentToothChartProps {
   clinicId: string
   patientId: string
   onVoid: (treatment: Treatment) => void
+  /** Opens the composer from the tooth's history panel. */
+  onCreate?: () => void
 }
 
 interface HoverState {
@@ -30,12 +33,18 @@ interface HoverState {
  * query as the history table, so both tabs share one request and one cache
  * entry.
  */
-export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentToothChartProps) {
+export function TreatmentToothChart({
+  clinicId,
+  patientId,
+  onVoid,
+  onCreate,
+}: TreatmentToothChartProps) {
   const { t } = useTranslation(['treatments', 'patients', 'common'])
   const query = useQuery(treatmentQueries.list(clinicId, patientId))
   const containerRef = useRef<HTMLDivElement>(null)
   const [hover, setHover] = useState<HoverState | null>(null)
   const [detailTreatment, setDetailTreatment] = useState<Treatment | null>(null)
+  const [selectedTooth, setSelectedTooth] = useState<string | null>(null)
 
   const summary = useMemo(() => summarizeTeeth(query.data ?? []), [query.data])
 
@@ -86,11 +95,10 @@ export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentTo
     setHover({ fdi, x: rect.left + rect.width / 2, y: rect.top })
   }
 
+  // A second click on the same tooth lets it go, so the chart can be read clean again.
   function handleClick(fdi: string) {
-    const treatment = summary.latest[fdi]
-    if (treatment === undefined) return
     setHover(null)
-    setDetailTreatment(treatment)
+    setSelectedTooth((current) => (current === fdi ? null : fdi))
   }
 
   if (query.isPending) return <Skeleton className="mx-auto aspect-[300/192] w-full max-w-md" />
@@ -142,24 +150,37 @@ export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentTo
         </ul>
       </div>
 
-      <div className="mx-auto flex w-full max-w-[560px] flex-col gap-1" ref={containerRef}>
-        <DentalChart
-          className="w-full"
-          labels={labels}
-          maxWidth="none"
-          showJawLabels
-          onToothClick={(fdi) => handleClick(fdi)}
-          onToothHover={handleHover}
-          statuses={statuses}
-          values={summary.values}
-        />
-        {/* FDI charts face the patient: their right is the viewer's left. */}
-        <div
-          aria-hidden="true"
-          className="flex justify-between text-caption tracking-wider text-text-tertiary uppercase"
-        >
-          <span>{t('treatments:chart.patientRight')}</span>
-          <span>{t('treatments:chart.patientLeft')}</span>
+      <div className="@container">
+        <div className="grid gap-6 @3xl:grid-cols-[minmax(0,1fr)_300px] @3xl:items-start">
+          <div className="mx-auto flex w-full max-w-[560px] flex-col gap-1" ref={containerRef}>
+            <DentalChart
+              className="w-full"
+              labels={labels}
+              maxWidth="none"
+              showJawLabels
+              onToothClick={(fdi) => handleClick(fdi)}
+              onToothHover={handleHover}
+              selectedTeeth={selectedTooth === null ? [] : [selectedTooth]}
+              statuses={statuses}
+              values={summary.values}
+            />
+            {/* FDI charts face the patient: their right is the viewer's left. */}
+            <div
+              aria-hidden="true"
+              className="flex justify-between text-caption tracking-wider text-text-tertiary uppercase"
+            >
+              <span>{t('treatments:chart.patientRight')}</span>
+              <span>{t('treatments:chart.patientLeft')}</span>
+            </div>
+          </div>
+
+          <ToothHistoryPanel
+            clinicId={clinicId}
+            onOpen={setDetailTreatment}
+            tooth={selectedTooth}
+            treatments={selectedTooth === null ? [] : (summary.history[selectedTooth] ?? [])}
+            {...(onCreate === undefined ? {} : { onCreate })}
+          />
         </div>
       </div>
 

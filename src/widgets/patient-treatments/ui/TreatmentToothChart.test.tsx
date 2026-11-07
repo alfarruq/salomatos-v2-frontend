@@ -91,15 +91,37 @@ describe('TreatmentToothChart', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
-  it("opens the tooth's latest procedure on click, and nothing for an untreated one", async () => {
+  it("lists the tooth's history beside the chart, voided lines included, newest first", async () => {
+    const { container } = renderChart()
+    await screen.findByText('Davolangan')
+    expect(screen.getByText("Tarixini ko'rish uchun tishni tanlang.")).toBeInTheDocument()
+
+    await userEvent.click(tooth(container, '16'))
+    const items = screen.getAllByRole('listitem').filter((item) => item.closest('section'))
+    expect(items.map((item) => item.textContent)).toEqual([
+      expect.stringContaining('Эндо Тиадент'),
+      expect.stringContaining('Plomba'),
+    ])
+
+    await userEvent.click(tooth(container, '26'))
+    expect(screen.getByText('Plomba')).toHaveClass('line-through')
+
+    await userEvent.click(tooth(container, '11'))
+    expect(screen.getByText("Bu tishda hali muolaja yo'q.")).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens a treatment from the history, and a second click lets the tooth go', async () => {
     const { container } = renderChart()
     await screen.findByText('Davolangan')
 
-    await userEvent.click(tooth(container, '11'))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-
-    await userEvent.click(tooth(container, '16'))
+    await userEvent.click(tooth(container, '21'))
+    await userEvent.click(screen.getByRole('button', { name: 'Batafsil' }))
     const dialog = await screen.findByRole('dialog', { name: "Muolaja ma'lumotlari" })
-    expect(dialog).toHaveTextContent('Эндо Тиадент')
+    expect(dialog).toHaveTextContent('Tozalash')
+    await userEvent.keyboard('{Escape}')
+
+    await userEvent.click(tooth(container, '21'))
+    expect(screen.getByText("Tarixini ko'rish uchun tishni tanlang.")).toBeInTheDocument()
   })
 })
