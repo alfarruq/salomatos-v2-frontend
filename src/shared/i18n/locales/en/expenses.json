@@ -189,7 +189,8 @@
     "totals": {
       "accrued": "Accrued",
       "paid": "Paid out",
-      "balance": "Owed"
+      "balance": "Owed",
+      "pendingShare": "In progress"
     },
     "table": {
       "title": "By doctor",
@@ -202,7 +203,8 @@
       "accruedPaid": "Accrued {{accrued}} · paid {{paid}}",
       "opening": "From earlier months: {{amount}}",
       "balanceShort": "Balance: {{amount}}",
-      "billedCollected": "billed {{billed}} · collected {{collected}}"
+      "billedCollected": "billed {{billed}} · collected {{collected}}",
+      "pending": "In progress: {{amount}}"
     },
     "terms": {
       "none": "No terms set",
@@ -230,7 +232,11 @@
       "failed": "Could not save the terms. Please try again.",
       "history": "Terms history",
       "noHistory": "No terms set yet.",
-      "since": "From {{month}}:"
+      "since": "From {{month}}:",
+      "salaryOn": "Monthly salary",
+      "percentOn": "Percent of treatment work",
+      "noneYet": "No pay agreed yet. You can set it later in the doctors list.",
+      "hiringHint": "Salary, percent or both. Applies from this month."
     },
     "pay": {
       "open": "Pay",

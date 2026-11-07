@@ -8,13 +8,22 @@ import {
   toDoctor,
   toDoctorPayload,
 } from '@/entities/doctor'
+import type { PayTermsPayload } from '@/entities/expense'
 import { httpClient } from '@/shared/api/httpClient'
 
-async function createDoctor(input: DoctorFormInput): Promise<Doctor> {
+export interface CreateDoctorInput {
+  doctor: DoctorFormInput
+  /** Agreed pay from this month on; `null` leaves it for later (owner only on the server). */
+  compensation: PayTermsPayload | null
+}
+
+async function createDoctor({ doctor, compensation }: CreateDoctorInput): Promise<Doctor> {
+  const body =
+    compensation === null ? toDoctorPayload(doctor) : { ...toDoctorPayload(doctor), compensation }
   const raw = await httpClient<unknown>('v1/staff/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(toDoctorPayload(input)),
+    body: JSON.stringify(body),
   })
 
   // The server assigns `role` and `clinic` itself and answers with the list
@@ -32,6 +41,7 @@ export function useCreateDoctor(clinicId: string) {
 
   return useMutation({
     mutationFn: createDoctor,
+    retry: false,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: doctorKeys.scope(clinicId) })
     },

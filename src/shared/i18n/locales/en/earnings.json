@@ -1,0 +1,33 @@
+{
+  "title": "My earnings",
+  "subtitle": "What you have earned this month and what is waiting on patients' payments.",
+  "terms": "Your terms:",
+  "error": "Could not load your earnings",
+  "totals": {
+    "earned": "Completed",
+    "earnedHint": "Salary and your share of paid work",
+    "pending": "In progress",
+    "pendingHint": "Your share once patients pay",
+    "paid": "Paid to you",
+    "balance": "Owed to you"
+  },
+  "lines": {
+    "title": "Your treatments",
+    "description": "This month's work, and earlier work still unpaid.",
+    "filter": "Status",
+    "empty": "No treatments",
+    "emptyDescription": "Nothing here for this month.",
+    "date": "Date",
+    "patient": "Patient",
+    "service": "Service",
+    "tooth": "Tooth",
+    "total": "Price",
+    "unpaid": "Unpaid",
+    "status": "Status"
+  },
+  "status": {
+    "all": "All",
+    "completed": "Completed (paid)",
+    "in_progress": "In progress"
+  }
+}

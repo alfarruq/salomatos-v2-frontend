@@ -18,7 +18,7 @@ afterEach(() => {
 afterAll(() => server.close())
 
 /** A client of its own — see `CreatePatientDialog.test.tsx` for why. */
-function renderDialog(onCreated = vi.fn()) {
+function renderDialog(onCreated = vi.fn(), canSetPay = false) {
   const onOpenChange = vi.fn()
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -29,6 +29,7 @@ function renderDialog(onCreated = vi.fn()) {
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
           <CreateDoctorDialog
+            canSetPay={canSetPay}
             clinicId="clinic:test"
             onCreated={onCreated}
             onOpenChange={onOpenChange}
@@ -53,7 +54,8 @@ function captureStaffPost(): { body: unknown } {
 }
 
 describe('CreateDoctorDialog', () => {
-  beforeEach(() => signInAs('admin'))
+  // Staff are managed by the owner alone.
+  beforeEach(() => signInAs('owner'))
 
   it('opens with "Stomatolog" preselected, most clinics being dental', async () => {
     renderDialog()
@@ -150,5 +152,73 @@ describe('CreateDoctorDialog', () => {
 
     expect(await screen.findByText("Parol kamida 8 belgidan iborat bo'lsin")).toBeInTheDocument()
     expect(onCreated).not.toHaveBeenCalled()
+  })
+
+  describe('pay terms', () => {
+    async function fillDoctor() {
+      await userEvent.type(await screen.findByLabelText('F. I. Sh.'), 'Yangi Shifokor')
+      await userEvent.type(screen.getByLabelText('Telefon raqami'), '935550099')
+      await userEvent.type(screen.getByLabelText('Login'), 'yangi.shifokor')
+      await userEvent.type(screen.getByLabelText('Parol'), 'maxfiy-parol')
+    }
+    const submit = () => userEvent.click(screen.getByRole('button', { name: "Shifokor qo'shish" }))
+
+    it('is hidden from someone who does not agree pay', async () => {
+      renderDialog()
+      await screen.findByLabelText('F. I. Sh.')
+      expect(screen.queryByRole('switch', { name: 'Oylik maosh' })).not.toBeInTheDocument()
+    })
+
+    it('sends salary and percent together', async () => {
+      const sent = captureStaffPost()
+      renderDialog(vi.fn(), true)
+      await fillDoctor()
+
+      await userEvent.click(screen.getByRole('switch', { name: 'Oylik maosh' }))
+      await userEvent.type(screen.getByLabelText("Oklad, so'm/oy"), '3000000')
+      await userEvent.click(screen.getByRole('switch', { name: 'Davolash ishlaridan foiz' }))
+      await userEvent.type(screen.getByLabelText('Foiz, %'), '50')
+      await submit()
+
+      await waitFor(() =>
+        expect(sent.body).toMatchObject({
+          compensation: { percent: 50, fixed: 3000000, base: 'collected' },
+        }),
+      )
+    })
+
+    it('sends a percent alone, and nothing when both are off', async () => {
+      const sent = captureStaffPost()
+      const { onCreated } = renderDialog(vi.fn(), true)
+      await fillDoctor()
+
+      await userEvent.click(screen.getByRole('switch', { name: 'Davolash ishlaridan foiz' }))
+      await userEvent.type(screen.getByLabelText('Foiz, %'), '40')
+      await submit()
+      await waitFor(() =>
+        expect(sent.body).toMatchObject({ compensation: { percent: 40, fixed: 0 } }),
+      )
+      await waitFor(() => expect(onCreated).toHaveBeenCalledOnce())
+
+      // The form is reset, both switches off again: a doctor without terms yet.
+      await userEvent.type(screen.getByLabelText('F. I. Sh.'), 'Ikkinchi Shifokor')
+      await userEvent.type(screen.getByLabelText('Telefon raqami'), '935550098')
+      await userEvent.type(screen.getByLabelText('Login'), 'ikkinchi.shifokor')
+      await userEvent.type(screen.getByLabelText('Parol'), 'maxfiy-parol')
+      await submit()
+      await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(2))
+      expect(sent.body).not.toHaveProperty('compensation')
+    })
+
+    it('refuses a switched-on half left empty', async () => {
+      const { onCreated } = renderDialog(vi.fn(), true)
+      await fillDoctor()
+
+      await userEvent.click(screen.getByRole('switch', { name: 'Oylik maosh' }))
+      await submit()
+
+      expect(await screen.findByText("Bu maydon to'ldirilishi shart")).toBeInTheDocument()
+      expect(onCreated).not.toHaveBeenCalled()
+    })
   })
 })

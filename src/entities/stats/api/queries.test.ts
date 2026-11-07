@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { MOCK_PATIENTS } from '@/shared/api/mocks/fixtures'
+import { MOCK_PATIENTS, MOCK_USERS, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { rangeOf } from '@/shared/lib/report'
@@ -15,14 +15,21 @@ afterAll(() => server.close())
 describe('statsKeys', () => {
   it('puts the clinic inside every key', () => {
     const range = rangeOf('week', '2026-10-19')
-    expect(statsKeys.overview('clinic:a', range)).toEqual([
+    expect(statsKeys.overview('clinic:a', range, null)).toEqual([
       'clinics',
       'clinic:a',
       'stats',
       'overview',
       range,
+      { doctorId: null },
     ])
-    expect(statsKeys.overview('clinic:a', range)).not.toEqual(statsKeys.overview('clinic:b', range))
+    expect(statsKeys.overview('clinic:a', range, null)).not.toEqual(
+      statsKeys.overview('clinic:b', range, null),
+    )
+    // One doctor's figures are cached apart from everyone's.
+    expect(statsKeys.overview('clinic:a', range, 'doctor:a')).not.toEqual(
+      statsKeys.overview('clinic:a', range, null),
+    )
   })
 })
 
@@ -34,7 +41,7 @@ describe('fetchStatsOverview', () => {
   beforeEach(() => signInAs('owner'))
 
   it('reads counts with the tooth as an FDI string', async () => {
-    const overview = await fetchStatsOverview(august)
+    const overview = await fetchStatsOverview(august, null)
 
     expect(overview.totals).toMatchObject({
       appointments: 1,
@@ -50,7 +57,7 @@ describe('fetchStatsOverview', () => {
   })
 
   it('carries no patient data', async () => {
-    const overview = JSON.stringify(await fetchStatsOverview(august))
+    const overview = JSON.stringify(await fetchStatsOverview(august, null))
 
     for (const patient of MOCK_PATIENTS) {
       expect(overview).not.toContain(patient.full_name)
@@ -58,8 +65,16 @@ describe('fetchStatsOverview', () => {
     }
   })
 
-  it('is refused to a doctor', async () => {
+  it('is refused to the front desk', async () => {
+    signInAs('admin')
+    await expect(fetchStatsOverview(august, null)).rejects.toMatchObject({ kind: 'forbidden' })
+  })
+
+  it('gives a doctor their own figures, whoever they ask for', async () => {
     signInAs('doctor')
-    await expect(fetchStatsOverview(august)).rejects.toMatchObject({ kind: 'forbidden' })
+    const mine = await fetchStatsOverview(august, null)
+    expect(mine.doctors.map((row) => row.doctorId)).toEqual([MOCK_USERS.doctor.memberships[0].id])
+    const asked = await fetchStatsOverview(august, mockId(4, 99))
+    expect(asked.totals).toEqual(mine.totals)
   })
 })

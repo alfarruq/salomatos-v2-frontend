@@ -31,7 +31,8 @@
     "username": "Login",
     "password": "Parol",
     "newPassword": "Yangi parol",
-    "passwordKeep": "Bo'sh qoldirilsa, joriy parol o'zgarmaydi."
+    "passwordKeep": "Bo'sh qoldirilsa, joriy parol o'zgarmaydi.",
+    "pay": "Maosh sharti"
   },
   "service": {
     "name": "Xizmat",

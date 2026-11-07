@@ -45,7 +45,8 @@ async function fillIn(username: string) {
 }
 
 describe('CreateAdministratorDialog', () => {
-  beforeEach(() => signInAs('admin'))
+  // Staff are managed by the owner alone.
+  beforeEach(() => signInAs('owner'))
 
   it('creates an admin membership with the login and password, never a clinic', async () => {
     const captured: { body: unknown } = { body: undefined }

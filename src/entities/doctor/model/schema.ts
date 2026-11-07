@@ -8,6 +8,21 @@ const optionalText = v.pipe(
   v.transform((value) => (value === null || value === '' ? null : value)),
 )
 
+/** DRF sends `DecimalField` as a string; so'm fit a double exactly. */
+const money = v.pipe(
+  v.union([v.string(), v.number()]),
+  v.transform((value) => Number(value)),
+  v.check((value: number) => Number.isFinite(value)),
+)
+
+/** `PayTermsSerializer`: only sent to someone who may see pay, and only for doctors. */
+const payTermsSchema = v.object({
+  percent: money,
+  fixed: money,
+  base: v.picklist(['collected', 'billed']),
+  effective_from: v.string(),
+})
+
 /** `StaffSerializer`, validated at runtime (ADR-006). */
 export const staffSchema = v.object({
   id: v.pipe(v.string(), v.uuid()),
@@ -20,6 +35,7 @@ export const staffSchema = v.object({
   specialty: v.optional(v.nullable(v.string()), null),
   specialty_name: optionalText,
   experience_years: v.optional(v.nullable(v.number()), null),
+  current_compensation: v.optional(v.nullable(payTermsSchema), null),
 })
 
 export const staffPageSchema = pageSchema(staffSchema)
@@ -41,5 +57,14 @@ export function toDoctor(response: DoctorResponse): Doctor {
     doctorTypeName: response.specialty_name,
     experienceYears: response.experience_years,
     isActive: response.is_active,
+    currentPay:
+      response.current_compensation === null
+        ? null
+        : {
+            percent: response.current_compensation.percent,
+            fixed: response.current_compensation.fixed,
+            base: response.current_compensation.base,
+            effectiveFrom: response.current_compensation.effective_from,
+          },
   }
 }

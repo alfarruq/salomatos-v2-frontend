@@ -75,6 +75,8 @@ const OWNER_PERMISSIONS = [
   'payment:manage',
   'payment:void',
   'report:view',
+  'statistics:view',
+  'statistics:view_all',
   'expense:view',
   'expense:manage',
   'expense:void',
@@ -101,11 +103,20 @@ const DOCTOR_PERMISSIONS = [
   'procedure:view',
   'procedure:manage',
   'payment:view',
+  // Their own figures only: the server narrows both to the caller.
+  'statistics:view',
+  'payroll:view_own',
 ]
 const ADMIN_PERMISSIONS = OWNER_PERMISSIONS.filter(
   (p) =>
     ![
       'clinic:manage',
+      // Management (Boshqaruv) and statistics are the owner's.
+      'staff:manage',
+      'service:manage',
+      'specialty:manage',
+      'statistics:view',
+      'statistics:view_all',
       'staff:manage_owners',
       'audit:view',
       'payment:void',

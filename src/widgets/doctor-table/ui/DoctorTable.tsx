@@ -1,12 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
+import { CompensationTerms } from '@/entities/expense'
+import { useCan } from '@/entities/session'
+import { CompensationDialog } from '@/features/doctor-compensation-set'
 import { CreateDoctorDialog } from '@/features/doctor-create'
 import { DeleteDoctorDialog } from '@/features/doctor-delete'
 import { EditDoctorDialog } from '@/features/doctor-edit'
+import { currentMonth } from '@/shared/lib/calendarMonth'
 import {
   Button,
   EmptyState,
@@ -38,9 +42,13 @@ const EMPTY = '—'
  * the list fits on a screen.
  */
 export function DoctorTable({ clinicId }: DoctorTableProps) {
-  const { t } = useTranslation(['admin', 'common'])
+  const { t } = useTranslation(['admin', 'common', 'expenses'])
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Doctor | null>(null)
+  const [settingPay, setSettingPay] = useState<Doctor | null>(null)
+  // UX only: the server leaves terms out of the rows and refuses changes without these.
+  const seesPay = useCan('payroll:view')
+  const managesPay = useCan('payroll:manage')
   const [deleting, setDeleting] = useState<Doctor | null>(null)
 
   const query = useQuery(doctorQueries.list(clinicId))
@@ -76,7 +84,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
         )}
         loading={
           <Table density="compact">
-            <TableSkeleton columns={5} rows={4} />
+            <TableSkeleton columns={seesPay ? 6 : 5} rows={4} />
           </Table>
         }
         query={query}
@@ -90,6 +98,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
                 <TableHead>{t('admin:doctor.type')}</TableHead>
                 <TableHead>{t('admin:doctor.phoneNumber')}</TableHead>
                 <TableHead>{t('admin:doctor.email')}</TableHead>
+                {seesPay ? <TableHead>{t('admin:doctor.pay')}</TableHead> : null}
                 <TableHead align="right">{t('common:action.edit')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -106,8 +115,23 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
                       : `+998-${formatSubscriber(subscriberDigitsOf(doctor.phoneNumber))}`}
                   </TableCell>
                   <TableCell>{doctor.email ?? EMPTY}</TableCell>
+                  {seesPay ? (
+                    <TableCell className="whitespace-normal">
+                      <CompensationTerms compensation={doctor.currentPay} />
+                    </TableCell>
+                  ) : null}
                   <TableCell align="right">
                     <div className="flex justify-end gap-1">
+                      {managesPay ? (
+                        <Button
+                          aria-label={`${t('expenses:payroll.terms.open')} — ${doctor.fullName}`}
+                          onClick={() => setSettingPay(doctor)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <Wallet aria-hidden="true" className="size-4" />
+                        </Button>
+                      ) : null}
                       <Button
                         aria-label={`${t('common:action.edit')} — ${doctor.fullName}`}
                         onClick={() => setEditing(doctor)}
@@ -133,7 +157,28 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
         )}
       </QueryBoundary>
 
-      <CreateDoctorDialog clinicId={clinicId} onOpenChange={setCreateOpen} open={isCreateOpen} />
+      <CreateDoctorDialog
+        canSetPay={managesPay}
+        clinicId={clinicId}
+        onOpenChange={setCreateOpen}
+        open={isCreateOpen}
+      />
+
+      {settingPay === null ? null : (
+        <CompensationDialog
+          clinicId={clinicId}
+          doctor={{
+            id: settingPay.id,
+            name: settingPay.fullName,
+            compensation: settingPay.currentPay,
+          }}
+          month={currentMonth()}
+          onOpenChange={(open) => {
+            if (!open) setSettingPay(null)
+          }}
+          open
+        />
+      )}
 
       {editing === null ? null : (
         <EditDoctorDialog

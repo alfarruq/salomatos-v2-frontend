@@ -16,5 +16,5 @@ export {
   staffSchema,
   toDoctor,
 } from './model/schema'
-export type { Doctor, DoctorId } from './model/types'
+export type { Doctor, DoctorId, DoctorPay } from './model/types'
 export { DoctorFormFields, type DoctorFormFieldsProps } from './ui/DoctorFormFields'

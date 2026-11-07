@@ -44,7 +44,8 @@ function captureBody(): { body: unknown } {
 }
 
 describe('useUpdateDoctor', () => {
-  beforeEach(() => signInAs('admin'))
+  // Staff are managed by the owner alone.
+  beforeEach(() => signInAs('owner'))
 
   it('sends the specialty as its id', async () => {
     const captured = captureBody()

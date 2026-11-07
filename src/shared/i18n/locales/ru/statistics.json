@@ -70,5 +70,11 @@
     "title": "Лечение",
     "completed": "Завершено",
     "plansAccepted": "Принятые планы"
+  },
+  "doctorFilter": {
+    "label": "Врач",
+    "all": "Все врачи",
+    "selected": "Выбранный врач",
+    "ownOnly": "Только ваши показатели"
   }
 }

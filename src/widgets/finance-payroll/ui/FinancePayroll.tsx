@@ -90,8 +90,8 @@ function PayrollContent({ clinicId, payroll }: { clinicId: string; payroll: Payr
 
   return (
     <div className="flex flex-col gap-6">
-      <dl className="grid gap-3 sm:grid-cols-3">
-        {(['accrued', 'paid', 'balance'] as const).map((key) => (
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(['accrued', 'pendingShare', 'paid', 'balance'] as const).map((key) => (
           <Card className="flex flex-col gap-1 p-4" key={key}>
             <dt className="text-caption text-text-secondary">
               {t(`expenses:payroll.totals.${key}`)}
@@ -170,7 +170,14 @@ function PayrollContent({ clinicId, payroll }: { clinicId: string; payroll: Payr
                   className="whitespace-nowrap text-text max-md:hidden"
                   isNumeric
                 >
-                  {money(row.accrued)}
+                  <div className="flex flex-col items-end">
+                    <span>{money(row.accrued)}</span>
+                    {row.pendingShare === 0 ? null : (
+                      <span className="text-caption text-text-secondary">
+                        {t('expenses:payroll.table.pending', { amount: money(row.pendingShare) })}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell align="right" className="whitespace-nowrap max-md:hidden" isNumeric>
                   {money(row.paid)}
@@ -221,8 +228,12 @@ function PayrollContent({ clinicId, payroll }: { clinicId: string; payroll: Payr
           onOpenChange={(open) => {
             if (!open) setEditing(null)
           }}
+          doctor={{
+            id: editing.doctorId,
+            name: editing.doctorName,
+            compensation: editing.compensation,
+          }}
           open
-          row={editing}
         />
       )}
     </div>

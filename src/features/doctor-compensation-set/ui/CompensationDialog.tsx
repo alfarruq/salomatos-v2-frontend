@@ -4,13 +4,13 @@ import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import {
-  COMPENSATION_BASES,
   type CompensationFormInput,
   CompensationTerms,
   compensationFormFieldOf,
   compensationFormSchema,
   expenseQueries,
-  type PayrollRow,
+  PayTermsFields,
+  type PayTermsSource,
   toCompensationForm,
   toCompensationPayload,
 } from '@/entities/expense'
@@ -21,22 +21,19 @@ import {
   monthLabel,
   shiftMonth,
 } from '@/shared/lib/calendarMonth'
-import {
-  Alert,
-  Button,
-  Dialog,
-  Field,
-  Input,
-  MoneyInput,
-  Select,
-  Skeleton,
-  toast,
-} from '@/shared/ui'
+import { Alert, Button, Dialog, Field, Select, Skeleton, toast } from '@/shared/ui'
 import { useSetCompensation } from '../model/useSetCompensation'
+
+/** Whom the terms are for: a payroll row or a staff row both have this much. */
+export interface CompensationDoctor {
+  id: string
+  name: string
+  compensation: PayTermsSource | null
+}
 
 export interface CompensationDialogProps {
   clinicId: string
-  row: PayrollRow
+  doctor: CompensationDoctor
   /** The month on screen: the new terms start from it unless another one is picked. */
   month: CalendarMonth
   open: boolean
@@ -51,14 +48,14 @@ const FORM_ID = 'compensation-form'
  */
 export function CompensationDialog({
   clinicId,
-  row,
+  doctor,
   month,
   open,
   onOpenChange,
 }: CompensationDialogProps) {
   const { t, i18n } = useTranslation(['expenses', 'common', 'validation'])
   const { mutate, isPending } = useSetCompensation(clinicId)
-  const historyQuery = useQuery(expenseQueries.compensation(clinicId, row.doctorId))
+  const historyQuery = useQuery(expenseQueries.compensation(clinicId, doctor.id))
 
   // A few months either side: terms are set for now, fixed for a month just
   // closed, or agreed ahead. The server accepts any month.
@@ -70,13 +67,13 @@ export function CompensationDialog({
   const form = useForm<CompensationFormInput>({
     resolver: valibotResolver(compensationFormSchema),
     mode: 'onBlur',
-    defaultValues: toCompensationForm(row.compensation, month),
+    defaultValues: toCompensationForm(doctor.compensation, month),
   })
 
   const { reset } = form
   useEffect(() => {
-    if (open) reset(toCompensationForm(row.compensation, month))
-  }, [open, reset, row.compensation, month])
+    if (open) reset(toCompensationForm(doctor.compensation, month))
+  }, [open, reset, doctor.compensation, month])
 
   const message = (value: string | undefined): string | undefined => {
     if (value === undefined) return undefined
@@ -85,7 +82,7 @@ export function CompensationDialog({
 
   const handleSubmit = form.handleSubmit((values) =>
     mutate(
-      { doctorId: row.doctorId, payload: toCompensationPayload(values) },
+      { doctorId: doctor.id, payload: toCompensationPayload(values) },
       {
         onSuccess: () => {
           toast.success(t('expenses:payroll.terms.success'))
@@ -119,7 +116,7 @@ export function CompensationDialog({
 
   return (
     <Dialog
-      description={t('expenses:payroll.terms.description', { name: row.doctorName })}
+      description={t('expenses:payroll.terms.description', { name: doctor.name })}
       footer={
         <>
           <Button disabled={isPending} onClick={() => onOpenChange(false)} variant="secondary">
@@ -137,62 +134,23 @@ export function CompensationDialog({
       <form className="flex flex-col gap-4" id={FORM_ID} noValidate onSubmit={handleSubmit}>
         {rootError ? <Alert title={rootError} tone="danger" /> : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            description={t('expenses:payroll.terms.percentHint')}
-            error={message(errors.percent?.message)}
-            label={t('expenses:payroll.terms.percentLabel')}
-          >
-            <Input
-              autoComplete="off"
-              disabled={isPending}
-              inputMode="decimal"
-              placeholder="35"
-              {...form.register('percent')}
+        <Controller
+          control={form.control}
+          name="pay"
+          render={({ field }) => (
+            <PayTermsFields
+              errors={{
+                percent: message(errors.pay?.percent?.message),
+                fixed: message(errors.pay?.fixed?.message),
+              }}
+              isDisabled={isPending}
+              onChange={field.onChange}
+              value={field.value}
             />
-          </Field>
-
-          <Field
-            description={t('expenses:payroll.terms.fixedHint')}
-            error={message(errors.fixed?.message)}
-            label={t('expenses:payroll.terms.fixedLabel')}
-          >
-            <Controller
-              control={form.control}
-              name="fixed"
-              render={({ field }) => (
-                <MoneyInput
-                  disabled={isPending}
-                  name={field.name}
-                  onChange={field.onChange}
-                  placeholder="0"
-                  value={field.value}
-                />
-              )}
-            />
-          </Field>
-        </div>
+          )}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field isRequired label={t('expenses:payroll.terms.base')}>
-            <Controller
-              control={form.control}
-              name="base"
-              render={({ field }) => (
-                <Select
-                  disabled={isPending}
-                  name={field.name}
-                  onValueChange={field.onChange}
-                  options={COMPENSATION_BASES.map((value) => ({
-                    value,
-                    label: t(`expenses:payroll.terms.bases.${value}`),
-                  }))}
-                  value={field.value}
-                />
-              )}
-            />
-          </Field>
-
           <Field isRequired label={t('expenses:payroll.terms.effectiveFrom')}>
             <Controller
               control={form.control}

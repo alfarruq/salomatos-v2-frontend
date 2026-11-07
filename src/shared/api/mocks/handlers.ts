@@ -244,6 +244,8 @@ interface ResourceOptions {
   patch?: ((row: Row, body: Body) => void) | null
   /** Omit to keep the default hard delete; null to refuse DELETE entirely. */
   remove?: ((row: Row) => void) | null
+  /** Shapes a stored row for the response, e.g. fields the serializer computes per viewer. */
+  present?: (row: Row, scope: Scope) => Row
 }
 
 /** List/retrieve/create/patch/delete for a clinic-scoped table. */
@@ -254,6 +256,7 @@ function resource(
   options: ResourceOptions = {},
 ) {
   const base = `/api/v1/${path}/`
+  const show = (row: Row, scope: Scope) => options.present?.(row, scope) ?? row
   const handlers = [
     http.get(base, ({ request }) => {
       const scope = guard(request, perms.view, true)
@@ -262,13 +265,16 @@ function resource(
       const rows = table(name).filter(
         (row) => inScope(row, scope) && (options.filter?.(row, params) ?? true),
       )
-      return paginate(request, rows)
+      return paginate(
+        request,
+        rows.map((row) => show(row, scope)),
+      )
     }),
     http.get(`${base}:id/`, ({ request, params }) => {
       const scope = guard(request, perms.view, true)
       if (scope instanceof Response) return scope
       const row = findRow(name, params.id, scope)
-      return row === null ? notFound() : HttpResponse.json(row)
+      return row === null ? notFound() : HttpResponse.json(show(row, scope))
     }),
     http.post(base, async ({ request }) => {
       const scope = guard(request, perms.manage)
@@ -281,7 +287,7 @@ function resource(
       }
       if (created instanceof Response) return created
       table(name).unshift(created)
-      return HttpResponse.json(created, { status: 201 })
+      return HttpResponse.json(show(created, scope), { status: 201 })
     }),
   ]
 
@@ -296,7 +302,7 @@ function resource(
         const body = await bodyOf(request)
         if (patch === undefined) Object.assign(row, body, { id: row.id })
         else patch(row, body)
-        return HttpResponse.json(row)
+        return HttpResponse.json(show(row, scope))
       }),
     )
   }
@@ -478,6 +484,15 @@ function dueMonth(scope: Scope, month: string) {
   }
 }
 
+/** The terms in force in `month`: the newest entry that started by then. */
+function termsOf(doctorId: string, month: string): Row | null {
+  return (
+    table('compensations')
+      .filter((row) => row.doctor === doctorId && String(row.effective_from) <= month)
+      .sort((a, b) => String(b.effective_from).localeCompare(String(a.effective_from)))[0] ?? null
+  )
+}
+
 /**
  * A simplified `payroll.compute`: billed is the doctor's work in the month,
  * collected the patients' payments that month capped at it. The real FIFO
@@ -488,10 +503,7 @@ function payrollRows(scope: Scope, month: string) {
     (member) => member.role === 'doctor' && inScope(member, scope),
   )
   const rows = doctors.map((doctor) => {
-    const terms =
-      table('compensations')
-        .filter((row) => row.doctor === doctor.id && String(row.effective_from) <= month)
-        .sort((a, b) => String(b.effective_from).localeCompare(String(a.effective_from)))[0] ?? null
+    const terms = termsOf(doctor.id, month)
     const work = table('procedures').filter(
       (row) =>
         row.doctor === doctor.id &&
@@ -509,6 +521,10 @@ function payrollRows(scope: Scope, month: string) {
     const collected = Math.min(billed, paidIn)
     const base = terms?.base === 'billed' ? billed : collected
     const accrued = terms === null ? 0 : Number(terms.fixed) + (Number(terms.percent) / 100) * base
+    // Work still waiting on the patient: on collected terms it pays the doctor later.
+    const pending = billed - collected
+    const pendingShare =
+      terms === null || terms.base === 'billed' ? 0 : (Number(terms.percent) / 100) * pending
     const paid = liveSum(
       table('expenses').filter(
         (row) =>
@@ -526,17 +542,100 @@ function payrollRows(scope: Scope, month: string) {
       collected: collected.toFixed(2),
       base_amount: base.toFixed(2),
       accrued: accrued.toFixed(2),
+      pending: pending.toFixed(2),
+      pending_share: pendingShare.toFixed(2),
       opening: '0.00',
       paid: paid.toFixed(2),
       balance: (accrued - paid).toFixed(2),
     }
   })
-  const total = (field: 'accrued' | 'paid' | 'balance') =>
+  const total = (field: 'accrued' | 'pending_share' | 'paid' | 'balance') =>
     rows.reduce((sum, row) => sum + Number(row[field]), 0).toFixed(2)
   return {
     month,
     rows,
-    totals: { accrued: total('accrued'), paid: total('paid'), balance: total('balance') },
+    totals: {
+      accrued: total('accrued'),
+      pending_share: total('pending_share'),
+      paid: total('paid'),
+      balance: total('balance'),
+    },
+  }
+}
+
+/**
+ * `EarningsViewSet.earnings`: the caller's payroll row and their procedures,
+ * each paid from the patient's money oldest work first (`allocation.run`).
+ */
+function myEarnings(scope: Scope, month: string) {
+  const me = membershipOf(scope.user)
+  const summary = payrollRows(scope, month).rows.find((row) => row.doctor === me) ?? null
+  const paidOf = new Map<string, number>()
+  const byPatient = new Map<unknown, Row[]>()
+  for (const row of table('procedures')) {
+    if (row.voided_at !== null || !inScope(row, scope) || monthOf(String(row.performed_at)) > month)
+      continue
+    byPatient.set(row.patient, [...(byPatient.get(row.patient) ?? []), row])
+  }
+  for (const [patient, work] of byPatient) {
+    let money = liveSum(
+      table('payments').filter(
+        (row) => row.patient === patient && monthOf(String(row.paid_at)) <= month,
+      ),
+      'amount',
+    )
+    for (const row of work.sort((a, b) =>
+      String(a.performed_at).localeCompare(String(b.performed_at)),
+    )) {
+      const share = Math.min(Number(row.total), money)
+      paidOf.set(row.id, share)
+      money -= share
+    }
+  }
+  const lines = table('procedures')
+    .filter((row) => row.doctor === me && row.voided_at === null && inScope(row, scope))
+    .filter((row) => {
+      const owed = Number(row.total) - (paidOf.get(row.id) ?? 0) > 0
+      const when = monthOf(String(row.performed_at))
+      return when === month || (when < month && owed)
+    })
+    .sort((a, b) => String(b.performed_at).localeCompare(String(a.performed_at)))
+    .map((row) => {
+      const paid = paidOf.get(row.id) ?? 0
+      const total = Number(row.total)
+      const patient = table('patients').find((candidate) => candidate.id === row.patient)
+      return {
+        procedure: row.id,
+        performed_at: row.performed_at,
+        patient: row.patient,
+        patient_name: patient?.full_name ?? null,
+        service_name: row.service_name ?? '',
+        tooth: row.tooth ?? null,
+        total: total.toFixed(2),
+        paid: paid.toFixed(2),
+        unpaid: (total - paid).toFixed(2),
+        status: paid >= total ? 'completed' : 'in_progress',
+      }
+    })
+  return {
+    month,
+    summary: summary ?? {
+      doctor: me,
+      doctor_name: MOCK_USERS[scope.user].full_name,
+      clinic_name: clinicNameOf(scope.clinicId),
+      is_active: true,
+      compensation: null,
+      billed: '0.00',
+      collected: '0.00',
+      base_amount: '0.00',
+      accrued: '0.00',
+      pending: '0.00',
+      pending_share: '0.00',
+      opening: '0.00',
+      paid: '0.00',
+      balance: '0.00',
+    },
+    lines,
   }
 }
 
@@ -631,16 +730,27 @@ function localDay(instant: unknown): string {
   return tashkent(instant).toISOString().slice(0, 10)
 }
 
-/** Mirrors `statistics.statistics_overview`, one bucket per range: enough for the screen. */
-function statisticsOverview(scope: Scope, from: string, to: string, previous: [string, string]) {
+/**
+ * Mirrors `statistics.statistics_overview`, one bucket per range: enough for the screen.
+ * `doctor` narrows every figure to one doctor's work and patients.
+ */
+function statisticsOverview(
+  scope: Scope,
+  from: string,
+  to: string,
+  previous: [string, string],
+  doctor: string | null,
+) {
+  const mine = (row: Row) => doctor === null || row.doctor === doctor
   const visitsIn = (start: string, end: string) =>
     table('appointments').filter(
-      (row) => inScope(row, scope) && between(localDay(row.start_at), start, end),
+      (row) => inScope(row, scope) && mine(row) && between(localDay(row.start_at), start, end),
     )
   const treatedIn = (start: string, end: string) =>
     table('procedures').filter(
       (row) =>
         inScope(row, scope) &&
+        mine(row) &&
         row.voided_at === null &&
         between(localDay(row.performed_at), start, end),
     )
@@ -651,14 +761,17 @@ function statisticsOverview(scope: Scope, from: string, to: string, previous: [s
       ...treated.map((row) => row.patient),
       ...visits.filter((row) => row.status === 'completed').map((row) => row.patient),
     ])
-    const patients = table('patients').filter((row) => inScope(row, scope))
+    const patients = table('patients').filter(
+      (row) => inScope(row, scope) && (doctor === null || row.primary_doctor === doctor),
+    )
+    const everyone = table('patients').filter((row) => inScope(row, scope))
     return {
       appointments: visits.filter((row) => row.status !== 'cancelled').length,
       appointments_completed: visits.filter((row) => row.status === 'completed').length,
       no_shows: visits.filter((row) => row.status === 'no_show').length,
       cancellations: visits.filter((row) => row.status === 'cancelled').length,
       new_patients: patients.filter((row) => between(localDay(row.created_at), start, end)).length,
-      returning_patients: patients.filter(
+      returning_patients: everyone.filter(
         (row) => seen.has(row.id) && localDay(row.created_at) < start,
       ).length,
       procedures: treated.length,
@@ -790,13 +903,51 @@ export const handlers = [
       filter: (row, params) =>
         byParam(row, params, 'role', 'specialty') &&
         (!params.has('is_active') || String(row.is_active) === params.get('is_active')),
+      // `StaffSerializer.current_compensation`: owners only, doctors only.
+      present: (row, scope) => {
+        if (!scope.permissions.includes('payroll:view')) return row
+        const terms = row.role === 'doctor' ? termsOf(String(row.id), currentMonthKey()) : null
+        return {
+          ...row,
+          current_compensation:
+            terms === null
+              ? null
+              : {
+                  percent: terms.percent,
+                  fixed: terms.fixed,
+                  base: terms.base,
+                  effective_from: terms.effective_from,
+                },
+        }
+      },
       create: (body, scope) => {
         const missing = required(body, ['username', 'full_name', 'password', 'role'])
         if (missing !== null) return missing
         if (table('staff').some((member) => member.username === body.username)) {
           return validation({ username: 'duplicate' })
         }
-        const { password: _password, ...rest } = body
+        const { password: _password, compensation, ...rest } = body
+        const id = newId()
+        if (compensation !== undefined && compensation !== null) {
+          if (body.role !== 'doctor') return validation({ compensation: 'invalid' })
+          if (!scope.permissions.includes('payroll:manage')) return forbidden()
+          const terms = compensation as Body
+          const percent = Number(terms.percent ?? 0)
+          const fixed = Number(terms.fixed ?? 0)
+          if (percent === 0 && fixed === 0)
+            return validation({ 'compensation.percent': 'required' })
+          table('compensations').unshift({
+            id: newId(),
+            clinic: scope.clinicId,
+            doctor: id,
+            percent: percent.toFixed(2),
+            fixed: fixed.toFixed(2),
+            base: terms.base ?? 'collected',
+            effective_from: currentMonthKey(),
+            created_by: membershipOf(scope.user),
+            created_by_name: MOCK_USERS[scope.user].full_name,
+          })
+        }
         return {
           phone_number: '',
           email: '',
@@ -804,7 +955,7 @@ export const handlers = [
           experience_years: null,
           biography: '',
           ...rest,
-          id: newId(),
+          id,
           clinic: scope.clinicId,
           is_active: true,
           specialty_name:
@@ -1293,6 +1444,14 @@ export const handlers = [
     },
   ),
 
+  http.get('/api/v1/me/earnings/', ({ request }) => {
+    // Not a read in all-branches mode: a doctor's month belongs to one branch.
+    const scope = guard(request, 'payroll:view_own')
+    if (scope instanceof Response) return scope
+    const month = new URL(request.url).searchParams.get('month') ?? currentMonthKey()
+    return HttpResponse.json(myEarnings(scope, month))
+  }),
+
   http.get('/api/v1/payroll/', ({ request }) => {
     const scope = guard(request, 'payroll:view', true)
     if (scope instanceof Response) return scope
@@ -1361,9 +1520,24 @@ export const handlers = [
   }),
 
   http.get('/api/v1/reports/statistics/', ({ request }) => {
-    const scope = guard(request, 'report:view', true)
+    const scope = guard(request, 'statistics:view', true)
     if (scope instanceof Response) return scope
     const { from, to, previous } = rangeOf(request)
-    return HttpResponse.json(statisticsOverview(scope, from, to, previous))
+    const asked = new URL(request.url).searchParams.get('doctor')
+    let doctor: string | null
+    if (!scope.permissions.includes('statistics:view_all')) {
+      // A doctor's figures are their own, whatever they ask for.
+      doctor = membershipOf(scope.user)
+    } else if (asked === null) {
+      doctor = null
+    } else {
+      const member = table('staff').find(
+        (row) =>
+          row.id === asked && row.role === 'doctor' && scope.clinicIds.includes(String(row.clinic)),
+      )
+      if (member === undefined) return validation({ doctor: 'does_not_exist' })
+      doctor = asked
+    }
+    return HttpResponse.json(statisticsOverview(scope, from, to, previous, doctor))
   }),
 ]

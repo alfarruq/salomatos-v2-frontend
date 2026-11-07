@@ -17,4 +17,16 @@ export interface Doctor {
   doctorTypeName: string | null
   experienceYears: number | null
   isActive: boolean
+  currentPay: DoctorPay | null
+}
+
+/**
+ * The terms in force this month. `null` both when none are set and when the
+ * viewer may not see pay: the server leaves the field out for them.
+ */
+export interface DoctorPay {
+  percent: number
+  fixed: number
+  base: 'collected' | 'billed'
+  effectiveFrom: string
 }
