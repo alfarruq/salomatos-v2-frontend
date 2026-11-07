@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next'
 import type { Treatment } from '@/entities/treatment'
 import { ApiError } from '@/shared/api/errors'
-import { Button, toast } from '@/shared/ui'
+import { Button, type ButtonProps, toast } from '@/shared/ui'
 import { useCompleteTreatment } from '../model/useCompleteTreatment'
 
 export interface CompleteTreatmentButtonProps {
   clinicId: string
   treatmentId: string
   onCompleted?: (treatment: Treatment) => void
+  size?: ButtonProps['size']
 }
 
 /** Marks multi-visit work as finished. The charge was owed from the start, so money is untouched. */
@@ -15,6 +16,7 @@ export function CompleteTreatmentButton({
   clinicId,
   treatmentId,
   onCompleted,
+  size = 'md',
 }: CompleteTreatmentButtonProps) {
   const { t } = useTranslation(['treatments', 'common'])
   const { mutate, isPending } = useCompleteTreatment(clinicId)
@@ -22,6 +24,7 @@ export function CompleteTreatmentButton({
   return (
     <Button
       isLoading={isPending}
+      size={size}
       onClick={() =>
         mutate(treatmentId, {
           onSuccess: (treatment) => {

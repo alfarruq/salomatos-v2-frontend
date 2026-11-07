@@ -13,6 +13,8 @@ export interface ToothSummary {
    * the doctor can complete it from there, else the latest one.
    */
   latest: Record<string, Treatment>
+  /** FDI → every line on that tooth, voided ones included, newest first. */
+  history: Record<string, Treatment[]>
   /** How many teeth are in each state, for the legend. */
   counts: Record<ToothState, number>
 }
@@ -29,16 +31,23 @@ function isNewer(candidate: Treatment, current: Treatment): boolean {
 }
 
 /**
- * One pass over the treatments, building all three maps. A voided line is a
- * mistake, not work on the tooth, so it is left out entirely.
+ * One pass over the treatments. A voided line is a mistake, not work on the
+ * tooth, so it colours nothing; only the per-tooth history keeps it.
  */
 export function summarizeTeeth(treatments: readonly Treatment[]): ToothSummary {
   const values: Record<string, ToothState> = {}
   const names: Record<string, string[]> = {}
   const latest: Record<string, Treatment> = {}
 
+  const history: Record<string, Treatment[]> = {}
+
   for (const treatment of treatments) {
-    if (treatment.toothNumber === null || treatment.status === 'voided') continue
+    if (treatment.toothNumber === null) continue
+    // The history keeps a voided line, struck through, so the record explains itself.
+    const lines = history[String(treatment.toothNumber)] ?? []
+    lines.push(treatment)
+    history[String(treatment.toothNumber)] = lines
+    if (treatment.status === 'voided') continue
     const tooth = String(treatment.toothNumber)
     if (treatment.status === 'inProgress') values[tooth] = 'inProgress'
     else if (values[tooth] === undefined) values[tooth] = 'done'
@@ -57,5 +66,11 @@ export function summarizeTeeth(treatments: readonly Treatment[]): ToothSummary {
   const counts: Record<ToothState, number> = { done: 0, inProgress: 0 }
   for (const state of Object.values(values)) counts[state] += 1
 
-  return { values, names, latest, counts }
+  for (const lines of Object.values(history)) {
+    lines.sort((a, b) =>
+      a.performedAt < b.performedAt ? 1 : a.performedAt > b.performedAt ? -1 : 0,
+    )
+  }
+
+  return { values, names, latest, history, counts }
 }

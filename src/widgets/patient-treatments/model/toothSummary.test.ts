@@ -74,4 +74,13 @@ describe('summarizeTeeth', () => {
     ])
     expect(summary.latest['16']?.id).toBe('p-old')
   })
+
+  it('keeps every line of a tooth in its history, voided too, newest first', () => {
+    const summary = summarizeTeeth([
+      treatment({ id: 'p-1', performedAt: '2026-08-01T06:00:00Z' }),
+      treatment({ id: 'p-2', status: 'voided', performedAt: '2026-09-01T06:00:00Z' }),
+      treatment({ id: 'p-3', toothNumber: null }),
+    ])
+    expect(summary.history['16']?.map((row) => row.id)).toEqual(['p-2', 'p-1'])
+  })
 })

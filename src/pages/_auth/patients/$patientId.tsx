@@ -454,6 +454,7 @@ function PatientTabs({
               <Card className="p-6">
                 <TreatmentToothChart
                   clinicId={clinicId}
+                  onCreate={onOpenComposer}
                   onVoid={setVoidingTreatment}
                   patientId={patient.id}
                 />

@@ -67,7 +67,13 @@
     "inProgress": "Jarayonda",
     "untouched": "Ishlanmagan",
     "patientRight": "Bemorning o'ng tomoni",
-    "patientLeft": "Bemorning chap tomoni"
+    "patientLeft": "Bemorning chap tomoni",
+    "history": {
+      "pick": "Tarixini ko'rish uchun tishni tanlang.",
+      "empty": "Bu tishda hali muolaja yo'q.",
+      "details": "Batafsil",
+      "add": "Muolaja qo'shish"
+    }
   },
   "list": {
     "title": "Muolajalar",

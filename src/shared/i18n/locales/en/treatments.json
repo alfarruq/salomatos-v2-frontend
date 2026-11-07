@@ -67,7 +67,13 @@
     "inProgress": "In progress",
     "untouched": "Untouched",
     "patientRight": "Patient's right",
-    "patientLeft": "Patient's left"
+    "patientLeft": "Patient's left",
+    "history": {
+      "pick": "Pick a tooth to see its history.",
+      "empty": "No treatment on this tooth yet.",
+      "details": "Details",
+      "add": "Add treatment"
+    }
   },
   "list": {
     "title": "Treatments",
