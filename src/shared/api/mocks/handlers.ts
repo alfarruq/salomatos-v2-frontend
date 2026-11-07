@@ -156,6 +156,10 @@ function seed(): void {
   db.payments = structuredClone(MOCK_PAYMENTS)
   db.prescriptions = structuredClone(MOCK_PRESCRIPTIONS)
   db.attachments = []
+  db.expenses = []
+  db.recurring_expenses = []
+  db.recurring_skips = []
+  db.compensations = []
   db.clinics = structuredClone(ALL_CLINICS) as unknown as Row[]
 }
 seed()
@@ -357,6 +361,265 @@ function balanceRows(scope: Scope): Row[] {
 
 function byParam(row: Row, params: URLSearchParams, ...fields: string[]): boolean {
   return fields.every((field) => !params.has(field) || row[field] === params.get(field))
+}
+
+/** `apps/finance`: pay rows stay hidden from anyone without `payroll:view`. */
+const PAYROLL_CATEGORIES = ['doctor_share', 'staff_salary']
+const FIXED_CATEGORIES = ['rent', 'utilities', 'communication', 'taxes_fees']
+
+function seesPay(scope: Scope): boolean {
+  return scope.permissions.includes('payroll:view')
+}
+
+function expenseRows(scope: Scope): Row[] {
+  return table('expenses').filter(
+    (row) =>
+      inScope(row, scope) && (seesPay(scope) || !PAYROLL_CATEGORIES.includes(String(row.category))),
+  )
+}
+
+function liveSum(rows: Row[], field: string): number {
+  return rows
+    .filter((row) => row.voided_at === null || row.voided_at === undefined)
+    .reduce((total, row) => total + Number(row[field]), 0)
+}
+
+function between(value: unknown, from: string, to: string): boolean {
+  const day = String(value).slice(0, 10)
+  return day >= from && day <= to
+}
+
+/** `?from&to`, defaulting to the last 30 days like `periods.parse_range`. */
+function rangeOf(request: Request): { from: string; to: string; previous: [string, string] } {
+  const params = new URL(request.url).searchParams
+  const to = params.get('to') ?? new Date().toISOString().slice(0, 10)
+  const from =
+    params.get('from') ?? new Date(Date.parse(to) - 29 * 86_400_000).toISOString().slice(0, 10)
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1
+  const previousTo = new Date(Date.parse(from) - 86_400_000).toISOString().slice(0, 10)
+  const previousFrom = new Date(Date.parse(from) - days * 86_400_000).toISOString().slice(0, 10)
+  return { from, to, previous: [previousFrom, previousTo] }
+}
+
+function expenseTotals(rows: Row[]) {
+  const live = rows.filter((row) => row.voided_at === null)
+  const of = (pick: (category: string) => boolean) =>
+    liveSum(
+      live.filter((row) => pick(String(row.category))),
+      'amount',
+    ).toFixed(2)
+  return {
+    total: liveSum(live, 'amount').toFixed(2),
+    count: live.length,
+    payroll: of((category) => PAYROLL_CATEGORIES.includes(category)),
+    fixed: of((category) => FIXED_CATEGORIES.includes(category)),
+    variable: of(
+      (category) => !PAYROLL_CATEGORIES.includes(category) && !FIXED_CATEGORIES.includes(category),
+    ),
+  }
+}
+
+function monthOf(day: string): string {
+  return day.slice(0, 7)
+}
+
+function currentMonthKey(): string {
+  return new Date().toISOString().slice(0, 7)
+}
+
+/** The month's slots of every active template, as `RecurringExpenseViewSet.due` lays them out. */
+function dueMonth(scope: Scope, month: string) {
+  const today = new Date().toISOString().slice(0, 10)
+  const items = table('recurring_expenses')
+    .filter((template) => inScope(template, scope) && template.is_active === true)
+    .map((template) => {
+      const dueDate = `${month}-${String(template.day_of_month).padStart(2, '0')}`
+      const paid = table('expenses').find(
+        (row) => row.recurring === template.id && row.period === month && row.voided_at === null,
+      )
+      const skip = table('recurring_skips').find(
+        (row) => row.recurring === template.id && row.period === month,
+      )
+      const status =
+        paid !== undefined
+          ? 'paid'
+          : skip !== undefined
+            ? 'skipped'
+            : dueDate < today
+              ? 'overdue'
+              : 'due'
+      return {
+        recurring: template.id,
+        name: template.name,
+        category: template.category,
+        amount: template.amount,
+        method: template.method,
+        payee: template.payee,
+        due_date: dueDate,
+        status,
+        expense: paid?.id ?? null,
+        paid_amount: paid?.amount ?? null,
+        paid_on: paid?.spent_on ?? null,
+        skip_reason: skip?.reason ?? null,
+      }
+    })
+  const expected = items
+    .filter((item) => item.status !== 'skipped')
+    .reduce((total, item) => total + Number(item.amount), 0)
+  const paid = items.reduce((total, item) => total + Number(item.paid_amount ?? 0), 0)
+  return {
+    month,
+    totals: {
+      expected: expected.toFixed(2),
+      paid: paid.toFixed(2),
+      remaining: Math.max(0, expected - paid).toFixed(2),
+    },
+    items,
+  }
+}
+
+/**
+ * A simplified `payroll.compute`: billed is the doctor's work in the month,
+ * collected the patients' payments that month capped at it. The real FIFO
+ * allocation lives on the server; this only has to be plausible.
+ */
+function payrollRows(scope: Scope, month: string) {
+  const doctors = table('staff').filter(
+    (member) => member.role === 'doctor' && inScope(member, scope),
+  )
+  const rows = doctors.map((doctor) => {
+    const terms =
+      table('compensations')
+        .filter((row) => row.doctor === doctor.id && String(row.effective_from) <= month)
+        .sort((a, b) => String(b.effective_from).localeCompare(String(a.effective_from)))[0] ?? null
+    const work = table('procedures').filter(
+      (row) =>
+        row.doctor === doctor.id &&
+        row.voided_at === null &&
+        monthOf(String(row.performed_at)) === month,
+    )
+    const billed = liveSum(work, 'total')
+    const patients = new Set(work.map((row) => row.patient))
+    const paidIn = liveSum(
+      table('payments').filter(
+        (row) => patients.has(row.patient) && monthOf(String(row.paid_at)) === month,
+      ),
+      'amount',
+    )
+    const collected = Math.min(billed, paidIn)
+    const base = terms?.base === 'billed' ? billed : collected
+    const accrued = terms === null ? 0 : Number(terms.fixed) + (Number(terms.percent) / 100) * base
+    const paid = liveSum(
+      table('expenses').filter(
+        (row) =>
+          row.category === 'doctor_share' && row.doctor === doctor.id && row.period === month,
+      ),
+      'amount',
+    )
+    return {
+      doctor: doctor.id,
+      doctor_name: doctor.full_name,
+      clinic_name: clinicNameOf(typeof doctor.clinic === 'string' ? doctor.clinic : null),
+      is_active: doctor.is_active,
+      compensation: terms,
+      billed: billed.toFixed(2),
+      collected: collected.toFixed(2),
+      base_amount: base.toFixed(2),
+      accrued: accrued.toFixed(2),
+      opening: '0.00',
+      paid: paid.toFixed(2),
+      balance: (accrued - paid).toFixed(2),
+    }
+  })
+  const total = (field: 'accrued' | 'paid' | 'balance') =>
+    rows.reduce((sum, row) => sum + Number(row[field]), 0).toFixed(2)
+  return {
+    month,
+    rows,
+    totals: { accrued: total('accrued'), paid: total('paid'), balance: total('balance') },
+  }
+}
+
+function newExpense(scope: Scope, fields: Body): Row {
+  return {
+    payee: '',
+    notes: '',
+    doctor: null,
+    doctor_name: null,
+    period: null,
+    recurring: null,
+    ...fields,
+    amount: Number(fields.amount).toFixed(2),
+    id: newId(),
+    clinic: scope.clinicId,
+    clinic_name: clinicNameOf(scope.clinicId),
+    spent_on: fields.spent_on ?? new Date().toISOString().slice(0, 10),
+    created_by: membershipOf(scope.user),
+    created_by_name: MOCK_USERS[scope.user].full_name,
+    voided_at: null,
+    void_reason: '',
+  }
+}
+
+/** Mirrors `reports.finance_overview`, one bucket per range: enough for the screen. */
+function financeOverview(scope: Scope, from: string, to: string, previous: [string, string]) {
+  const income = (start: string, end: string) => {
+    const billed = liveSum(
+      table('procedures').filter(
+        (row) => inScope(row, scope) && between(row.performed_at, start, end),
+      ),
+      'total',
+    )
+    const collected = liveSum(
+      table('payments').filter((row) => inScope(row, scope) && between(row.paid_at, start, end)),
+      'amount',
+    )
+    const expenses = liveSum(
+      expenseRows(scope).filter((row) => between(row.spent_on, start, end)),
+      'amount',
+    )
+    return {
+      billed: billed.toFixed(2),
+      collected: collected.toFixed(2),
+      expenses: expenses.toFixed(2),
+      profit: seesPay(scope) ? (collected - expenses).toFixed(2) : null,
+    }
+  }
+  const current = income(from, to)
+  const balances = balanceRows(scope).filter((row) => Number(row.debt) > 0)
+  const payments = table('payments').filter(
+    (row) => inScope(row, scope) && row.voided_at === null && between(row.paid_at, from, to),
+  )
+  const methods = [...new Set(payments.map((row) => String(row.method)))].map((method) => ({
+    method,
+    amount: liveSum(
+      payments.filter((row) => row.method === method),
+      'amount',
+    ).toFixed(2),
+  }))
+  return {
+    from,
+    to,
+    bucket: 'day',
+    totals: {
+      ...current,
+      outstanding_debt: balances.reduce((sum, row) => sum + Number(row.debt), 0).toFixed(2),
+      debtors_count: balances.length,
+    },
+    previous_totals: income(...previous),
+    includes_payroll: seesPay(scope),
+    series: [
+      {
+        start: from,
+        billed: current.billed,
+        collected: current.collected,
+        expenses: current.expenses,
+      },
+    ],
+    payment_methods: methods,
+    doctors: [],
+    services: [],
+  }
 }
 
 export const handlers = [
@@ -772,4 +1035,234 @@ export const handlers = [
       filter: (row, params) => byParam(row, params, 'patient', 'kind'),
     },
   ),
+
+  // Before `resource('expenses')`, so `summary/` is not read as an id.
+  http.get('/api/v1/expenses/summary/', ({ request }) => {
+    const scope = guard(request, 'expense:view', true)
+    if (scope instanceof Response) return scope
+    const { from, to, previous } = rangeOf(request)
+    const current = expenseRows(scope).filter((row) => between(row.spent_on, from, to))
+    const live = current.filter((row) => row.voided_at === null)
+    const categories = [...new Set(live.map((row) => String(row.category)))]
+    return HttpResponse.json({
+      from,
+      to,
+      bucket: 'day',
+      totals: expenseTotals(current),
+      previous_totals: expenseTotals(
+        expenseRows(scope).filter((row) => between(row.spent_on, ...previous)),
+      ),
+      by_category: categories.map((category) => ({
+        category,
+        amount: liveSum(
+          live.filter((row) => row.category === category),
+          'amount',
+        ).toFixed(2),
+      })),
+      series: [{ start: from, amount: liveSum(live, 'amount').toFixed(2) }],
+    })
+  }),
+
+  http.get('/api/v1/expenses/', ({ request }) => {
+    const scope = guard(request, 'expense:view', true)
+    if (scope instanceof Response) return scope
+    const params = new URL(request.url).searchParams
+    const from = params.get('spent_from') ?? '0000-01-01'
+    const to = params.get('spent_to') ?? '9999-12-31'
+    const rows = expenseRows(scope).filter(
+      (row) => between(row.spent_on, from, to) && byParam(row, params, 'category'),
+    )
+    return paginate(request, rows)
+  }),
+
+  http.post('/api/v1/expenses/', async ({ request }) => {
+    const scope = guard(request, 'expense:manage')
+    if (scope instanceof Response) return scope
+    const body = await bodyOf(request)
+    const missing = required(body, ['category', 'amount', 'method'])
+    if (missing !== null) return missing
+    if (PAYROLL_CATEGORIES.includes(String(body.category)) && !seesPay(scope)) return forbidden()
+    if (body.category === 'doctor_share' && (body.doctor === null || body.doctor === undefined)) {
+      return validation({ doctor: 'required' })
+    }
+    const row = newExpense(scope, {
+      ...body,
+      doctor_name: staffNameOf(body.doctor),
+      period:
+        body.category === 'doctor_share'
+          ? monthOf(String(body.spent_on ?? currentMonthKey()))
+          : null,
+    })
+    table('expenses').unshift(row)
+    return HttpResponse.json(row, { status: 201 })
+  }),
+
+  http.get('/api/v1/expenses/:id/', ({ request, params }) => {
+    const scope = guard(request, 'expense:view', true)
+    if (scope instanceof Response) return scope
+    const row = expenseRows(scope).find((candidate) => candidate.id === params.id)
+    return row === undefined ? notFound() : HttpResponse.json(row)
+  }),
+
+  voidAction('expenses', 'expenses', 'expense:void'),
+
+  http.get('/api/v1/recurring-expenses/due/', ({ request }) => {
+    const scope = guard(request, 'expense:view', true)
+    if (scope instanceof Response) return scope
+    const month = new URL(request.url).searchParams.get('month') ?? currentMonthKey()
+    return HttpResponse.json(dueMonth(scope, month))
+  }),
+
+  http.post('/api/v1/recurring-expenses/:id/pay/', async ({ request, params }) => {
+    const scope = guard(request, 'expense:manage')
+    if (scope instanceof Response) return scope
+    const template = findRow('recurring_expenses', params.id, scope)
+    if (template === null) return notFound()
+    const body = await bodyOf(request)
+    const missing = required(body, ['month'])
+    if (missing !== null) return missing
+    const taken = table('expenses').some(
+      (row) => row.recurring === template.id && row.period === body.month && row.voided_at === null,
+    )
+    if (taken) return validation({ month: 'already_paid' })
+    const row = newExpense(scope, {
+      category: template.category,
+      payee: template.payee,
+      amount: body.amount ?? template.amount,
+      method: body.method ?? template.method,
+      spent_on: body.spent_on,
+      notes: body.notes ?? '',
+      period: body.month,
+      recurring: template.id,
+    })
+    table('expenses').unshift(row)
+    return HttpResponse.json(row, { status: 201 })
+  }),
+
+  http.post('/api/v1/recurring-expenses/:id/skip/', async ({ request, params }) => {
+    const scope = guard(request, 'expense:manage')
+    if (scope instanceof Response) return scope
+    const template = findRow('recurring_expenses', params.id, scope)
+    if (template === null) return notFound()
+    const body = await bodyOf(request)
+    const missing = required(body, ['month'])
+    if (missing !== null) return missing
+    table('recurring_skips').push({
+      id: newId(),
+      clinic: scope.clinicId,
+      recurring: template.id,
+      period: body.month,
+      reason: body.reason ?? '',
+    })
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('/api/v1/recurring-expenses/:id/unskip/', async ({ request, params }) => {
+    const scope = guard(request, 'expense:manage')
+    if (scope instanceof Response) return scope
+    const template = findRow('recurring_expenses', params.id, scope)
+    if (template === null) return notFound()
+    const body = await bodyOf(request)
+    db.recurring_skips = table('recurring_skips').filter(
+      (row) => !(row.recurring === template.id && row.period === body.month),
+    )
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  ...resource(
+    'recurring-expenses',
+    'recurring_expenses',
+    { view: 'expense:view', manage: 'expense:manage' },
+    {
+      create: (body, scope) => {
+        const missing = required(body, ['name', 'category', 'amount', 'method', 'day_of_month'])
+        if (missing !== null) return missing
+        if (PAYROLL_CATEGORIES.includes(String(body.category)) && !seesPay(scope)) {
+          return forbidden()
+        }
+        return {
+          payee: '',
+          is_active: true,
+          ...body,
+          amount: Number(body.amount).toFixed(2),
+          id: newId(),
+          clinic: scope.clinicId,
+          clinic_name: clinicNameOf(scope.clinicId),
+        }
+      },
+      patch: (row, body) => {
+        const { id: _id, clinic: _clinic, ...rest } = body
+        Object.assign(row, rest)
+        if (rest.amount !== undefined) row.amount = Number(rest.amount).toFixed(2)
+      },
+      remove: null,
+    },
+  ),
+
+  http.get('/api/v1/payroll/', ({ request }) => {
+    const scope = guard(request, 'payroll:view', true)
+    if (scope instanceof Response) return scope
+    const month = new URL(request.url).searchParams.get('month') ?? currentMonthKey()
+    return HttpResponse.json(payrollRows(scope, month))
+  }),
+
+  http.post('/api/v1/payroll/pay/', async ({ request }) => {
+    const scope = guard(request, 'payroll:manage')
+    if (scope instanceof Response) return scope
+    const body = await bodyOf(request)
+    const missing = required(body, ['doctor', 'month', 'amount', 'method'])
+    if (missing !== null) return missing
+    const doctor = findRow('staff', body.doctor, scope)
+    if (doctor === null || doctor.role !== 'doctor') return validation({ doctor: 'does_not_exist' })
+    const row = newExpense(scope, {
+      category: 'doctor_share',
+      doctor: doctor.id,
+      doctor_name: doctor.full_name,
+      payee: doctor.full_name,
+      amount: body.amount,
+      method: body.method,
+      spent_on: body.spent_on,
+      notes: body.notes ?? '',
+      period: body.month,
+    })
+    table('expenses').unshift(row)
+    return HttpResponse.json(row, { status: 201 })
+  }),
+
+  ...resource(
+    'compensations',
+    'compensations',
+    { view: 'payroll:view', manage: 'payroll:manage' },
+    {
+      filter: (row, params) => byParam(row, params, 'doctor'),
+      create: (body, scope) => {
+        const missing = required(body, ['doctor', 'base', 'effective_from'])
+        if (missing !== null) return missing
+        const doctor = findRow('staff', body.doctor, scope)
+        if (doctor === null || doctor.role !== 'doctor') {
+          return validation({ doctor: 'does_not_exist' })
+        }
+        return {
+          ...body,
+          percent: Number(body.percent ?? 0).toFixed(2),
+          fixed: Number(body.fixed ?? 0).toFixed(2),
+          id: newId(),
+          clinic: scope.clinicId,
+          doctor_name: doctor.full_name,
+          created_by: membershipOf(scope.user),
+          created_by_name: MOCK_USERS[scope.user].full_name,
+          created_at: new Date().toISOString(),
+        }
+      },
+      patch: null,
+      remove: null,
+    },
+  ),
+
+  http.get('/api/v1/reports/finance/', ({ request }) => {
+    const scope = guard(request, 'report:view', true)
+    if (scope instanceof Response) return scope
+    const { from, to, previous } = rangeOf(request)
+    return HttpResponse.json(financeOverview(scope, from, to, previous))
+  }),
 ]

@@ -1,0 +1,250 @@
+{
+  "kpi": {
+    "total": "Total expenses",
+    "entries_one": "{{count}} entry",
+    "entries_other": "{{count}} entries",
+    "share": "{{percent}}% of all expenses",
+    "vsPrevious": "vs previous period"
+  },
+  "kinds": {
+    "payroll": "Payroll",
+    "fixed": "Fixed costs",
+    "variable": "Variable costs"
+  },
+  "categories": {
+    "doctor_share": "Doctor share",
+    "staff_salary": "Staff salaries",
+    "rent": "Rent",
+    "utilities": "Utilities",
+    "communication": "Phone, internet, software",
+    "materials": "Materials and medicines",
+    "lab": "Dental lab",
+    "equipment": "Equipment",
+    "marketing": "Marketing",
+    "taxes_fees": "Taxes and bank fees",
+    "other": "Other"
+  },
+  "methods": {
+    "cash": "Cash",
+    "card": "Card",
+    "transfer": "Bank transfer"
+  },
+  "charts": {
+    "trend": {
+      "title": "Expenses over time",
+      "description": "Amounts paid in the period"
+    },
+    "categories": {
+      "title": "By category",
+      "description": "Each category's share of all expenses"
+    }
+  },
+  "journal": {
+    "title": "Expense journal",
+    "description": "Every entry in the period, newest first",
+    "categoryFilter": "Filter by category",
+    "allCategories": "All categories",
+    "date": "Date",
+    "category": "Category",
+    "payee": "Paid to / note",
+    "method": "Method",
+    "enteredBy": "Entered by",
+    "amount": "Amount",
+    "actions": "Actions",
+    "voided": "Voided",
+    "voidReason": "Reason: {{reason}}",
+    "empty": "No expenses were entered in this period.",
+    "emptyFiltered": "No expenses in this category.",
+    "pageSummary": "{{from}}–{{to}} of {{total}}"
+  },
+  "form": {
+    "date": "Date",
+    "datePlaceholder": "Pick a date",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "amount": "Amount, so'm",
+    "category": "Category",
+    "categoryPlaceholder": "Pick a category",
+    "method": "Payment method",
+    "doctor": "Doctor",
+    "doctorPlaceholder": "Pick a doctor",
+    "payee": "Paid to",
+    "payeeHint": "For example: landlord, supplier, utility company",
+    "note": "Note",
+    "noteHint": "Do not write a patient's name or other personal details."
+  },
+  "create": {
+    "open": "Add expense",
+    "title": "New expense",
+    "description": "Enter a payment the clinic made.",
+    "submit": "Add",
+    "success": "Expense added",
+    "failed": "Could not save the expense. Please try again."
+  },
+  "edit": {
+    "title": "Edit expense",
+    "description": "The server keeps the history of changes.",
+    "success": "Expense updated",
+    "failed": "Could not save the changes. Please try again."
+  },
+  "void": {
+    "title": "Void entry",
+    "description": "{{date}}, {{category}}, {{amount}}. The entry stays in the journal but no longer counts in any total. This cannot be undone.",
+    "reason": "Reason",
+    "reasonHint": "For example: entered twice, wrong amount",
+    "keep": "Keep",
+    "submit": "Void",
+    "success": "Entry voided",
+    "failed": "Could not void the entry. Please try again."
+  },
+  "empty": {
+    "title": "No expenses in this period",
+    "description": "Pick a longer period or enter the first expense."
+  },
+  "error": {
+    "title": "Could not load expenses",
+    "description": "Check your internet connection and try again."
+  },
+  "recurring": {
+    "month": {
+      "previous": "Previous month",
+      "next": "Next month",
+      "current": "This month"
+    },
+    "totals": {
+      "expected": "Expected this month",
+      "paid": "Paid",
+      "remaining": "Remaining"
+    },
+    "due": {
+      "title": "This month's bills",
+      "description": "Each payment is confirmed by hand and written to the expense journal",
+      "date": "Due",
+      "name": "Name",
+      "status": "Status",
+      "paidOn": "{{date}}, {{method}}",
+      "expected": "Expected: {{amount}}"
+    },
+    "status": {
+      "due": "Due",
+      "overdue": "Overdue",
+      "paid": "Paid",
+      "skipped": "Skipped"
+    },
+    "templates": {
+      "title": "Templates",
+      "description": "Bills that repeat every month. A template never pays anything by itself.",
+      "day": "Day",
+      "everyMonth": "Every month on day {{day}}",
+      "active": "Active",
+      "empty": "No templates yet. Add rent, utilities and salaries.",
+      "paused": "Template paused",
+      "resumed": "Template resumed"
+    },
+    "form": {
+      "name": "Name",
+      "nameHint": "For example: building rent, electricity",
+      "amountHint": "The usual amount. You can change it when paying.",
+      "day": "Payment day",
+      "dayHint": "Day 1 to 28 of the month"
+    },
+    "create": {
+      "open": "Add template",
+      "title": "New recurring bill",
+      "description": "Enter a payment that repeats every month.",
+      "submit": "Add",
+      "success": "Template added",
+      "failed": "Could not save the template. Please try again."
+    },
+    "edit": {
+      "title": "Edit template",
+      "description": "Changes apply to upcoming payments. Paid months stay as they are.",
+      "submit": "Save",
+      "success": "Template updated",
+      "failed": "Could not save the changes. Please try again."
+    },
+    "pay": {
+      "open": "Mark paid",
+      "title": "Confirm payment",
+      "description": "{{name}}, due {{date}}. Enter the amount actually paid.",
+      "submit": "Confirm",
+      "success": "Payment written to the expense journal",
+      "failed": "Could not save the payment. Please try again."
+    },
+    "skip": {
+      "open": "Skip",
+      "title": "Skip this month?",
+      "description": "{{name}}, {{month}}. Nothing is posted. You can still pay it later.",
+      "submit": "Skip month",
+      "success": "Month skipped",
+      "failed": "Could not save. Please try again."
+    },
+    "empty": {
+      "title": "No recurring bills this month",
+      "description": "Add rent, utilities and salaries in the templates section below."
+    },
+    "error": "Could not load recurring bills"
+  },
+  "payroll": {
+    "totals": {
+      "accrued": "Accrued",
+      "paid": "Paid out",
+      "balance": "Owed"
+    },
+    "table": {
+      "title": "By doctor",
+      "description": "The server computes each share from the doctor's terms. Every payout is entered by hand.",
+      "doctor": "Doctor",
+      "base": "Percent base",
+      "accrued": "Accrued",
+      "paid": "Paid out",
+      "balance": "Balance",
+      "accruedPaid": "Accrued {{accrued}} · paid {{paid}}",
+      "opening": "From earlier months: {{amount}}",
+      "balanceShort": "Balance: {{amount}}",
+      "billedCollected": "billed {{billed}} · collected {{collected}}"
+    },
+    "terms": {
+      "none": "No terms set",
+      "fixed": "Salary {{amount}}",
+      "percent": {
+        "collected": "{{percent}}% of collected",
+        "billed": "{{percent}}% of billed work"
+      },
+      "withLab": "{{terms}}, lab deducted",
+      "open": "Terms",
+      "title": "Pay terms",
+      "description": "{{name}}. New terms apply from the chosen month; earlier months stay as they were.",
+      "percentLabel": "Percent, %",
+      "percentHint": "0–100, e.g. 35 or 32.5",
+      "fixedLabel": "Salary, so'm/month",
+      "fixedHint": "Leave empty for percent only",
+      "base": "Percent of",
+      "bases": {
+        "collected": "Money patients paid",
+        "billed": "Value of work done"
+      },
+      "effectiveFrom": "From month",
+      "submit": "Save",
+      "success": "Terms saved",
+      "failed": "Could not save the terms. Please try again.",
+      "history": "Terms history",
+      "noHistory": "No terms set yet.",
+      "since": "From {{month}}:"
+    },
+    "pay": {
+      "open": "Pay",
+      "title": "Pay a doctor",
+      "description": "{{name}}. Owed: {{amount}}. You can change the amount (bonus, deduction).",
+      "submit": "Enter",
+      "success": "Payout written to the expense journal",
+      "failed": "Could not save the payout. Please try again.",
+      "noteHint": "For example: advance, bonus. Do not write patient details."
+    },
+    "empty": {
+      "title": "No doctors",
+      "description": "Once doctors are added, their share is worked out here."
+    },
+    "error": "Could not load doctor pay"
+  }
+}

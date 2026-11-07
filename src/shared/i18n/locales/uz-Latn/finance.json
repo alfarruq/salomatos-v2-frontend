@@ -1,5 +1,62 @@
 {
   "title": "Moliya",
+  "tabs": {
+    "overview": "Umumiy",
+    "debtors": "Qarzdorlar",
+    "expenses": "Xarajatlar",
+    "recurring": "Doimiy to'lovlar",
+    "payroll": "Shifokor ulushi"
+  },
+  "period": {
+    "label": "Davr",
+    "week": "Oxirgi 7 kun",
+    "month": "Oxirgi 30 kun",
+    "quarter": "Oxirgi 3 oy",
+    "year": "Oxirgi 12 oy"
+  },
+  "kpi": {
+    "collected": "Tushum",
+    "billed": "Bajarilgan ish",
+    "outstandingDebt": "Umumiy qarz",
+    "vsPrevious": "oldingi davrga nisbatan",
+    "debtors_one": "{{count}} ta qarzdor",
+    "debtors_other": "{{count}} ta qarzdor"
+  },
+  "charts": {
+    "revenue": {
+      "title": "Bajarilgan ish va tushum",
+      "description": "Narxi bo'yicha bajarilgan ish va qabul qilingan to'lovlar",
+      "billed": "Bajarilgan ish",
+      "collected": "Tushum"
+    },
+    "methods": {
+      "title": "To'lov usullari",
+      "description": "Tushumdagi ulushi"
+    },
+    "doctors": {
+      "title": "Shifokorlar bo'yicha tushum",
+      "description": "Har bir shifokor ishi uchun to'lovlar"
+    },
+    "services": {
+      "title": "Xizmatlar bo'yicha daromad",
+      "description": "Davr ichida bajarilgan ish summasi"
+    }
+  },
+  "empty": {
+    "title": "Bu davrda pul harakati yo'q",
+    "description": "Uzunroq davrni tanlang yoki to'lovlar kiritilgach qayta qarang."
+  },
+  "error": {
+    "title": "Moliya ma'lumotlarini yuklab bo'lmadi",
+    "description": "Internet aloqasini tekshirib, qayta urinib ko'ring."
+  },
+  "profit": {
+    "expenses": "Xarajat",
+    "profit": "Sof foyda",
+    "expensesNote": "Tushumning {{percent}}%",
+    "margin": "Foyda marjasi: {{percent}}%",
+    "withoutPayroll": "Shifokorlar maoshi hisobga olinmagan, shuning uchun foyda ko'rsatilmaydi."
+  },
   "payment": {
     "record": "To'lov qabul qilish",
     "title": "To'lovni kiritish",
