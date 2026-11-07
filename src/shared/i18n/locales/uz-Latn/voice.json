@@ -1,0 +1,45 @@
+{
+  "open": "Ovoz bilan to'ldirish",
+  "title": "Ovoz bilan to'ldirish",
+  "language": "Nutq tili",
+  "languages": {
+    "uz-UZ": "O'zbekcha",
+    "ru-RU": "Ruscha"
+  },
+  "start": "Gapirish",
+  "stop": "To'xtatish",
+  "textLabel": "Diktovka matni",
+  "placeholder": "«Gapirish»ni bosing va gapiring yoki shu yerga yozing",
+  "placeholderNoMic": "Shu yerga yozing",
+  "unsupported": "Bu brauzer ovozni tanimaydi. Chrome yoki Edge'da oching, yoki matnni yozing.",
+  "speechError": {
+    "denied": "Mikrofonga ruxsat berilmagan. Brauzer sozlamasidan ruxsat bering.",
+    "no-speech": "Ovoz eshitilmadi. Qaytadan gapiring.",
+    "network": "Ovozni tanib bo'lmadi: internet aloqasini tekshiring.",
+    "other": "Ovozni tanib bo'lmadi. Qaytadan urinib ko'ring."
+  },
+  "error": {
+    "failed": "Diktovkani o'qib bo'lmadi. Qaytadan urinib ko'ring yoki formani qo'lda to'ldiring.",
+    "network": "Server bilan aloqa yo'q.",
+    "limit": "Klinikaning shu oylik ovoz limiti tugadi.",
+    "unavailable": "Ovozli to'ldirish hozir o'chiq."
+  },
+  "usage": "Bu oy: {{used}} / {{limit}}",
+  "clear": "Tozalash",
+  "fill": "Formani to'ldirish",
+  "filling": "AI o'qimoqda…",
+  "privacy": "Matn AI'ga yuboriladi va saqlanmaydi. AI xato qilishi mumkin: maydonlarni tekshirib, keyin saqlang.",
+  "hint": {
+    "patient": "Ayting: bemorning ismi-familiyasi, telefoni, tug'ilgan sanasi, manzili va shikoyati.",
+    "procedure": "Ayting: bemor ismi (kerak bo'lsa), qilingan muolajalar va tish raqamlari, izoh.",
+    "prescription": "Ayting: har bir dori nomi, bir martada nechta, kuniga necha marta, necha kun, ovqatdan oldin yoki keyin."
+  },
+  "result": {
+    "filled": "Forma to'ldirildi. Tekshirib, keyin saqlang.",
+    "empty": "Diktovkadan forma uchun ma'lumot topilmadi.",
+    "unmatched": "Narxlar ro'yxatidan topilmadi, qo'lda qo'shing: {{items}}",
+    "pickPatient": "Bemorni tanlang:",
+    "patientNotFound": "«{{name}}» bemorlar ro'yxatidan topilmadi. Bemorni qo'lda tanlang.",
+    "chooseDoctorFirst": "Avval doktorni tanlang."
+  }
+}

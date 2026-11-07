@@ -1,4 +1,5 @@
-import { FREQUENCIES, type Frequency } from '@/entities/recipe'
+import { DOSE_FORMS, FREQUENCIES, type Frequency } from '@/entities/recipe'
+import type { VoiceMedicine } from '@/entities/voice-draft'
 import type { CatalogMedicine } from './catalog'
 import type { MedicineRow } from './types'
 
@@ -58,6 +59,31 @@ export function fillFromCatalog(row: MedicineRow, medicine: CatalogMedicine): Me
     meal: medicine.meal,
     durationAmount: String(medicine.durationAmount),
     durationUnit: medicine.durationUnit,
+  }
+}
+
+/**
+ * A dictated medicine as an editor row. What was not said stays empty, so the
+ * row is incomplete and the doctor has to finish it: a dose or a duration is
+ * never made up. Frequency and form have no empty state in the editor, so they
+ * fall back to the same defaults a new row starts with.
+ */
+export function fromVoiceMedicine(item: VoiceMedicine): MedicineRow {
+  const blank = newMedicineRow()
+  const dose = /^\d+$/.test(item.dose.trim()) ? item.dose.trim() : ''
+  const times = item.timesPerDay
+  return {
+    ...blank,
+    name: item.medicine,
+    dose,
+    form: DOSE_FORMS.find((form) => form === item.form) ?? blank.form,
+    frequency:
+      times !== null && times >= 1 && times <= FREQUENCIES.length
+        ? (FREQUENCIES[times - 1] ?? blank.frequency)
+        : blank.frequency,
+    meal: item.mealRelation === 'any' ? 'none' : item.mealRelation,
+    durationAmount: item.durationDays === null ? '' : String(item.durationDays),
+    durationUnit: 'days',
   }
 }
 

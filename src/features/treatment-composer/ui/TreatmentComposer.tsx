@@ -1,11 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
-import { useActsOnlyAs } from '@/entities/session'
+import { Can, useActsOnlyAs } from '@/entities/session'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
+import {
+  requestVoiceDraft,
+  type VoiceDraft,
+  VoicePanel,
+  type VoicePatientRef,
+  voiceKeys,
+} from '@/entities/voice-draft'
 import { ApiError } from '@/shared/api/errors'
 import { Alert, Button, Dialog, ErrorState, Field, Select, Skeleton, Textarea } from '@/shared/ui'
 import type { ComposerFields, TreatmentRow } from '../model/types'
@@ -115,8 +122,17 @@ function TreatmentComposerForm({
   doctors: Doctor[]
   treatmentTypes: TreatmentType[]
 }) {
-  const { t } = useTranslation(['treatments', 'patients', 'common'])
+  const { t } = useTranslation(['treatments', 'patients', 'common', 'voice'])
   const { mutate, isPending, error } = useSaveTreatments(clinicId)
+  const queryClient = useQueryClient()
+  // Every call is billed and writes nothing, so it is never retried.
+  const voice = useMutation({
+    mutationFn: requestVoiceDraft,
+    retry: false,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: voiceKeys.status(clinicId) }),
+  })
+  const [voiceNotes, setVoiceNotes] = useState<string[]>([])
+  const [voicePatients, setVoicePatients] = useState<VoicePatientRef[]>([])
 
   const [pickedPatient, setPickedPatient] = useState<PickedPatient | null>(null)
   const effectivePatientId = patientId ?? pickedPatient?.id ?? null
@@ -184,6 +200,45 @@ function TreatmentComposerForm({
     setRows((current) => current.filter((row) => row.rowId !== rowId))
   }
 
+  /*
+   * Adds what was dictated to what is already on the form, the same way a tap
+   * on the chart would. Only services of the chosen doctor's price list are
+   * taken; anything else is listed for the doctor to add by hand.
+   */
+  function applyVoiceDraft(draft: VoiceDraft) {
+    const messages: string[] = []
+    if (patientId === undefined && pickedPatient === null) {
+      if (draft.patient !== null) {
+        setPickedPatient({
+          id: draft.patient.id,
+          fullName: draft.patient.fullName,
+          phoneNumber: null,
+        })
+        setVoicePatients([])
+      } else if (draft.patientCandidates.length > 0) {
+        setVoicePatients(draft.patientCandidates)
+      } else if (draft.patientName !== '') {
+        messages.push(t('voice:result.patientNotFound', { name: draft.patientName }))
+      }
+    }
+
+    const unmatched: string[] = []
+    for (const procedure of draft.procedures) {
+      const type = specialtyTypes.find((item) => item.id === procedure.serviceId)
+      if (type === undefined) unmatched.push(procedure.heard || procedure.serviceName)
+      else handleAddRow(procedure.tooth, type)
+    }
+    if (draft.notes !== '' && notes.trim() === '') setNotes(draft.notes)
+
+    const added = draft.procedures.length - unmatched.length
+    messages.unshift(
+      added > 0 || draft.patient !== null ? t('voice:result.filled') : t('voice:result.empty'),
+    )
+    if (unmatched.length > 0)
+      messages.push(t('voice:result.unmatched', { items: unmatched.join(', ') }))
+    setVoiceNotes(messages)
+  }
+
   const errorMessage =
     error === null || error === undefined
       ? null
@@ -222,6 +277,50 @@ function TreatmentComposerForm({
     >
       <div className="flex flex-col gap-6">
         {errorMessage === null ? null : <Alert title={errorMessage} tone="danger" />}
+
+        <Can permission="voice:use">
+          <VoicePanel
+            clinicId={clinicId}
+            disabledReason={selectedDoctor === null ? t('voice:result.chooseDoctorFirst') : null}
+            error={voice.error}
+            hint={t('voice:hint.procedure')}
+            isPending={voice.isPending}
+            onSubmit={(text) =>
+              voice.mutate(
+                { form: 'procedure', text, patientId: effectivePatientId },
+                { onSuccess: applyVoiceDraft },
+              )
+            }
+          >
+            {voiceNotes.map((message) => (
+              <Alert key={message} title={message} tone="info" />
+            ))}
+            {voicePatients.length > 0 && pickedPatient === null ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-caption text-text-secondary">
+                  {t('voice:result.pickPatient')}
+                </span>
+                {voicePatients.map((candidate) => (
+                  <Button
+                    key={candidate.id}
+                    onClick={() => {
+                      setPickedPatient({
+                        id: candidate.id,
+                        fullName: candidate.fullName,
+                        phoneNumber: null,
+                      })
+                      setVoicePatients([])
+                    }}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    {candidate.fullName}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+          </VoicePanel>
+        </Can>
 
         {/* Fields first: the doctor has to be chosen before the right half means anything.
             Two columns only from `lg`: below that the chart needs the full width. */}

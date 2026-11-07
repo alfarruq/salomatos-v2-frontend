@@ -84,6 +84,7 @@ const OWNER_PERMISSIONS = [
   'payroll:view',
   'payroll:manage',
   'audit:view',
+  'voice:use',
 ]
 const DOCTOR_PERMISSIONS = [
   'clinic:view',
@@ -108,6 +109,7 @@ const DOCTOR_PERMISSIONS = [
   // Their own figures only: the server narrows both to the caller.
   'statistics:view',
   'payroll:view_own',
+  'voice:use',
 ]
 const ADMIN_PERMISSIONS = OWNER_PERMISSIONS.filter(
   (p) =>

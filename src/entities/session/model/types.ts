@@ -48,6 +48,7 @@ export const PERMISSIONS = [
   'payroll:manage',
   'payroll:view_own',
   'audit:view',
+  'voice:use',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]

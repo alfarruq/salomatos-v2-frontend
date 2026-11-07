@@ -1,0 +1,45 @@
+{
+  "open": "Fill by voice",
+  "title": "Fill by voice",
+  "language": "Speech language",
+  "languages": {
+    "uz-UZ": "Uzbek",
+    "ru-RU": "Russian"
+  },
+  "start": "Speak",
+  "stop": "Stop",
+  "textLabel": "Dictation text",
+  "placeholder": "Press “Speak” and dictate, or type here",
+  "placeholderNoMic": "Type here",
+  "unsupported": "This browser cannot recognise speech. Open it in Chrome or Edge, or type the text.",
+  "speechError": {
+    "denied": "Microphone access is blocked. Allow it in the browser settings.",
+    "no-speech": "No speech heard. Try again.",
+    "network": "Speech recognition failed: check the internet connection.",
+    "other": "Speech recognition failed. Try again."
+  },
+  "error": {
+    "failed": "Could not read the dictation. Try again or fill the form by hand.",
+    "network": "No connection to the server.",
+    "limit": "The clinic's monthly voice limit is used up.",
+    "unavailable": "Voice input is switched off."
+  },
+  "usage": "This month: {{used}} / {{limit}}",
+  "clear": "Clear",
+  "fill": "Fill the form",
+  "filling": "AI is reading…",
+  "privacy": "The text is sent to an AI and not stored. AI can make mistakes: check the fields, then save.",
+  "hint": {
+    "patient": "Say: the patient's full name, phone, date of birth, address and complaint.",
+    "procedure": "Say: the patient (if needed), the treatments done and tooth numbers, a note.",
+    "prescription": "Say: each medicine, how many per intake, times a day, how many days, before or after food."
+  },
+  "result": {
+    "filled": "The form is filled. Check it, then save.",
+    "empty": "Nothing in the dictation fits this form.",
+    "unmatched": "Not found in the price list, add by hand: {{items}}",
+    "pickPatient": "Choose the patient:",
+    "patientNotFound": "No patient “{{name}}” found. Choose the patient by hand.",
+    "chooseDoctorFirst": "Choose the doctor first."
+  }
+}
