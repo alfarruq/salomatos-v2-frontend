@@ -36,7 +36,12 @@ function toPageQuery(filters: TreatmentListFilters): string {
   if (filters.patientId !== null) params.set('patient', filters.patientId)
   if (filters.doctorId !== null) params.set('doctor', filters.doctorId)
   if (filters.treatmentTypeId !== null) params.set('service', filters.treatmentTypeId)
-  if (filters.status !== null) params.set('voided', filters.status === 'voided' ? 'true' : 'false')
+  if (filters.status !== null) {
+    params.set('voided', filters.status === 'voided' ? 'true' : 'false')
+    if (filters.status !== 'voided') {
+      params.set('status', filters.status === 'inProgress' ? 'in_progress' : 'completed')
+    }
+  }
   return params.toString()
 }
 

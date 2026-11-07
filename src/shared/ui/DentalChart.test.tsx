@@ -84,3 +84,51 @@ describe('DentalChart', () => {
     expect(container.querySelector('[data-fdi="18"]')).not.toBeInTheDocument()
   })
 })
+
+describe('DentalChart status shapes', () => {
+  const shaped = [
+    {
+      id: 'done',
+      fillClassName: 'fill-success/30',
+      strokeClassName: 'stroke-success',
+      marker: 'check' as const,
+      markerClassName: 'fill-success',
+    },
+    {
+      id: 'inProgress',
+      fillClassName: 'fill-warning/20',
+      strokeClassName: 'stroke-warning',
+      hatched: true,
+      marker: 'clock' as const,
+      markerClassName: 'fill-warning',
+    },
+  ]
+
+  it('stripes a hatched status and badges both, so state does not rest on colour alone', () => {
+    const { container } = render(
+      <DentalChart
+        labels={labels}
+        statuses={shaped}
+        values={{ '16': 'done', '24': 'inProgress' }}
+      />,
+    )
+
+    const striped = container.querySelector('[data-fdi="24"] path[fill^="url(#"]')
+    expect(striped).not.toBeNull()
+    const patternId = striped?.getAttribute('fill')?.slice(5, -1) ?? ''
+    expect(container.querySelector(`pattern[id="${patternId}"]`)).not.toBeNull()
+    expect(container.querySelector('[data-fdi="16"] path[fill^="url(#"]')).toBeNull()
+    expect(container.querySelector('[data-fdi="16"] circle.fill-success')).not.toBeNull()
+    expect(container.querySelector('[data-fdi="24"] circle.fill-warning')).not.toBeNull()
+    expect(container.querySelector('[data-fdi="11"] circle')).toBeNull()
+  })
+
+  it('writes the jaw names only when asked', () => {
+    const { rerender } = render(<DentalChart labels={labels} statuses={shaped} />)
+    expect(screen.queryByText("Yuqori jag'")).toBeNull()
+
+    rerender(<DentalChart labels={labels} showJawLabels statuses={shaped} />)
+    expect(screen.getByText("Yuqori jag'")).toBeInTheDocument()
+    expect(screen.getByText("Pastki jag'")).toBeInTheDocument()
+  })
+})

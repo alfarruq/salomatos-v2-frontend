@@ -75,6 +75,7 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         options={[
           { value: FILTER_ALL, label: t('filters.statusAll') },
           { value: 'done', label: t('status.done') },
+          { value: 'inProgress', label: t('status.inProgress') },
           { value: 'voided', label: t('status.voided') },
         ]}
         size="sm"

@@ -58,10 +58,16 @@
     "patientNoResults": "No patient found",
     "rowDiscount": "Discount, %",
     "rowTotal": "Total",
-    "noServices": "The price list has no services for this doctor yet. Add them under Manage → Services."
+    "noServices": "The price list has no services for this doctor yet. Add them under Manage → Services.",
+    "rowInProgress": "In progress",
+    "rowStage": "Stage"
   },
   "chart": {
-    "treated": "Treated"
+    "treated": "Treated",
+    "inProgress": "In progress",
+    "untouched": "Untouched",
+    "patientRight": "Patient's right",
+    "patientLeft": "Patient's left"
   },
   "list": {
     "title": "Treatments",
@@ -91,7 +97,8 @@
   },
   "status": {
     "done": "Done",
-    "voided": "Voided"
+    "voided": "Voided",
+    "inProgress": "In progress"
   },
   "void": {
     "title": "Void procedure",
@@ -100,5 +107,11 @@
     "confirm": "Void",
     "failed": "Could not void the procedure. Please try again.",
     "forbidden": "You don't have permission to void procedures."
+  },
+  "complete": {
+    "confirm": "Complete",
+    "done": "Treatment completed",
+    "failed": "Could not complete the treatment. Try again.",
+    "forbidden": "You can only complete your own treatments."
   }
 }

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { cn } from '@/shared/lib/cn'
 import { formatSom } from '@/shared/lib/money'
-import { Button, Input, MoneyInput, Select } from '@/shared/ui'
+import { Button, Checkbox, Input, MoneyInput, Select } from '@/shared/ui'
 import { lineTotalOf } from '../model/formSchema'
 import type { TreatmentRow } from '../model/types'
 
@@ -86,7 +86,7 @@ export function TreatmentRowsTable({
             <span>{t('treatments:composer.rowType')}</span>
             <span className="text-right">{t('treatments:composer.rowCost')}</span>
             <span className="text-right">{t('treatments:composer.rowDiscount')}</span>
-            <span />
+            <span>{t('treatments:composer.rowStage')}</span>
             <span className="text-right">{t('treatments:composer.rowTotal')}</span>
             <span />
           </div>
@@ -183,7 +183,15 @@ export function TreatmentRowsTable({
                     />
                   </div>
 
-                  <span aria-hidden="true" className="max-lg:hidden" />
+                  <Checkbox
+                    checked={row.inProgress}
+                    className="col-span-2 lg:col-span-1"
+                    id={`${row.rowId}-in-progress`}
+                    label={t('treatments:composer.rowInProgress')}
+                    onCheckedChange={(checked) =>
+                      onRowChange(row.rowId, { inProgress: checked === true })
+                    }
+                  />
 
                   <div className="flex min-w-0 flex-col gap-1 lg:items-end">
                     <CellLabel>{t('treatments:composer.rowTotal')}</CellLabel>

@@ -1,10 +1,11 @@
 import type { CalendarDate } from '@/shared/lib/calendarDate'
 
 /**
- * A recorded procedure is either standing or voided. Money is append-only on
- * the server: a mistake is voided with a reason, never edited or deleted.
+ * A standing procedure is finished (`done`) or spans more visits and is still
+ * `inProgress`; either way it is charged. Money is append-only on the server:
+ * a mistake is voided with a reason, never edited or deleted.
  */
-export type TreatmentStatus = 'done' | 'voided'
+export type TreatmentStatus = 'done' | 'inProgress' | 'voided'
 
 /** A tooth surface, FDI convention: mesial, occlusal, distal, buccal, lingual, incisal. */
 export type ToothSurface = 'M' | 'O' | 'D' | 'B' | 'L' | 'I'
@@ -51,5 +52,7 @@ export interface Treatment {
   startDate: CalendarDate
   notes: string | null
   status: TreatmentStatus
+  /** UTC ISO-8601 instant; null while the work is in progress. */
+  completedAt: string | null
   voidReason: string | null
 }

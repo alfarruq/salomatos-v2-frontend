@@ -50,14 +50,29 @@ export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentTo
   }
 
   // Theme tokens, not hex: both are redefined for dark mode in theme.css.
+  // Each state also has a shape (tick, clock, stripes), so it reads without colour.
   const statuses: ToothStatusDef[] = [
     {
       id: 'done',
       fillClassName: 'fill-success/30',
       strokeClassName: 'stroke-success',
       label: t('treatments:chart.treated'),
+      marker: 'check',
+      markerClassName: 'fill-success',
+      numberClassName: 'fill-success',
+    },
+    {
+      id: 'inProgress',
+      fillClassName: 'fill-warning/20',
+      strokeClassName: 'stroke-warning',
+      label: t('treatments:chart.inProgress'),
+      hatched: true,
+      marker: 'clock',
+      markerClassName: 'fill-warning',
+      numberClassName: 'fill-warning',
     },
   ]
+  const untouched = 32 - summary.counts.done - summary.counts.inProgress
 
   function handleHover(fdi: string | null) {
     if (fdi === null || summary.values[fdi] === undefined) {
@@ -99,21 +114,53 @@ export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentTo
         <h2 className="text-title2 text-text">{t('patients:detail.toothChart')}</h2>
         <ul className="flex flex-wrap items-center gap-4 text-caption text-text-secondary">
           <li className="flex items-center gap-2">
-            <span aria-hidden="true" className="size-2.5 rounded-full bg-success" />
+            <span
+              aria-hidden="true"
+              className="size-3 rounded-[4px] border-[1.5px] border-success bg-success/30"
+            />
             {t('treatments:chart.treated')}
+            <span className="font-semibold text-text tabular-nums">{summary.counts.done}</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="size-3 rounded-[4px] border-[1.5px] border-warning bg-[repeating-linear-gradient(45deg,var(--color-warning)_0_1px,transparent_1px_3px)]"
+            />
+            {t('treatments:chart.inProgress')}
+            <span className="font-semibold text-text tabular-nums">
+              {summary.counts.inProgress}
+            </span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="size-3 rounded-[4px] border-[1.5px] border-border-strong bg-surface"
+            />
+            {t('treatments:chart.untouched')}
+            <span className="font-semibold text-text tabular-nums">{untouched}</span>
           </li>
         </ul>
       </div>
 
-      <div className="flex justify-center" ref={containerRef}>
+      <div className="mx-auto flex w-full max-w-[560px] flex-col gap-1" ref={containerRef}>
         <DentalChart
           className="w-full"
           labels={labels}
+          maxWidth="none"
+          showJawLabels
           onToothClick={(fdi) => handleClick(fdi)}
           onToothHover={handleHover}
           statuses={statuses}
           values={summary.values}
         />
+        {/* FDI charts face the patient: their right is the viewer's left. */}
+        <div
+          aria-hidden="true"
+          className="flex justify-between text-caption tracking-wider text-text-tertiary uppercase"
+        >
+          <span>{t('treatments:chart.patientRight')}</span>
+          <span>{t('treatments:chart.patientLeft')}</span>
+        </div>
       </div>
 
       {hover === null ? null : (
@@ -133,6 +180,8 @@ export function TreatmentToothChart({ clinicId, patientId, onVoid }: TreatmentTo
 
       {detailTreatment === null ? null : (
         <TreatmentDetailDialog
+          clinicId={clinicId}
+          onCompleted={() => setDetailTreatment(null)}
           onOpenChange={(open) => {
             if (!open) setDetailTreatment(null)
           }}

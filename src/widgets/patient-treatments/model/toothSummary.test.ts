@@ -21,6 +21,7 @@ function treatment(overrides: Partial<Treatment>): Treatment {
     startDate: '2026-09-01',
     notes: null,
     status: 'done',
+    completedAt: '2026-09-01T06:00:00Z',
     voidReason: null,
     ...overrides,
   }
@@ -54,5 +55,23 @@ describe('summarizeTeeth', () => {
 
   it('skips procedures with no tooth', () => {
     expect(summarizeTeeth([treatment({ toothNumber: null })]).values).toEqual({})
+  })
+
+  it('marks a tooth in progress while any of its work is unfinished', () => {
+    const summary = summarizeTeeth([
+      treatment({ id: 'p-1', toothNumber: 24, performedAt: '2026-09-10T06:00:00Z' }),
+      treatment({ id: 'p-2', toothNumber: 24, status: 'inProgress', completedAt: null }),
+      treatment({ id: 'p-3', toothNumber: 16 }),
+    ])
+    expect(summary.values).toEqual({ '24': 'inProgress', '16': 'done' })
+    expect(summary.counts).toEqual({ done: 1, inProgress: 1 })
+  })
+
+  it('opens the unfinished treatment of a tooth, so it can be completed', () => {
+    const summary = summarizeTeeth([
+      treatment({ id: 'p-old', status: 'inProgress', completedAt: null }),
+      treatment({ id: 'p-new', performedAt: '2026-09-10T06:00:00Z' }),
+    ])
+    expect(summary.latest['16']?.id).toBe('p-old')
   })
 })

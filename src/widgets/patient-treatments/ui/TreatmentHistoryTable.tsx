@@ -190,6 +190,8 @@ export function TreatmentHistoryTable({
 
       {detailTreatment === null ? null : (
         <TreatmentDetailDialog
+          clinicId={clinicId}
+          onCompleted={() => setDetailTreatment(null)}
           onOpenChange={(open) => {
             if (!open) setDetailTreatment(null)
           }}

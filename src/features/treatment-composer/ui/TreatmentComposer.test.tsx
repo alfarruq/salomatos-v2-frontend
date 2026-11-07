@@ -122,6 +122,7 @@ describe('TreatmentComposer', () => {
       tooth: null,
       unit_price: '200000',
       discount_percent: '10',
+      status: 'completed',
       notes: '',
     })
   })

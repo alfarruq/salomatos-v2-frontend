@@ -1,16 +1,30 @@
 import type { Treatment } from '@/entities/treatment'
 
+/** A tooth with any work still under way is in progress, whatever else was finished on it. */
+export type ToothState = 'done' | 'inProgress'
+
 export interface ToothSummary {
   /** FDI → colour status. Only teeth with recorded work appear. */
-  values: Record<string, 'done'>
+  values: Record<string, ToothState>
   /** FDI → the treatment types done on it, real backend names, no repeats. */
   names: Record<string, string[]>
-  /** FDI → that tooth's most recent treatment, opened on click. */
+  /**
+   * FDI → the treatment a click opens: the latest one still in progress, so
+   * the doctor can complete it from there, else the latest one.
+   */
   latest: Record<string, Treatment>
+  /** How many teeth are in each state, for the legend. */
+  counts: Record<ToothState, number>
 }
 
-/** The later instant wins; UTC ISO strings compare correctly as strings. */
+/**
+ * Open work outranks finished work; within the same rank the later instant
+ * wins (UTC ISO strings compare correctly as strings).
+ */
 function isNewer(candidate: Treatment, current: Treatment): boolean {
+  const candidateOpen = candidate.status === 'inProgress'
+  const currentOpen = current.status === 'inProgress'
+  if (candidateOpen !== currentOpen) return candidateOpen
   return candidate.performedAt > current.performedAt
 }
 
@@ -19,14 +33,15 @@ function isNewer(candidate: Treatment, current: Treatment): boolean {
  * mistake, not work on the tooth, so it is left out entirely.
  */
 export function summarizeTeeth(treatments: readonly Treatment[]): ToothSummary {
-  const values: Record<string, 'done'> = {}
+  const values: Record<string, ToothState> = {}
   const names: Record<string, string[]> = {}
   const latest: Record<string, Treatment> = {}
 
   for (const treatment of treatments) {
     if (treatment.toothNumber === null || treatment.status === 'voided') continue
     const tooth = String(treatment.toothNumber)
-    values[tooth] = 'done'
+    if (treatment.status === 'inProgress') values[tooth] = 'inProgress'
+    else if (values[tooth] === undefined) values[tooth] = 'done'
 
     const label = treatment.treatmentTypeName
     if (label !== null && label !== '') {
@@ -39,5 +54,8 @@ export function summarizeTeeth(treatments: readonly Treatment[]): ToothSummary {
     if (existing === undefined || isNewer(treatment, existing)) latest[tooth] = treatment
   }
 
-  return { values, names, latest }
+  const counts: Record<ToothState, number> = { done: 0, inProgress: 0 }
+  for (const state of Object.values(values)) counts[state] += 1
+
+  return { values, names, latest, counts }
 }

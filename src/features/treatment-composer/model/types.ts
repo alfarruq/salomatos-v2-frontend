@@ -8,6 +8,8 @@ export interface TreatmentRow {
   unitPrice: string
   /** Whole percent, as typed. */
   discountPercent: string
+  /** Work that continues on a later visit; the doctor completes it then. */
+  inProgress: boolean
 }
 
 export interface ComposerFields {

@@ -20,7 +20,7 @@ const treatmentsSearchSchema = v.object({
   patient: uuid,
   doctor: uuid,
   type: uuid,
-  status: v.optional(v.picklist(['done', 'voided'])),
+  status: v.optional(v.picklist(['done', 'inProgress', 'voided'])),
 })
 
 type TreatmentsSearch = v.InferOutput<typeof treatmentsSearchSchema>

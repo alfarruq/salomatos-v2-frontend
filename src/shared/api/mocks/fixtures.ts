@@ -398,6 +398,8 @@ export const MOCK_PROCEDURES = [
     discount_percent: '0.00',
     total: '350000.00',
     performed_at: '2026-08-10T06:00:00Z',
+    status: 'completed',
+    completed_at: '2026-08-10T06:00:00Z',
     notes: '',
     voided_at: null,
     void_reason: '',
