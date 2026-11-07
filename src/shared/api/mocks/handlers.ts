@@ -622,6 +622,100 @@ function financeOverview(scope: Scope, from: string, to: string, previous: [stri
   }
 }
 
+/** The clinic's wall clock is UTC+5 (Asia/Tashkent, no DST); the mock does not need zones. */
+function tashkent(instant: unknown): Date {
+  return new Date(Date.parse(String(instant)) + 5 * 3_600_000)
+}
+
+function localDay(instant: unknown): string {
+  return tashkent(instant).toISOString().slice(0, 10)
+}
+
+/** Mirrors `statistics.statistics_overview`, one bucket per range: enough for the screen. */
+function statisticsOverview(scope: Scope, from: string, to: string, previous: [string, string]) {
+  const visitsIn = (start: string, end: string) =>
+    table('appointments').filter(
+      (row) => inScope(row, scope) && between(localDay(row.start_at), start, end),
+    )
+  const treatedIn = (start: string, end: string) =>
+    table('procedures').filter(
+      (row) =>
+        inScope(row, scope) &&
+        row.voided_at === null &&
+        between(localDay(row.performed_at), start, end),
+    )
+  const totals = (start: string, end: string) => {
+    const visits = visitsIn(start, end)
+    const treated = treatedIn(start, end)
+    const seen = new Set([
+      ...treated.map((row) => row.patient),
+      ...visits.filter((row) => row.status === 'completed').map((row) => row.patient),
+    ])
+    const patients = table('patients').filter((row) => inScope(row, scope))
+    return {
+      appointments: visits.filter((row) => row.status !== 'cancelled').length,
+      appointments_completed: visits.filter((row) => row.status === 'completed').length,
+      no_shows: visits.filter((row) => row.status === 'no_show').length,
+      cancellations: visits.filter((row) => row.status === 'cancelled').length,
+      new_patients: patients.filter((row) => between(localDay(row.created_at), start, end)).length,
+      returning_patients: patients.filter(
+        (row) => seen.has(row.id) && localDay(row.created_at) < start,
+      ).length,
+      procedures: treated.length,
+      plans_accepted: 0,
+    }
+  }
+  const current = totals(from, to)
+  const visits = visitsIn(from, to).filter((row) => row.status !== 'cancelled')
+  const treated = treatedIn(from, to)
+  const countBy = <K>(rows: Row[], key: (row: Row) => K) => {
+    const counts = new Map<K, number>()
+    for (const row of rows) counts.set(key(row), (counts.get(key(row)) ?? 0) + 1)
+    return [...counts]
+  }
+  const doctorIds = [...new Set([...visits, ...treated].map((row) => String(row.doctor)))]
+  return {
+    from,
+    to,
+    bucket: 'day',
+    totals: current,
+    previous_totals: totals(...previous),
+    appointments_series: [
+      { start: from, total: current.appointments, completed: current.appointments_completed },
+    ],
+    procedures_series: [{ start: from, count: current.procedures }],
+    doctors: doctorIds.map((doctor) => {
+      const member = table('staff').find((row) => row.id === doctor)
+      return {
+        doctor,
+        doctor_name: staffNameOf(doctor) ?? '',
+        clinic_name: clinicNameOf(typeof member?.clinic === 'string' ? member.clinic : null),
+        appointments: visits.filter((row) => row.doctor === doctor).length,
+        appointments_completed: visits.filter(
+          (row) => row.doctor === doctor && row.status === 'completed',
+        ).length,
+        procedures: treated.filter((row) => row.doctor === doctor).length,
+      }
+    }),
+    services: countBy(treated, (row) => String(row.service)).map(([service, count]) => ({
+      service,
+      service_name: String(serviceOf(service)?.name ?? ''),
+      count,
+    })),
+    busy_slots: countBy(visits, (row) => {
+      const local = tashkent(row.start_at)
+      return `${local.getUTCDay() === 0 ? 7 : local.getUTCDay()}:${local.getUTCHours()}`
+    }).map(([slot, appointments]) => {
+      const [weekday, hour] = slot.split(':').map(Number)
+      return { weekday, hour, appointments }
+    }),
+    teeth: countBy(
+      treated.filter((row) => typeof row.tooth === 'number'),
+      (row) => Number(row.tooth),
+    ).map(([tooth, count]) => ({ tooth, count })),
+  }
+}
+
 export const handlers = [
   http.post('/api/v1/auth/login/', async ({ request }) => {
     const body = await bodyOf(request)
@@ -1264,5 +1358,12 @@ export const handlers = [
     if (scope instanceof Response) return scope
     const { from, to, previous } = rangeOf(request)
     return HttpResponse.json(financeOverview(scope, from, to, previous))
+  }),
+
+  http.get('/api/v1/reports/statistics/', ({ request }) => {
+    const scope = guard(request, 'report:view', true)
+    if (scope instanceof Response) return scope
+    const { from, to, previous } = rangeOf(request)
+    return HttpResponse.json(statisticsOverview(scope, from, to, previous))
   }),
 ]
