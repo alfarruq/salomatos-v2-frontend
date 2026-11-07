@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import {
+  BarChart3,
   CalendarDays,
   House,
   LogOut,
@@ -195,6 +196,12 @@ function AuthenticatedLayout() {
           <Can permission="appointment:view">
             <li>
               <SidebarLink icon={CalendarDays} label={t('nav.appointments')} to="/appointments" />
+            </li>
+          </Can>
+          {/* Clinic-wide figures are for whoever runs the clinic, not for one doctor's chair. */}
+          <Can permission="report:view">
+            <li>
+              <SidebarLink icon={BarChart3} label={t('nav.statistics')} to="/statistics" />
             </li>
           </Can>
           <Can permission="payment:view">
