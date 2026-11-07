@@ -75,6 +75,11 @@ const OWNER_PERMISSIONS = [
   'payment:manage',
   'payment:void',
   'report:view',
+  'expense:view',
+  'expense:manage',
+  'expense:void',
+  'payroll:view',
+  'payroll:manage',
   'audit:view',
 ]
 const DOCTOR_PERMISSIONS = [
@@ -98,7 +103,16 @@ const DOCTOR_PERMISSIONS = [
   'payment:view',
 ]
 const ADMIN_PERMISSIONS = OWNER_PERMISSIONS.filter(
-  (p) => !['clinic:manage', 'staff:manage_owners', 'audit:view', 'payment:void'].includes(p),
+  (p) =>
+    ![
+      'clinic:manage',
+      'staff:manage_owners',
+      'audit:view',
+      'payment:void',
+      'expense:void',
+      'payroll:view',
+      'payroll:manage',
+    ].includes(p),
 )
 
 export const MOCK_USERS = {

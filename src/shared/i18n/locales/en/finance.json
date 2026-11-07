@@ -1,5 +1,62 @@
 {
   "title": "Finance",
+  "tabs": {
+    "overview": "Overview",
+    "debtors": "Debtors",
+    "expenses": "Expenses",
+    "recurring": "Recurring",
+    "payroll": "Doctor pay"
+  },
+  "period": {
+    "label": "Period",
+    "week": "Last 7 days",
+    "month": "Last 30 days",
+    "quarter": "Last 3 months",
+    "year": "Last 12 months"
+  },
+  "kpi": {
+    "collected": "Collected",
+    "billed": "Work billed",
+    "outstandingDebt": "Outstanding debt",
+    "vsPrevious": "vs previous period",
+    "debtors_one": "{{count}} debtor",
+    "debtors_other": "{{count}} debtors"
+  },
+  "charts": {
+    "revenue": {
+      "title": "Billed and collected",
+      "description": "Work done at its price, and the payments received",
+      "billed": "Billed",
+      "collected": "Collected"
+    },
+    "methods": {
+      "title": "Payment methods",
+      "description": "Share of the money collected"
+    },
+    "doctors": {
+      "title": "Collected by doctor",
+      "description": "Payments for each doctor's work"
+    },
+    "services": {
+      "title": "Revenue by service",
+      "description": "Billed in the period"
+    }
+  },
+  "empty": {
+    "title": "No money moved in this period",
+    "description": "Pick a longer period or check back once payments are recorded."
+  },
+  "error": {
+    "title": "Finance could not be loaded",
+    "description": "Check your connection and try again."
+  },
+  "profit": {
+    "expenses": "Expenses",
+    "profit": "Net profit",
+    "expensesNote": "{{percent}}% of collected",
+    "margin": "Margin: {{percent}}%",
+    "withoutPayroll": "Doctor pay is not included, so profit is not shown."
+  },
   "payment": {
     "record": "Record payment",
     "title": "Record a payment",

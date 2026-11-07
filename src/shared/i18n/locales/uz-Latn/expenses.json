@@ -1,0 +1,250 @@
+{
+  "kpi": {
+    "total": "Jami xarajat",
+    "entries_one": "{{count}} ta yozuv",
+    "entries_other": "{{count}} ta yozuv",
+    "share": "Jami xarajatning {{percent}}%",
+    "vsPrevious": "oldingi davrga nisbatan"
+  },
+  "kinds": {
+    "payroll": "Ish haqi",
+    "fixed": "Doimiy xarajatlar",
+    "variable": "O'zgaruvchan xarajatlar"
+  },
+  "categories": {
+    "doctor_share": "Shifokor ulushi",
+    "staff_salary": "Xodimlar maoshi",
+    "rent": "Ijara",
+    "utilities": "Kommunal",
+    "communication": "Aloqa va dasturlar",
+    "materials": "Materiallar va dori-darmon",
+    "lab": "Zubtexnik laboratoriyasi",
+    "equipment": "Uskuna",
+    "marketing": "Marketing",
+    "taxes_fees": "Soliq va bank to'lovlari",
+    "other": "Boshqa"
+  },
+  "methods": {
+    "cash": "Naqd",
+    "card": "Karta",
+    "transfer": "Bank o'tkazmasi"
+  },
+  "charts": {
+    "trend": {
+      "title": "Xarajatlar dinamikasi",
+      "description": "Davr ichida to'langan summalar"
+    },
+    "categories": {
+      "title": "Toifalar bo'yicha",
+      "description": "Har bir toifaning jami xarajatdagi ulushi"
+    }
+  },
+  "journal": {
+    "title": "Xarajatlar jurnali",
+    "description": "Davr ichidagi barcha yozuvlar, yangilari yuqorida",
+    "categoryFilter": "Toifa bo'yicha saralash",
+    "allCategories": "Barcha toifalar",
+    "date": "Sana",
+    "category": "Toifa",
+    "payee": "Kimga / izoh",
+    "method": "Usul",
+    "enteredBy": "Kiritgan",
+    "amount": "Summa",
+    "actions": "Amallar",
+    "voided": "Hisobdan chiqarilgan",
+    "voidReason": "Sabab: {{reason}}",
+    "empty": "Bu davrda xarajat kiritilmagan.",
+    "emptyFiltered": "Bu toifada xarajat yo'q.",
+    "pageSummary": "{{total}} tadan {{from}}–{{to}}"
+  },
+  "form": {
+    "date": "Sana",
+    "datePlaceholder": "Sanani tanlang",
+    "previousMonth": "Oldingi oy",
+    "nextMonth": "Keyingi oy",
+    "amount": "Summa, so'm",
+    "category": "Toifa",
+    "categoryPlaceholder": "Toifani tanlang",
+    "method": "To'lov usuli",
+    "doctor": "Shifokor",
+    "doctorPlaceholder": "Shifokorni tanlang",
+    "payee": "Kimga to'landi",
+    "payeeHint": "Masalan: ijara beruvchi, yetkazib beruvchi, kommunal xizmat",
+    "note": "Izoh",
+    "noteHint": "Bemor ismi va boshqa shaxsiy ma'lumotlarni yozmang."
+  },
+  "create": {
+    "open": "Xarajat qo'shish",
+    "title": "Yangi xarajat",
+    "description": "Klinika qilgan to'lovni kiriting.",
+    "submit": "Qo'shish",
+    "success": "Xarajat qo'shildi",
+    "failed": "Xarajatni saqlab bo'lmadi. Qayta urinib ko'ring."
+  },
+  "edit": {
+    "title": "Xarajatni tahrirlash",
+    "description": "O'zgarishlar tarixi serverda saqlanadi.",
+    "success": "Xarajat yangilandi",
+    "failed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring."
+  },
+  "void": {
+    "title": "Hisobdan chiqarish",
+    "description": "{{date}}, {{category}}, {{amount}}. Yozuv jurnalda qoladi, lekin hisob-kitobga kirmaydi. Bu amalni qaytarib bo'lmaydi.",
+    "reason": "Sabab",
+    "reasonHint": "Masalan: ikki marta kiritilgan, summa xato",
+    "keep": "Qoldirish",
+    "submit": "Hisobdan chiqarish",
+    "success": "Yozuv hisobdan chiqarildi",
+    "failed": "Yozuvni hisobdan chiqarib bo'lmadi. Qayta urinib ko'ring."
+  },
+  "empty": {
+    "title": "Bu davrda xarajat yo'q",
+    "description": "Uzunroq davrni tanlang yoki birinchi xarajatni kiriting."
+  },
+  "error": {
+    "title": "Xarajatlarni yuklab bo'lmadi",
+    "description": "Internet aloqasini tekshirib, qayta urinib ko'ring."
+  },
+  "recurring": {
+    "month": {
+      "previous": "Oldingi oy",
+      "next": "Keyingi oy",
+      "current": "Joriy oy"
+    },
+    "totals": {
+      "expected": "Oy bo'yicha kutilgan",
+      "paid": "To'langan",
+      "remaining": "Qolgan"
+    },
+    "due": {
+      "title": "Shu oyning to'lovlari",
+      "description": "Har bir to'lov qo'lda tasdiqlanadi va xarajatlar jurnaliga yoziladi",
+      "date": "Muddat",
+      "name": "Nomi",
+      "status": "Holat",
+      "paidOn": "{{date}}, {{method}}",
+      "expected": "Kutilgan: {{amount}}"
+    },
+    "status": {
+      "due": "Kutilmoqda",
+      "overdue": "Muddati o'tgan",
+      "paid": "To'langan",
+      "skipped": "O'tkazib yuborilgan"
+    },
+    "templates": {
+      "title": "Shablonlar",
+      "description": "Har oy takrorlanadigan to'lovlar. Shablon hech narsani avtomatik to'lamaydi.",
+      "day": "Kuni",
+      "everyMonth": "Har oyning {{day}}-kuni",
+      "active": "Faol",
+      "empty": "Hali shablon yo'q. Ijara, kommunal va maoshlarni qo'shing.",
+      "paused": "Shablon to'xtatildi",
+      "resumed": "Shablon qayta yoqildi"
+    },
+    "form": {
+      "name": "Nomi",
+      "nameHint": "Masalan: Bino ijarasi, Elektr energiyasi",
+      "amountHint": "Odatdagi summa. To'lashda o'zgartirish mumkin.",
+      "day": "To'lov kuni",
+      "dayHint": "Oyning 1–28 kunlari"
+    },
+    "create": {
+      "open": "Shablon qo'shish",
+      "title": "Yangi doimiy to'lov",
+      "description": "Har oy qaytariladigan to'lovni kiriting.",
+      "submit": "Qo'shish",
+      "success": "Shablon qo'shildi",
+      "failed": "Shablonni saqlab bo'lmadi. Qayta urinib ko'ring."
+    },
+    "edit": {
+      "title": "Shablonni tahrirlash",
+      "description": "O'zgarish keyingi to'lovlarga ta'sir qiladi. To'langan oylar o'zgarmaydi.",
+      "submit": "Saqlash",
+      "success": "Shablon yangilandi",
+      "failed": "O'zgarishni saqlab bo'lmadi. Qayta urinib ko'ring."
+    },
+    "pay": {
+      "open": "To'landi",
+      "title": "To'lovni tasdiqlash",
+      "description": "{{name}}, muddat {{date}}. Haqiqatda to'langan summani kiriting.",
+      "submit": "Tasdiqlash",
+      "success": "To'lov xarajatlar jurnaliga yozildi",
+      "failed": "To'lovni saqlab bo'lmadi. Qayta urinib ko'ring."
+    },
+    "skip": {
+      "open": "O'tkazish",
+      "title": "Bu oy to'lanmaydimi?",
+      "description": "{{name}}, {{month}}. Hech narsa yozilmaydi. Keyinroq baribir to'lash mumkin.",
+      "submit": "O'tkazib yuborish",
+      "success": "Bu oy o'tkazib yuborildi",
+      "failed": "Saqlab bo'lmadi. Qayta urinib ko'ring."
+    },
+    "empty": {
+      "title": "Bu oyda doimiy to'lov yo'q",
+      "description": "Pastdagi shablonlar bo'limidan ijara, kommunal va maoshlarni qo'shing."
+    },
+    "error": "Doimiy to'lovlarni yuklab bo'lmadi"
+  },
+  "payroll": {
+    "totals": {
+      "accrued": "Hisoblangan",
+      "paid": "Berilgan",
+      "balance": "Berilishi kerak"
+    },
+    "table": {
+      "title": "Shifokorlar bo'yicha",
+      "description": "Hisoblangan ulush shartga ko'ra serverda hisoblanadi. Har bir to'lov qo'lda kiritiladi.",
+      "doctor": "Shifokor",
+      "base": "Foiz olinadigan summa",
+      "accrued": "Hisoblangan",
+      "paid": "Berilgan",
+      "balance": "Qoldiq",
+      "accruedPaid": "Hisoblangan {{accrued}} · berilgan {{paid}}",
+      "opening": "Oldingi oylardan: {{amount}}",
+      "balanceShort": "Qoldiq: {{amount}}",
+      "billedCollected": "bajarilgan {{billed}} · to'langan {{collected}}"
+    },
+    "terms": {
+      "none": "Shart belgilanmagan",
+      "fixed": "Oklad {{amount}}",
+      "percent": {
+        "collected": "{{percent}}% tushumdan",
+        "billed": "{{percent}}% bajarilgan ishdan"
+      },
+      "withLab": "{{terms}}, laboratoriya ayiriladi",
+      "open": "Shart",
+      "title": "Ish haqi sharti",
+      "description": "{{name}}. Yangi shart tanlangan oydan amal qiladi, oldingi oylar o'zgarmaydi.",
+      "percentLabel": "Foiz, %",
+      "percentHint": "0–100, masalan 35 yoki 32,5",
+      "fixedLabel": "Oklad, so'm/oy",
+      "fixedHint": "Faqat foizda ishlasa bo'sh qoldiring",
+      "base": "Foiz nimadan olinadi",
+      "bases": {
+        "collected": "Bemor to'lagan pul",
+        "billed": "Bajarilgan ish summasi"
+      },
+      "effectiveFrom": "Qaysi oydan",
+      "submit": "Saqlash",
+      "success": "Shart saqlandi",
+      "failed": "Shartni saqlab bo'lmadi. Qayta urinib ko'ring.",
+      "history": "Shartlar tarixi",
+      "noHistory": "Hali shart belgilanmagan.",
+      "since": "{{month}}dan:"
+    },
+    "pay": {
+      "open": "To'lov",
+      "title": "Shifokorga to'lov",
+      "description": "{{name}}. Berilishi kerak: {{amount}}. Summani o'zgartirish mumkin (bonus, ushlab qolish).",
+      "submit": "Kiritish",
+      "success": "To'lov xarajatlar jurnaliga yozildi",
+      "failed": "To'lovni saqlab bo'lmadi. Qayta urinib ko'ring.",
+      "noteHint": "Masalan: avans, bonus. Bemor ma'lumotini yozmang."
+    },
+    "empty": {
+      "title": "Shifokorlar yo'q",
+      "description": "Shifokor qo'shilgach, uning ulushi shu yerda hisoblanadi."
+    },
+    "error": "Shifokor ulushini yuklab bo'lmadi"
+  }
+}
