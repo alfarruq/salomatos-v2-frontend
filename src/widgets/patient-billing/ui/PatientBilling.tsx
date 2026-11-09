@@ -111,7 +111,6 @@ export function PatientBilling({ clinicId, patientId }: PatientBillingProps) {
                 <TableRow>
                   <TableHead>{t('finance:ledger.date')}</TableHead>
                   <TableHead>{t('finance:ledger.method')}</TableHead>
-                  <TableHead className="max-sm:hidden">{t('finance:ledger.receivedBy')}</TableHead>
                   <TableHead align="right">{t('finance:ledger.amount')}</TableHead>
                   <TableHead>
                     <span className="sr-only">{t('finance:void.action')}</span>
@@ -126,13 +125,22 @@ export function PatientBilling({ clinicId, patientId }: PatientBillingProps) {
                     </TableCell>
                     <TableCell>
                       {t(`finance:methods.${payment.method}`)}
+                      {/* Under the method, not a column of its own: the card is a narrow
+                          sidebar, and a fourth column pushed the amount out of view. */}
+                      {payment.receivedByName === null ? null : (
+                        <p
+                          className="text-footnote text-text-tertiary"
+                          title={t('finance:ledger.receivedBy')}
+                        >
+                          {payment.receivedByName}
+                        </p>
+                      )}
                       {payment.status === 'voided' ? (
                         <p className="text-footnote text-text-tertiary">
                           {t('finance:ledger.voided', { reason: payment.voidReason ?? '—' })}
                         </p>
                       ) : null}
                     </TableCell>
-                    <TableCell className="max-sm:hidden">{payment.receivedByName ?? '—'}</TableCell>
                     <TableCell
                       align="right"
                       className={

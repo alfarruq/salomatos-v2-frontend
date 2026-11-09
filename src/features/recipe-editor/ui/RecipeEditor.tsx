@@ -30,6 +30,8 @@ export interface RecipeEditorProps {
   patientName: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** The patient's own doctor, picked up front as the treatment composer does. */
+  initialDoctorId?: string | null
 }
 
 /**
@@ -43,6 +45,7 @@ export function RecipeEditor({
   patientName,
   open,
   onOpenChange,
+  initialDoctorId,
 }: RecipeEditorProps) {
   const { t } = useTranslation(['recipes', 'common', 'voice'])
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
@@ -58,7 +61,10 @@ export function RecipeEditor({
 
   // A doctor writes prescriptions in their own name only.
   const onlyMe = useActsOnlyAs('patient:view_all')
-  const [doctorId, setDoctorId] = useState(onlyMe ?? '')
+  const [pickedDoctorId, setDoctorId] = useState(onlyMe ?? initialDoctorId ?? '')
+  // A preset doctor who is no longer on the list (left the clinic) is not a choice.
+  const doctorId =
+    doctorsQuery.data?.some((doctor) => doctor.id === pickedDoctorId) === true ? pickedDoctorId : ''
   // One empty row to start with: there is no prescription without a medicine.
   const [rows, setRows] = useState<MedicineRow[]>(() => [newMedicineRow()])
   const [newRowId, setNewRowId] = useState<string | null>(null)
@@ -148,7 +154,9 @@ export function RecipeEditor({
                     : `${doctor.fullName} · ${doctor.doctorTypeName}`,
               }))}
             placeholder={t('recipes:editor.doctorPlaceholder')}
-            {...(doctorId === '' ? {} : { value: doctorId })}
+            // Always controlled: '' shows the placeholder, and switching from
+            // uncontrolled to controlled on the first pick made React warn.
+            value={doctorId}
           />
         </Field>
       </div>

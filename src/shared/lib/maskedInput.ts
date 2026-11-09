@@ -2,6 +2,10 @@ import type { ChangeEvent } from 'react'
 
 const DIGIT = /\d/
 
+function digitsIn(text: string): string {
+  return text.replace(/\D/g, '')
+}
+
 function countDigits(text: string): number {
   let count = 0
   for (const char of text) if (DIGIT.test(char)) count += 1
@@ -50,8 +54,10 @@ export function applyMask(
 
   // Deleting only a separator would be undone by the mask on the spot, so the
   // key would look dead. Delete the digit the user was aiming at instead.
+  // The digits must be the very same ones: pasting "100000" over "350,000" is
+  // one character shorter with as many digits, and must not lose a digit.
   const removedSeparatorOnly =
-    raw.length === previous.length - 1 && countDigits(raw) === countDigits(previous) && raw !== ''
+    raw.length === previous.length - 1 && digitsIn(raw) === digitsIn(previous) && raw !== ''
   if (removedSeparatorOnly) {
     if (inputType === 'deleteContentForward') {
       const next = raw.slice(at).search(DIGIT)
