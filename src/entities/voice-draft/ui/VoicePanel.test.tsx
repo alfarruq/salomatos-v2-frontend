@@ -48,11 +48,12 @@ function renderPanel(onSubmit = vi.fn()) {
 describe('VoicePanel', () => {
   beforeEach(() => signInAs('doctor'))
 
-  it('stays hidden while the clinic has voice switched off', async () => {
-    renderPanel()
+  it('explains what is missing while the clinic has no key', async () => {
     // The default mock answers `enabled: false`.
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    expect(screen.queryByRole('button', { name: "Ovoz bilan to'ldirish" })).toBeNull()
+    renderPanel()
+    await userEvent.click(await screen.findByRole('button', { name: "Ovoz bilan to'ldirish" }))
+    expect(screen.getByText("Ovozli to'ldirish hali sozlanmagan")).toBeTruthy()
+    expect(screen.queryByRole('textbox', { name: 'Diktovka matni' })).toBeNull()
   })
 
   it('sends the typed dictation and shows the month so far', async () => {
