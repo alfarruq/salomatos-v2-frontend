@@ -99,7 +99,9 @@
     "noMatch": "Mos muolaja topilmadi",
     "noMatchDescription": "Filtrlarni o'zgartirib ko'ring.",
     "clear": "Filtrlarni tozalash",
-    "patientLoading": "Bemor"
+    "patientLoading": "Bemor",
+    "dateFrom": "Sanadan",
+    "dateTo": "Sanagacha"
   },
   "status": {
     "done": "Bajarildi",

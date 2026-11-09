@@ -99,7 +99,9 @@
     "noMatch": "Мос муолажа топилмади",
     "noMatchDescription": "Фильтрларни ўзгартириб кўринг.",
     "clear": "Фильтрларни тозалаш",
-    "patientLoading": "Бемор"
+    "patientLoading": "Бемор",
+    "dateFrom": "Санадан",
+    "dateTo": "Санагача"
   },
   "status": {
     "done": "Бажарилди",

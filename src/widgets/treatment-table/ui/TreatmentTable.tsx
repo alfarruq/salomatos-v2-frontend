@@ -104,7 +104,9 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
     filters.patientId !== null ||
     filters.doctorId !== null ||
     filters.treatmentTypeId !== null ||
-    filters.status !== null
+    filters.status !== null ||
+    filters.dateFrom !== null ||
+    filters.dateTo !== null
   // Without `payment:view` the money column is not theirs.
   const canSeeMoney = useCan('payment:view')
   const navigate = useNavigate()

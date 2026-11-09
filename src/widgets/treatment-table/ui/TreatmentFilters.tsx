@@ -7,7 +7,7 @@ import type { TreatmentListFilters, TreatmentStatus } from '@/entities/treatment
 import { treatmentTypeQueries } from '@/entities/treatment-type'
 import { PatientSearchInput, usePatientSearch } from '@/features/patient-search'
 import { cn } from '@/shared/lib/cn'
-import { Select } from '@/shared/ui'
+import { Input, Select } from '@/shared/ui'
 
 /** Radix Select treats `""` as "nothing chosen", so "all" needs a real value. */
 const FILTER_ALL = 'all'
@@ -81,6 +81,35 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         size="sm"
         value={filters.status ?? FILTER_ALL}
       />
+
+      {/* One range: the two days wrap together on a narrow screen. */}
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label={t('filters.dateFrom')}
+          className="w-40"
+          max={filters.dateTo ?? undefined}
+          onChange={(event) =>
+            change({ dateFrom: event.target.value === '' ? null : event.target.value })
+          }
+          size="sm"
+          type="date"
+          value={filters.dateFrom ?? ''}
+        />
+        <span aria-hidden="true" className="text-text-tertiary">
+          –
+        </span>
+        <Input
+          aria-label={t('filters.dateTo')}
+          className="w-40"
+          min={filters.dateFrom ?? undefined}
+          onChange={(event) =>
+            change({ dateTo: event.target.value === '' ? null : event.target.value })
+          }
+          size="sm"
+          type="date"
+          value={filters.dateTo ?? ''}
+        />
+      </div>
     </div>
   )
 }

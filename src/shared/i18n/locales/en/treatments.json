@@ -99,7 +99,9 @@
     "noMatch": "No matching treatments",
     "noMatchDescription": "Try changing the filters.",
     "clear": "Clear filters",
-    "patientLoading": "Patient"
+    "patientLoading": "Patient",
+    "dateFrom": "From date",
+    "dateTo": "To date"
   },
   "status": {
     "done": "Done",
