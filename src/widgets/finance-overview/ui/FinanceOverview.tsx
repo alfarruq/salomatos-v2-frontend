@@ -104,6 +104,7 @@ function OverviewContent({ data, showBranch }: { data: FinanceOverviewData; show
 
       <ChartCard description={t('charts.revenue.description')} title={t('charts.revenue.title')}>
         <BarChart
+          paired
           data={data.series.map((point) => ({
             key: point.start,
             label: bucketLabel(point.start, data.range.bucket, i18n.language),
