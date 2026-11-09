@@ -849,7 +849,21 @@ export const handlers = [
 
     return HttpResponse.json({
       message: 'Ok',
-      result: { access_token: accessTokenFor(match), refresh_token: `refresh-${match}` },
+      // Mock-only: the refresh token is the same fake JWT, so the refresh handler can read the user.
+      result: { access_token: accessTokenFor(match), refresh_token: accessTokenFor(match) },
+    })
+  }),
+
+  http.post('/api/v1/auth/refresh/', async ({ request }) => {
+    const body = await bodyOf(request)
+    const payload =
+      typeof body.refresh_token === 'string' ? readJwtPayload(body.refresh_token) : null
+    const match = (Object.keys(MOCK_USERS) as MockUserKey[]).find(
+      (key) => MOCK_USERS[key].id === payload?.userId,
+    )
+    if (match === undefined) return unauthorized()
+    return HttpResponse.json({
+      result: { access_token: accessTokenFor(match), refresh_token: accessTokenFor(match) },
     })
   }),
 

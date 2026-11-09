@@ -13,9 +13,9 @@
 
 interface ApiContext {
   /**
-   * Called once when the server says the session is gone. The backend has no
-   * token refresh route (ADR-003, revised), so this is a hard logout: drop the
-   * token, send the user to /login.
+   * Called once when the session is gone for good: the server refused the
+   * token and the refresh token could not replace it. A hard logout: drop the
+   * tokens, send the user to /login.
    */
   onUnauthorized: () => void
 }

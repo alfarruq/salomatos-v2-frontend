@@ -1,6 +1,7 @@
 import ky, { HTTPError, TimeoutError } from 'ky'
 import { ApiError, normalizeDrfError } from './errors'
 import { getApiContext } from './httpContext'
+import { refreshSession } from './refreshSession'
 import { getTenantScope } from './tenantScope'
 import { getAccessToken } from './tokenStore'
 
@@ -12,12 +13,32 @@ import { getAccessToken } from './tokenStore'
  */
 const API_PREFIX = `${globalThis.location.origin}/api`
 
+const RETRY_LIMIT = 2
+
+function bearer(): string | null {
+  const token = getAccessToken()
+  return token === null ? null : `Bearer ${token}`
+}
+
+function handOffUnauthorized(): void {
+  /*
+   * Deferred to a microtask so application code never runs inside this
+   * request's own promise chain. A handler that touched the query cache
+   * would otherwise cancel the very request that triggered it, and the
+   * caller would receive a CancelledError instead of the `unauthorized`
+   * ApiError the route guard branches on.
+   */
+  queueMicrotask(() => {
+    getApiContext().onUnauthorized()
+  })
+}
+
 export const api = ky.create({
   prefix: API_PREFIX,
   timeout: 20_000,
 
   retry: {
-    limit: 2,
+    limit: RETRY_LIMIT,
     // GET only. Retrying a POST could book the same appointment twice.
     methods: ['get'],
     statusCodes: [408, 429, 500, 502, 503, 504],
@@ -32,32 +53,39 @@ export const api = ky.create({
          * The tenant header names the clinic (or, for owners, the organization)
          * the request is for; the backend checks it against the membership.
          */
-        const token = getAccessToken()
-        if (token !== null) request.headers.set('Authorization', `Bearer ${token}`)
+        const auth = bearer()
+        if (auth !== null) request.headers.set('Authorization', auth)
         const scope = getTenantScope()
         if (scope?.kind === 'clinic') request.headers.set('X-Clinic-Id', scope.id)
         if (scope?.kind === 'organization') request.headers.set('X-Organization-Id', scope.id)
       },
     ],
 
+    // beforeRequest runs once; a retry after a refresh must carry the new token.
+    beforeRetry: [
+      ({ request }) => {
+        const auth = bearer()
+        if (auth !== null) request.headers.set('Authorization', auth)
+      },
+    ],
+
     afterResponse: [
-      ({ response }) => {
+      async ({ request, response, retryCount }) => {
+        if (response.status !== 401) return response
         /*
-         * A 401 is terminal. The backend exposes no token refresh route, so
-         * there is nothing to retry with — the `refresh_token` it issues at
-         * login has nowhere to be sent. Hand off once and let the error surface.
-         *
-         * Deferred to a microtask so application code never runs inside this
-         * request's own promise chain. A handler that touched the query cache
-         * would otherwise cancel the very request that triggered it, and the
-         * caller would receive a CancelledError instead of the `unauthorized`
-         * ApiError the route guard branches on.
+         * An expired access token is routine (it lives minutes): trade the
+         * refresh token for a new pair and repeat the request once. Only when
+         * that fails is the 401 terminal, and the app is told exactly once.
          */
-        if (response.status === 401) {
-          queueMicrotask(() => {
-            getApiContext().onUnauthorized()
-          })
+        const sent = request.headers.get('Authorization')
+        if (sent !== null && retryCount < RETRY_LIMIT) {
+          // Another request may already have refreshed while this one was in flight.
+          const current = bearer()
+          if ((current !== null && current !== sent) || (await refreshSession())) {
+            return ky.retry({ delay: 0, code: 'TOKEN_REFRESHED' })
+          }
         }
+        handOffUnauthorized()
         return response
       },
     ],

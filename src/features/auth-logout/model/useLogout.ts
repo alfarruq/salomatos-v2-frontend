@@ -1,33 +1,40 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSessionStore } from '@/entities/session'
 import { clearSession } from '@/shared/api/authSession'
+import { httpClient } from '@/shared/api/httpClient'
+import { storage } from '@/shared/lib/storage'
 
 /**
- * Signing out is entirely local, because there is nothing to tell the server.
+ * Revokes the refresh token on the server, then forgets everything locally.
  *
- * The backend has no logout route, and no way to revoke a token even in
- * principle: `BLACKLIST_AFTER_ROTATION` is configured but
- * `rest_framework_simplejwt.token_blacklist` is not in `INSTALLED_APPS`, so
- * simplejwt swallows the blacklist call. The issued token stays valid until it
- * expires — a day, by default.
- *
- * ⚠️ Which means this protects the *screen*, not the credential. Dropping the
- * token puts it beyond the reach of this page, and that is the realistic threat
- * on a shared reception machine; a token already captured off the wire is not
- * something the frontend can call back. Fixing that is server-side (§A5 of the
- * backend review).
- *
- * Still a mutation rather than a plain function: callers already treat signing
- * out as an async action with a pending state, and keeping the shape means the
- * call sites do not change when a real endpoint appears.
+ * The server call is best-effort: the user asked to leave, so a network error
+ * must not keep them signed in on a shared reception machine. The access token
+ * cannot be revoked and simply expires (minutes); the refresh token would
+ * otherwise stay usable for days.
  */
+async function signOut(): Promise<void> {
+  const refreshToken = storage.get('refreshToken')
+  if (refreshToken === null) return
+  try {
+    await httpClient<void>('v1/auth/logout/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+  } catch {
+    // See above: leaving locally is what matters.
+  }
+}
+
 export function useLogout() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async () => {
+      await signOut()
       clearSession()
     },
+    retry: false,
 
     /*
      * `onSettled`, not `onSuccess`: the user asked to leave, and the next

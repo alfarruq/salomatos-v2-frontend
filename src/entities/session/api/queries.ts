@@ -1,6 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError } from '@/shared/api/errors'
 import { httpClient } from '@/shared/api/httpClient'
+import { refreshSession } from '@/shared/api/refreshSession'
 import { getTenantScope, setTenantScope } from '@/shared/api/tenantScope'
 import { getAccessToken } from '@/shared/api/tokenStore'
 import { cachePolicy } from '@/shared/config/cache'
@@ -18,8 +19,10 @@ export const sessionKeys = {
 }
 
 export async function fetchSession(signal?: AbortSignal): Promise<Session> {
-  // No token is the ordinary signed-out case; skip the round trip that would 401.
-  if (getAccessToken() === null) {
+  // No token is the ordinary signed-out case, unless a stored refresh token can
+  // still be traded (a reload after the access token expired). Otherwise skip
+  // the round trip that would 401.
+  if (getAccessToken() === null && !(await refreshSession())) {
     throw new ApiError({ kind: 'unauthorized', messageKey: 'no_access_token' })
   }
 
