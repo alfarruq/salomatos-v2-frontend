@@ -31,19 +31,44 @@ export interface VoicePanelProps {
  * turns the text into a draft, and the form fills its own fields. Nothing is
  * saved here — the doctor reviews the form and presses its own save button.
  *
- * Hidden until the clinic has voice switched on, so a form without it looks
- * exactly as before. Callers wrap it in `<Can permission="voice:use">`: an
+ * Until the clinic has a key on the server the button still shows, and opens
+ * an explanation instead of the recorder: a feature that silently vanishes
+ * reads as broken. Callers wrap it in `<Can permission="voice:use">`: an
  * entity cannot read the session (§4).
  */
 export function VoicePanel(props: VoicePanelProps) {
   const statusQuery = useQuery(voiceQueries.status(props.clinicId))
-  if (statusQuery.data?.isEnabled !== true) return null
+  if (statusQuery.isPending) return null
+  if (statusQuery.data?.isEnabled !== true) return <VoiceNotConfigured />
   return (
     <VoicePanelBody
       {...props}
       monthlyLimit={statusQuery.data.monthlyLimit}
       usedThisMonth={statusQuery.data.usedThisMonth}
     />
+  )
+}
+
+function VoiceNotConfigured() {
+  const { t } = useTranslation('voice')
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <Button
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+        size="sm"
+        variant="ghost"
+      >
+        <Mic aria-hidden="true" className="size-4" />
+        {t('open')}
+      </Button>
+      {isOpen ? (
+        <Alert className="w-full" title={t('notConfigured.title')} tone="info">
+          {t('notConfigured.body')}
+        </Alert>
+      ) : null}
+    </div>
   )
 }
 

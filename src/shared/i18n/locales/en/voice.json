@@ -41,5 +41,9 @@
     "pickPatient": "Choose the patient:",
     "patientNotFound": "No patient “{{name}}” found. Choose the patient by hand.",
     "chooseDoctorFirst": "Choose the doctor first."
+  },
+  "notConfigured": {
+    "title": "Voice input is not set up yet",
+    "body": "The server has no AI key (ANTHROPIC_API_KEY). The clinic owner needs to add it to the backend .env and restart the server."
   }
 }

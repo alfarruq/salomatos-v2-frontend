@@ -246,6 +246,8 @@ interface ResourceOptions {
   remove?: ((row: Row) => void) | null
   /** Shapes a stored row for the response, e.g. fields the serializer computes per viewer. */
   present?: (row: Row, scope: Scope) => Row
+  /** False for viewsets with `pagination_class = None`, which answer a plain array. */
+  paginated?: boolean
 }
 
 /** List/retrieve/create/patch/delete for a clinic-scoped table. */
@@ -265,10 +267,8 @@ function resource(
       const rows = table(name).filter(
         (row) => inScope(row, scope) && (options.filter?.(row, params) ?? true),
       )
-      return paginate(
-        request,
-        rows.map((row) => show(row, scope)),
-      )
+      const shown = rows.map((row) => show(row, scope))
+      return options.paginated === false ? HttpResponse.json(shown) : paginate(request, shown)
     }),
     http.get(`${base}:id/`, ({ request, params }) => {
       const scope = guard(request, perms.view, true)
@@ -881,6 +881,7 @@ export const handlers = [
     'specialties',
     { view: 'staff:view', manage: 'specialty:manage' },
     {
+      paginated: false,
       create: (body, scope) =>
         required(body, ['name']) ?? { id: newId(), clinic: scope.clinicId, name: body.name },
     },
