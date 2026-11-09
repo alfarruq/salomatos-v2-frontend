@@ -3,6 +3,11 @@ import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
 import type { Page } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
+import {
+  type MedicalHistory,
+  medicalHistorySchema,
+  toMedicalHistory,
+} from '../model/medicalHistory'
 import { patientPageSchema, patientSchema, toPatient } from '../model/schema'
 import type { Patient, PatientFilters, PatientId } from '../model/types'
 
@@ -19,6 +24,9 @@ export const patientKeys = {
 
   detail: (clinicId: string, patientId: PatientId) =>
     [...patientKeys.scope(clinicId), 'detail', patientId] as const,
+
+  medicalHistory: (clinicId: string, patientId: PatientId) =>
+    [...patientKeys.detail(clinicId, patientId), 'medical-history'] as const,
 }
 
 /** Non-PHI filters only. The search text never goes here (§3). */
@@ -66,6 +74,17 @@ export async function fetchPatient(patientId: PatientId, signal?: AbortSignal): 
   return toPatient(v.parse(patientSchema, raw))
 }
 
+export async function fetchMedicalHistory(
+  patientId: PatientId,
+  signal?: AbortSignal,
+): Promise<MedicalHistory> {
+  const raw = await httpClient<unknown>(
+    `v1/patients/${patientId}/medical-history/`,
+    signal === undefined ? {} : { signal },
+  )
+  return toMedicalHistory(v.parse(medicalHistorySchema, raw))
+}
+
 export const patientQueries = {
   list: (clinicId: string, filters: PatientFilters) =>
     queryOptions({
@@ -80,6 +99,12 @@ export const patientQueries = {
     queryOptions({
       queryKey: patientKeys.detail(clinicId, patientId),
       queryFn: ({ signal }) => fetchPatient(patientId, signal),
+      ...cachePolicy.standard,
+    }),
+  medicalHistory: (clinicId: string, patientId: PatientId) =>
+    queryOptions({
+      queryKey: patientKeys.medicalHistory(clinicId, patientId),
+      queryFn: ({ signal }) => fetchMedicalHistory(patientId, signal),
       ...cachePolicy.standard,
     }),
 }

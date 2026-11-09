@@ -156,6 +156,7 @@ function seed(): void {
   db.payments = structuredClone(MOCK_PAYMENTS)
   db.prescriptions = structuredClone(MOCK_PRESCRIPTIONS)
   db.attachments = []
+  db.medical_histories = []
   db.expenses = []
   db.recurring_expenses = []
   db.recurring_skips = []
@@ -172,6 +173,25 @@ function table(name: string): Row[] {
   const rows = db[name]
   if (rows === undefined) throw new Error(`Unknown mock table ${name}`)
   return rows
+}
+
+/** Created on first read, as the backend's `get_or_create` does. */
+function medicalHistoryOf(patientId: string): Row {
+  const rows = table('medical_histories')
+  const existing = rows.find((row) => row.patient === patientId)
+  if (existing !== undefined) return existing
+  const row: Row = {
+    id: newId(),
+    patient: patientId,
+    allergies: '',
+    chronic_conditions: '',
+    current_medications: '',
+    is_pregnant: null,
+    notes: '',
+    updated_at: new Date().toISOString(),
+  }
+  rows.push(row)
+  return row
 }
 
 function staffNameOf(id: unknown): string | null {
@@ -1031,6 +1051,22 @@ export const handlers = [
           String(row.phone_number).includes(query)),
     )
     return paginate(request, rows)
+  }),
+
+  http.get('/api/v1/patients/:id/medical-history/', ({ request, params }) => {
+    const scope = guard(request, 'patient:view', true)
+    if (scope instanceof Response) return scope
+    if (findRow('patients', params.id, scope) === null) return notFound()
+    return HttpResponse.json(medicalHistoryOf(String(params.id)))
+  }),
+
+  http.patch('/api/v1/patients/:id/medical-history/', async ({ request, params }) => {
+    const scope = guard(request, 'patient:manage')
+    if (scope instanceof Response) return scope
+    if (findRow('patients', params.id, scope) === null) return notFound()
+    const row = medicalHistoryOf(String(params.id))
+    Object.assign(row, await bodyOf(request), { updated_at: new Date().toISOString() })
+    return HttpResponse.json(row)
   }),
 
   http.post('/api/v1/patients/:id/archive/', ({ request, params }) => {

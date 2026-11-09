@@ -143,5 +143,22 @@
     "failed": "Could not archive the patient. Please try again.",
     "forbidden": "You don't have permission to archive patients.",
     "done": "Patient archived"
+  },
+  "medicalHistory": {
+    "title": "Medical history",
+    "edit": "Edit",
+    "empty": "No medical history recorded yet. Ask about allergies before treatment.",
+    "noAllergies": "No known allergies.",
+    "allergies": "Allergies",
+    "chronicConditions": "Chronic conditions",
+    "currentMedications": "Current medications",
+    "pregnancy": "Pregnancy",
+    "pregnancyYes": "Pregnant",
+    "pregnancyNo": "Not pregnant",
+    "pregnancyUnknown": "Not asked",
+    "notes": "Notes",
+    "description": "Allergies, conditions and medications the doctor must know before treatment.",
+    "failed": "Could not save the medical history. Try again.",
+    "allergiesPlaceholder": "For example: penicillin, lidocaine, latex"
   }
 }

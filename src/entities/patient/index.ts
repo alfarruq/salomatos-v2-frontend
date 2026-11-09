@@ -1,4 +1,5 @@
 export {
+  fetchMedicalHistory,
   fetchPatient,
   fetchPatients,
   MIN_SEARCH_LENGTH,
@@ -14,6 +15,15 @@ export {
   toPatientPayload,
 } from './model/formSchema'
 export {
+  isMedicalHistoryEmpty,
+  type MedicalHistory,
+  type MedicalHistoryInput,
+  medicalHistorySchema,
+  toMedicalHistory,
+  toMedicalHistoryInput,
+  toMedicalHistoryPayload,
+} from './model/medicalHistory'
+export {
   patientPageSchema,
   patientSchema,
   toPatient,
@@ -28,6 +38,7 @@ export {
   type PatientListItem,
   type PatientStatus,
 } from './model/types'
+export { MedicalHistoryCard, type MedicalHistoryCardProps } from './ui/MedicalHistoryCard'
 export { PatientAvatar, type PatientAvatarProps } from './ui/PatientAvatar'
 export { PatientFormFields, type PatientFormFieldsProps } from './ui/PatientFormFields'
 export { PatientStatusBadge, type PatientStatusBadgeProps } from './ui/PatientStatusBadge'

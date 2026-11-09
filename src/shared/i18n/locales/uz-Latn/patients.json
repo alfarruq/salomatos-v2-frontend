@@ -143,5 +143,22 @@
     "failed": "Bemorni arxivlab bo'lmadi. Qayta urinib ko'ring.",
     "forbidden": "Bemorlarni arxivlashga ruxsatingiz yo'q.",
     "done": "Bemor arxivlandi"
+  },
+  "medicalHistory": {
+    "title": "Tibbiy anamnez",
+    "edit": "Tahrirlash",
+    "empty": "Anamnez hali to'ldirilmagan. Davolashdan oldin allergiyani so'rang.",
+    "noAllergies": "Allergiya aniqlanmagan.",
+    "allergies": "Allergiya",
+    "chronicConditions": "Surunkali kasalliklar",
+    "currentMedications": "Qabul qilayotgan dorilari",
+    "pregnancy": "Homiladorlik",
+    "pregnancyYes": "Homilador",
+    "pregnancyNo": "Homilador emas",
+    "pregnancyUnknown": "So'ralmagan",
+    "notes": "Izoh",
+    "description": "Shifokor davolashdan oldin bilishi kerak bo'lgan allergiya, kasallik va dorilar.",
+    "failed": "Anamnezni saqlab bo'lmadi. Qayta urinib ko'ring.",
+    "allergiesPlaceholder": "Masalan: penitsillin, lidokain, lateks"
   }
 }

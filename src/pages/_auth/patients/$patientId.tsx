@@ -17,13 +17,19 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AttachmentGallery, attachmentQueries } from '@/entities/attachment'
 import type { Patient } from '@/entities/patient'
-import { PatientAvatar, PatientStatusBadge, patientQueries } from '@/entities/patient'
+import {
+  MedicalHistoryCard,
+  PatientAvatar,
+  PatientStatusBadge,
+  patientQueries,
+} from '@/entities/patient'
 import { type Recipe, recipeQueries } from '@/entities/recipe'
 import { Can, useCan } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { treatmentQueries } from '@/entities/treatment'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
 import { BotAccessPanel } from '@/features/bot-access-manage'
+import { EditMedicalHistoryDialog } from '@/features/medical-history-edit'
 import { ArchivePatientDialog } from '@/features/patient-archive'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { GalleryDropzone } from '@/features/patient-gallery-upload'
@@ -191,6 +197,7 @@ function PatientDetailPage() {
                 onWritePrescription={openRecipeEditor}
                 patient={patient}
               />
+              <MedicalHistorySection clinicId={clinicId} patient={patient} />
               <Can permission="payment:view">
                 <PatientBilling clinicId={clinicId} patientId={patient.id} />
               </Can>
@@ -403,6 +410,59 @@ function PatientSidebar({
         </p>
       )}
     </Card>
+  )
+}
+
+function MedicalHistorySection({ clinicId, patient }: { clinicId: string; patient: Patient }) {
+  const { t } = useTranslation(['patients', 'common'])
+  const [isEditOpen, setEditOpen] = useState(false)
+  const query = useQuery(patientQueries.medicalHistory(clinicId, patient.id))
+  const showPregnancy = patient.gender !== 'male'
+
+  return (
+    <QueryBoundary
+      error={({ retry }) => (
+        <Card className="p-4 sm:p-6">
+          <ErrorState
+            description={t('common:error.pageBody')}
+            retryLabel={t('common:action.retry')}
+            title={t('patients:medicalHistory.title')}
+            {...(retry === undefined ? {} : { onRetry: retry })}
+          />
+        </Card>
+      )}
+      loading={<Skeleton className="h-40 w-full" />}
+      query={query}
+    >
+      {(history) => (
+        <>
+          <MedicalHistoryCard
+            action={
+              <Can permission="patient:manage">
+                <Button
+                  iconLeft={<Pencil aria-hidden="true" className="size-4" />}
+                  onClick={() => setEditOpen(true)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  {t('patients:medicalHistory.edit')}
+                </Button>
+              </Can>
+            }
+            history={history}
+            showPregnancy={showPregnancy}
+          />
+          <EditMedicalHistoryDialog
+            clinicId={clinicId}
+            history={history}
+            onOpenChange={setEditOpen}
+            open={isEditOpen}
+            patientId={patient.id}
+            showPregnancy={showPregnancy}
+          />
+        </>
+      )}
+    </QueryBoundary>
   )
 }
 
