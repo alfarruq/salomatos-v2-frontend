@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { AttachmentGallery, attachmentQueries } from '@/entities/attachment'
 import type { Patient } from '@/entities/patient'
 import { PatientAvatar, PatientStatusBadge, patientQueries } from '@/entities/patient'
-import { recipeQueries } from '@/entities/recipe'
+import { type Recipe, recipeQueries } from '@/entities/recipe'
 import { Can, useCan } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { treatmentQueries } from '@/entities/treatment'
@@ -27,7 +27,9 @@ import { BotAccessPanel } from '@/features/bot-access-manage'
 import { ArchivePatientDialog } from '@/features/patient-archive'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { GalleryDropzone } from '@/features/patient-gallery-upload'
+import { DeleteRecipeDialog } from '@/features/recipe-delete'
 import { RecipeEditor } from '@/features/recipe-editor'
+import { usePrintRecipe } from '@/features/recipe-print'
 import { TreatmentComposer } from '@/features/treatment-composer'
 import { VoidTreatmentDialog } from '@/features/treatment-void'
 import { ageOn, formatCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
@@ -41,7 +43,6 @@ import {
   Skeleton,
   subscriberDigitsOf,
   Tabs,
-  toast,
 } from '@/shared/ui'
 import { PatientBilling } from '@/widgets/patient-billing'
 import { PrescriptionCards } from '@/widgets/patient-prescriptions'
@@ -438,6 +439,9 @@ function PatientTabs({
   const { t } = useTranslation(['patients', 'common'])
   const { clinicId } = Route.useRouteContext()
   const [voidingTreatment, setVoidingTreatment] = useState<Treatment | null>(null)
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null)
+  const [deletingRecipe, setDeletingRecipe] = useState<Recipe | null>(null)
+  const printRecipe = usePrintRecipe()
   // The same queries (and cache entries) the tabs' own contents read, so the
   // counts cost no extra request once a tab has been opened.
   const treatmentCount = useQuery(treatmentQueries.list(clinicId, patient.id)).data?.length
@@ -483,9 +487,9 @@ function PatientTabs({
                 <PrescriptionCards
                   clinicId={clinicId}
                   onCreate={onOpenRecipeEditor}
-                  onDelete={() => toast.info(t('patients:detail.comingSoon'))}
-                  onEdit={() => toast.info(t('patients:detail.comingSoon'))}
-                  onPrint={() => toast.info(t('patients:detail.comingSoon'))}
+                  onDelete={setDeletingRecipe}
+                  onEdit={setEditingRecipe}
+                  onPrint={(recipe) => printRecipe.mutate(recipe.id)}
                   patientId={patient.id}
                 />
               </Card>
@@ -513,6 +517,32 @@ function PatientTabs({
           },
         ]}
       />
+
+      {/* Mounted per prescription: the editor seeds its rows once, from the one being edited. */}
+      {editingRecipe === null ? null : (
+        <RecipeEditor
+          clinicId={clinicId}
+          key={editingRecipe.id}
+          onOpenChange={(open: boolean) => {
+            if (!open) setEditingRecipe(null)
+          }}
+          open
+          patientId={patient.id}
+          patientName={patient.fullName}
+          recipe={editingRecipe}
+        />
+      )}
+
+      {deletingRecipe === null ? null : (
+        <DeleteRecipeDialog
+          clinicId={clinicId}
+          onOpenChange={(open: boolean) => {
+            if (!open) setDeletingRecipe(null)
+          }}
+          open
+          recipe={deletingRecipe}
+        />
+      )}
 
       {voidingTreatment === null ? null : (
         <VoidTreatmentDialog

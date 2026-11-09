@@ -89,6 +89,17 @@
     "saved": "Prescription saved",
     "saveFailed": "Couldn't save the prescription. Please try again.",
     "patientLabel": "Patient",
-    "notesPlaceholder": "Extra instructions for the patient…"
+    "notesPlaceholder": "Extra instructions for the patient…",
+    "editTitle": "Edit prescription",
+    "updated": "Prescription updated"
+  },
+  "delete": {
+    "title": "Delete this prescription?",
+    "description": "The prescription and its medicines are removed from the patient's record. This cannot be undone.",
+    "done": "Prescription deleted",
+    "failed": "Could not delete the prescription. Try again."
+  },
+  "print": {
+    "failed": "Could not open the prescription for printing. Try again."
   }
 }

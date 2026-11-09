@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MEDICATION_CATALOG } from './catalog'
 import {
   fillFromCatalog,
+  fromSavedMedicine,
   fromVoiceMedicine,
   isRowComplete,
   newMedicineRow,
@@ -127,6 +128,50 @@ describe('fromVoiceMedicine', () => {
     expect(row.durationAmount).toBe('')
     expect(row.form).toBe('tablet')
     expect(row.meal).toBe('none')
+    expect(isRowComplete(row)).toBe(false)
+  })
+})
+
+describe('fromSavedMedicine', () => {
+  it('turns a saved item back into a complete row that saves the same', () => {
+    const row = fromSavedMedicine({
+      id: 'item-1',
+      name: 'Amoksiklav 625 mg',
+      dose: 1,
+      type: 'capsule',
+      frequency: 'tid',
+      timesPerDay: 3,
+      duration: 7,
+      meal: 'with',
+      instructions: 'Suv bilan',
+    })
+
+    expect(toMedicinePayload(row)).toEqual({
+      medicine: 'Amoksiklav 625 mg',
+      dose: '1',
+      form: 'capsule',
+      times_per_day: 3,
+      duration_days: 7,
+      meal_relation: 'with',
+      instructions: 'Suv bilan',
+    })
+  })
+
+  it('leaves a dose that is not a count empty, so the doctor re-enters it', () => {
+    const row = fromSavedMedicine({
+      id: 'item-2',
+      name: 'Ibuprofen',
+      dose: null,
+      type: '400 mg tabletka',
+      frequency: 'bid',
+      timesPerDay: 2,
+      duration: 3,
+      meal: 'after',
+      instructions: null,
+    })
+
+    expect(row.dose).toBe('')
+    expect(row.form).toBe('tablet')
     expect(isRowComplete(row)).toBe(false)
   })
 })

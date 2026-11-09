@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
+import type { Recipe } from '@/entities/recipe'
 import { Can, useActsOnlyAs } from '@/entities/session'
 import { requestVoiceDraft, type VoiceDraft, VoicePanel, voiceKeys } from '@/entities/voice-draft'
 import { ApiError } from '@/shared/api/errors'
@@ -18,9 +19,16 @@ import {
   Textarea,
   toast,
 } from '@/shared/ui'
-import { fromVoiceMedicine, isRowComplete, newMedicineRow, toRecipePayload } from '../model/payload'
+import {
+  fromSavedMedicine,
+  fromVoiceMedicine,
+  isRowComplete,
+  newMedicineRow,
+  toRecipePayload,
+} from '../model/payload'
 import type { MedicineRow } from '../model/types'
 import { useCreateRecipe } from '../model/useCreateRecipe'
+import { useUpdateRecipe } from '../model/useUpdateRecipe'
 import { MedicineRowFields } from './MedicineRowFields'
 
 export interface RecipeEditorProps {
@@ -32,6 +40,8 @@ export interface RecipeEditorProps {
   onOpenChange: (open: boolean) => void
   /** The patient's own doctor, picked up front as the treatment composer does. */
   initialDoctorId?: string | null
+  /** Edits this saved prescription instead of writing a new one. */
+  recipe?: Recipe
 }
 
 /**
@@ -46,10 +56,13 @@ export function RecipeEditor({
   open,
   onOpenChange,
   initialDoctorId,
+  recipe,
 }: RecipeEditorProps) {
   const { t } = useTranslation(['recipes', 'common', 'voice'])
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const { mutate, isPending } = useCreateRecipe(clinicId)
+  const create = useCreateRecipe(clinicId)
+  const update = useUpdateRecipe(clinicId)
+  const isPending = create.isPending || update.isPending
   const queryClient = useQueryClient()
   // Every call is billed and writes nothing, so it is never retried.
   const voice = useMutation({
@@ -61,14 +74,20 @@ export function RecipeEditor({
 
   // A doctor writes prescriptions in their own name only.
   const onlyMe = useActsOnlyAs('patient:view_all')
-  const [pickedDoctorId, setDoctorId] = useState(onlyMe ?? initialDoctorId ?? '')
+  const [pickedDoctorId, setDoctorId] = useState(
+    onlyMe ?? recipe?.doctorId ?? initialDoctorId ?? '',
+  )
   // A preset doctor who is no longer on the list (left the clinic) is not a choice.
   const doctorId =
     doctorsQuery.data?.some((doctor) => doctor.id === pickedDoctorId) === true ? pickedDoctorId : ''
   // One empty row to start with: there is no prescription without a medicine.
-  const [rows, setRows] = useState<MedicineRow[]>(() => [newMedicineRow()])
+  const [rows, setRows] = useState<MedicineRow[]>(() =>
+    recipe === undefined || recipe.medicines.length === 0
+      ? [newMedicineRow()]
+      : recipe.medicines.map(fromSavedMedicine),
+  )
   const [newRowId, setNewRowId] = useState<string | null>(null)
-  const [notes, setNotes] = useState('')
+  const [notes, setNotes] = useState(recipe?.notes ?? '')
 
   const namedRows = rows.filter((row) => row.name.trim() !== '')
   const incompleteRows = namedRows.filter((row) => !isRowComplete(row))
@@ -91,20 +110,27 @@ export function RecipeEditor({
   }
 
   function handleSave() {
-    mutate(toRecipePayload({ patientId, doctorId, notes, rows: namedRows }), {
+    const payload = toRecipePayload({ patientId, doctorId, notes, rows: namedRows })
+    const callbacks = {
       onSuccess: () => {
-        toast.success(t('recipes:editor.saved'))
+        toast.success(t(recipe === undefined ? 'recipes:editor.saved' : 'recipes:editor.updated'))
         onOpenChange(false)
       },
       // The dialog stays open with everything typed so far — nothing to redo.
-      onError: (error) => {
+      onError: (error: Error) => {
         toast.error(
           error instanceof ApiError && error.kind === 'network'
             ? t('common:error.network')
             : t('recipes:editor.saveFailed'),
         )
       },
-    })
+    }
+    if (recipe === undefined) {
+      create.mutate(payload, callbacks)
+    } else {
+      const { patient: _fixed, ...changes } = payload
+      update.mutate({ recipeId: recipe.id, payload: changes }, callbacks)
+    }
   }
 
   const columns = [
@@ -262,7 +288,7 @@ export function RecipeEditor({
       }
       onOpenChange={onOpenChange}
       open={open}
-      title={t('recipes:editor.title')}
+      title={t(recipe === undefined ? 'recipes:editor.title' : 'recipes:editor.editTitle')}
     >
       {body}
     </Dialog>

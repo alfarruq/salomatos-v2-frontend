@@ -1,4 +1,4 @@
-export { fetchRecipes, recipeKeys, recipeQueries } from './api/queries'
+export { fetchRecipePdf, fetchRecipes, recipeKeys, recipeQueries } from './api/queries'
 export { formatDosage, formatDuration, formatSchedule, type Translate } from './model/format'
 export {
   DOSE_FORMS,

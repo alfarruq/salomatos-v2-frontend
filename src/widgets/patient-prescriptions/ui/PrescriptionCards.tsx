@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Pencil, Pill, Printer, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatDosage, type Recipe, recipeQueries, type Translate } from '@/entities/recipe'
+import { Can } from '@/entities/session'
 import { formatFixedDate } from '@/shared/lib/calendarDate'
 import { clinicDayOf } from '@/shared/lib/datetime'
 import { Badge, Button, Card, EmptyState, ErrorState, QueryBoundary, Skeleton } from '@/shared/ui'
@@ -149,22 +150,24 @@ function RecipeCard({
       )}
 
       <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-        <Button
-          iconLeft={<Pencil aria-hidden="true" className="size-4" />}
-          onClick={onEdit}
-          size="sm"
-          variant="secondary"
-        >
-          {t('common:action.edit')}
-        </Button>
-        <Button
-          iconLeft={<Trash2 aria-hidden="true" className="size-4" />}
-          onClick={onDelete}
-          size="sm"
-          variant="danger"
-        >
-          {t('common:action.delete')}
-        </Button>
+        <Can permission="prescription:manage">
+          <Button
+            iconLeft={<Pencil aria-hidden="true" className="size-4" />}
+            onClick={onEdit}
+            size="sm"
+            variant="secondary"
+          >
+            {t('common:action.edit')}
+          </Button>
+          <Button
+            iconLeft={<Trash2 aria-hidden="true" className="size-4" />}
+            onClick={onDelete}
+            size="sm"
+            variant="danger"
+          >
+            {t('common:action.delete')}
+          </Button>
+        </Can>
         <Button
           iconLeft={<Printer aria-hidden="true" className="size-4" />}
           onClick={onPrint}

@@ -18,6 +18,8 @@ export interface Medicine {
 
 export interface Recipe {
   id: string
+  /** The prescribing doctor's membership id; the editor starts from it. */
+  doctorId: string | null
   doctorName: string | null
   notes: string | null
   clinicName: string | null

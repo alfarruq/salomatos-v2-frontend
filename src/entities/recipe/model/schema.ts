@@ -22,6 +22,7 @@ const medicineSchema = v.object({
 /** `PrescriptionSerializer`, validated at runtime (ADR-006). */
 export const recipeSchema = v.object({
   id: v.pipe(v.string(), v.uuid()),
+  doctor: optionalText,
   doctor_name: optionalText,
   notes: optionalText,
   clinic_name: optionalText,
@@ -64,6 +65,7 @@ function toMedicine(response: v.InferOutput<typeof medicineSchema>): Medicine {
 export function toRecipe(response: RecipeResponse): Recipe {
   return {
     id: response.id,
+    doctorId: response.doctor,
     doctorName: response.doctor_name,
     notes: response.notes,
     clinicName: response.clinic_name,

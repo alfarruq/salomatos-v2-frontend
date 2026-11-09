@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import { httpClient } from '@/shared/api/httpClient'
+import { httpBlob, httpClient } from '@/shared/api/httpClient'
 import { fetchAllPages } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
 import { recipeSchema, toRecipe } from '../model/schema'
@@ -21,6 +21,11 @@ export async function fetchRecipes(patientId: string, signal?: AbortSignal): Pro
     (path) => httpClient<unknown>(path, init),
   )
   return rows.map(toRecipe)
+}
+
+/** The printable PDF. Held in memory only; the file name on the server carries the id, never a name. */
+export function fetchRecipePdf(recipeId: string, signal?: AbortSignal): Promise<Blob> {
+  return httpBlob(`v1/prescriptions/${recipeId}/pdf/`, signal === undefined ? {} : { signal })
 }
 
 export const recipeQueries = {

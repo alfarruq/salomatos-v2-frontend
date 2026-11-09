@@ -89,6 +89,17 @@
     "saved": "Retsept saqlandi",
     "saveFailed": "Retseptni saqlab bo'lmadi. Qaytadan urinib ko'ring.",
     "patientLabel": "Bemor",
-    "notesPlaceholder": "Bemor uchun qo'shimcha izohlar…"
+    "notesPlaceholder": "Bemor uchun qo'shimcha izohlar…",
+    "editTitle": "Retseptni tahrirlash",
+    "updated": "Retsept yangilandi"
+  },
+  "delete": {
+    "title": "Bu retsept o'chirilsinmi?",
+    "description": "Retsept va undagi dorilar bemor kartasidan o'chiriladi. Buni qaytarib bo'lmaydi.",
+    "done": "Retsept o'chirildi",
+    "failed": "Retseptni o'chirib bo'lmadi. Qaytadan urinib ko'ring."
+  },
+  "print": {
+    "failed": "Retseptni chop etish uchun ochib bo'lmadi. Qaytadan urinib ko'ring."
   }
 }

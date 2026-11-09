@@ -1,4 +1,12 @@
-import { DOSE_FORMS, FREQUENCIES, type Frequency } from '@/entities/recipe'
+import {
+  DOSE_FORMS,
+  FREQUENCIES,
+  type Frequency,
+  isDoseForm,
+  isFrequency,
+  isMealRelation,
+  type Medicine,
+} from '@/entities/recipe'
 import type { VoiceMedicine } from '@/entities/voice-draft'
 import type { CatalogMedicine } from './catalog'
 import type { MedicineRow } from './types'
@@ -87,6 +95,27 @@ export function fromVoiceMedicine(item: VoiceMedicine): MedicineRow {
   }
 }
 
+/**
+ * A saved medicine back as an editor row, for editing a prescription. A dose
+ * that is not a plain count ("400 mg") comes back empty, so the row is
+ * incomplete and the doctor re-enters it rather than it being guessed.
+ */
+export function fromSavedMedicine(medicine: Medicine): MedicineRow {
+  const blank = newMedicineRow()
+  const days = medicine.duration
+  return {
+    rowId: blank.rowId,
+    name: medicine.name ?? '',
+    dose: medicine.dose === null ? '' : String(medicine.dose),
+    form: isDoseForm(medicine.type) ? medicine.type : blank.form,
+    frequency: isFrequency(medicine.frequency) ? medicine.frequency : blank.frequency,
+    meal: isMealRelation(medicine.meal) ? medicine.meal : blank.meal,
+    durationAmount: days === null ? '' : String(days),
+    durationUnit: 'days',
+    instructions: medicine.instructions ?? '',
+  }
+}
+
 /** The server only takes integers; anything else is refused before it is sent. */
 function parseInteger(value: string, min: number): number | null {
   if (!/^\d+$/.test(value.trim())) return null
@@ -114,13 +143,16 @@ export function toMedicinePayload(row: MedicineRow): MedicinePayload | null {
     duration_days: row.durationUnit === 'weeks' ? amount * DAYS_PER_WEEK : amount,
     // "Regardless of food" is `any` on the server.
     meal_relation: row.meal === 'none' ? 'any' : row.meal,
-    instructions: '',
+    instructions: row.instructions ?? '',
   }
 }
 
 export function isRowComplete(row: MedicineRow): boolean {
   return toMedicinePayload(row) !== null
 }
+
+/** `PATCH`: the patient is fixed once written, so it is not sent. */
+export type RecipeUpdatePayload = Omit<RecipePayload, 'patient'>
 
 export function toRecipePayload(input: {
   patientId: string

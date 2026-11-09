@@ -5,7 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MOCK_PATIENTS, mockId } from '@/shared/api/mocks/fixtures'
+import { MOCK_PATIENTS, MOCK_PRESCRIPTIONS, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
@@ -159,5 +159,72 @@ describe('RecipeEditor', () => {
     await vi.waitFor(() => expect(screen.getByRole('button', { name: SAVE })).not.toBeDisabled())
     expect(onOpenChange).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Dori nomi' })).toHaveTextContent('Nimesil 100 mg')
+  })
+})
+
+describe('RecipeEditor, editing a saved prescription', () => {
+  beforeEach(() => signInAs('admin'))
+
+  const SAVED = {
+    id: MOCK_PRESCRIPTIONS[0]?.id ?? '',
+    doctorId: MOCK_PRESCRIPTIONS[0]?.doctor ?? null,
+    doctorName: 'Sardor Usmonov',
+    notes: 'Issiq ovqat yemang',
+    clinicName: null,
+    createdAt: null,
+    medicines: [
+      {
+        id: mockId(12, 9),
+        name: 'Amoksiklav 625 mg',
+        dose: 1,
+        type: 'tablet',
+        frequency: 'bid',
+        timesPerDay: 2,
+        duration: 5,
+        meal: 'after',
+        instructions: null,
+      },
+    ],
+  }
+
+  it('opens on its doctor, medicines and note, and saves with PATCH without the patient', async () => {
+    const captured: { method?: string; body?: unknown } = {}
+    server.events.on('request:start', async ({ request }) => {
+      if (request.url.includes(`/api/v1/prescriptions/${SAVED.id}/`)) {
+        captured.method = request.method
+        captured.body = await request.clone().json()
+      }
+    })
+    const onOpenChange = vi.fn()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <I18nextProvider i18n={createI18n('uz-Latn')}>
+          <Suspense fallback={null}>
+            <RecipeEditor
+              clinicId="clinic:test"
+              onOpenChange={onOpenChange}
+              open
+              patientId={AZIZA}
+              patientName="Dilnoza Rahimova"
+              recipe={SAVED}
+            />
+          </Suspense>
+        </I18nextProvider>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Retseptni tahrirlash')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('Issiq ovqat yemang')).toBeInTheDocument()
+    expect(screen.getByText('1 ta dori')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    await vi.waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+    expect(captured.method).toBe('PATCH')
+    expect(captured.body).toEqual({
+      doctor: SAVED.doctorId,
+      notes: 'Issiq ovqat yemang',
+      items: [expect.objectContaining({ medicine: 'Amoksiklav 625 mg', times_per_day: 2 })],
+    })
   })
 })
