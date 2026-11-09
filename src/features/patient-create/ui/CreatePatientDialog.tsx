@@ -16,7 +16,7 @@ import { Can, useActsOnlyAs } from '@/entities/session'
 import { requestVoiceDraft, type VoiceDraft, VoicePanel, voiceKeys } from '@/entities/voice-draft'
 import { ApiError } from '@/shared/api/errors'
 import { toTypedDate } from '@/shared/lib/calendarDate'
-import { clinicNow } from '@/shared/lib/datetime'
+
 import { Alert, Button, Checkbox, Dialog } from '@/shared/ui'
 import { useCreatePatient } from '../model/useCreatePatient'
 
@@ -66,19 +66,6 @@ export function CreatePatientDialog({
     defaultValues: emptyPatientForm,
   })
 
-  /*
-   * The birth date opens on today, by the clinic's own decision (2026-10-09).
-   * ⚠️ That means a skipped field saves today as the birth date rather than
-   * nothing. Set on every opening, not via `defaultValues` — those are read
-   * once and this dialog stays mounted — and only while the user has not
-   * picked a date themselves.
-   */
-  useEffect(() => {
-    if (open && !form.getFieldState('birthDate').isDirty) {
-      form.setValue('birthDate', toTypedDate(clinicNow().date))
-    }
-  }, [open, form])
-
   // Reset rather than setValue: a previous walk-in's leftovers must not
   // survive into the next one's form.
   useEffect(() => {
@@ -86,7 +73,6 @@ export function CreatePatientDialog({
       form.reset({
         ...emptyPatientForm,
         ...initialValues,
-        birthDate: toTypedDate(clinicNow().date),
       })
     }
   }, [open, initialValues, form])

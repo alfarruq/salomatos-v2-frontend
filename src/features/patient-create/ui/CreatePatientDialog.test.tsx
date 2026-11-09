@@ -9,8 +9,6 @@ import { errorEnvelope, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
-import { toTypedDate } from '@/shared/lib/calendarDate'
-import { clinicNow } from '@/shared/lib/datetime'
 import { CreatePatientDialog } from './CreatePatientDialog'
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -61,12 +59,10 @@ function renderDialog({ offerTreatment = false }: { offerTreatment?: boolean } =
 describe('CreatePatientDialog', () => {
   beforeEach(() => signInAs('admin'))
 
-  it("opens with today's date as the birth date", async () => {
+  it('opens with the birth date empty, so a skipped field saves nothing', async () => {
     renderDialog()
 
-    expect(await screen.findByLabelText("Tug'ilgan sana")).toHaveValue(
-      toTypedDate(clinicNow().date),
-    )
+    expect(await screen.findByLabelText("Tug'ilgan sana")).toHaveValue('')
   })
 
   it('lets the birth date be typed as dd/mm/yyyy', async () => {
