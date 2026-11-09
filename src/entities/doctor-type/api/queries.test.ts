@@ -34,13 +34,16 @@ describe('fetchDoctorTypes', () => {
 
   it('refuses a row with no name, which nothing could render', async () => {
     server.use(
+      http.get('/api/v1/specialties/', () => HttpResponse.json([{ id: MOCK_SPECIALTIES[0]?.id }])),
+    )
+
+    await expect(fetchDoctorTypes()).rejects.toThrow()
+  })
+
+  it('refuses a page envelope, which the backend does not send for this list', async () => {
+    server.use(
       http.get('/api/v1/specialties/', () =>
-        HttpResponse.json({
-          count: 1,
-          next: null,
-          previous: null,
-          results: [{ id: MOCK_SPECIALTIES[0]?.id }],
-        }),
+        HttpResponse.json({ count: 0, next: null, previous: null, results: [] }),
       ),
     )
 
