@@ -34,6 +34,8 @@ export interface CreateAppointmentDialogProps {
    * page, as opposed to the calendar's, which starts with nothing linked.
    */
   initialPatient?: AppointmentPatientResult
+  /** The linked patient's own doctor, picked up front; the front desk can still change it. */
+  initialDoctorId?: string | null
 }
 
 const FORM_ID = 'create-appointment-form'
@@ -62,6 +64,7 @@ export function CreateAppointmentDialog({
   open,
   onOpenChange,
   initialPatient,
+  initialDoctorId,
 }: CreateAppointmentDialogProps) {
   const { t } = useTranslation(['appointments', 'common'])
 
@@ -93,11 +96,15 @@ export function CreateAppointmentDialog({
     .filter((doctor) => onlyMe === null || doctor.id === onlyMe)
     .map((doctor) => ({ value: doctor.id, label: doctor.fullName }))
 
+  const presetDoctorId = onlyMe ?? initialDoctorId ?? null
+  // Waits for the list: a preset doctor who left the clinic is not offered.
+  const presetIsOffered =
+    presetDoctorId !== null && doctorOptions.some((option) => option.value === presetDoctorId)
   useEffect(() => {
-    if (open && onlyMe !== null && form.getValues('doctorId') === '') {
-      form.setValue('doctorId', onlyMe)
+    if (open && presetIsOffered && presetDoctorId !== null && form.getValues('doctorId') === '') {
+      form.setValue('doctorId', presetDoctorId)
     }
-  }, [open, onlyMe, form])
+  }, [open, presetIsOffered, presetDoctorId, form])
 
   /*
    * Same rule as `features/treatment-composer`: the doctor's specialty narrows

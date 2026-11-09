@@ -8,6 +8,8 @@ const phone = (raw: string) => {
     .join('-')
 }
 
+const thousands = (raw: string) => raw.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
 describe('caretAfterDigits', () => {
   it('lands just after the n-th digit, skipping separators', () => {
     expect(caretAfterDigits('99-765-21-34', 0)).toBe(0)
@@ -46,6 +48,14 @@ describe('applyMask', () => {
     expect(applyMask({ raw: '99765-21-34', caret: 2, previous: '99-765-21-34' }, phone)).toEqual({
       display: '97-652-13-4',
       caret: 1,
+    })
+  })
+
+  it('keeps every digit of a replacement one character shorter than the old value', () => {
+    // "350,000" selected and "100000" pasted over it: not a deleted separator.
+    expect(applyMask({ raw: '100000', caret: 6, previous: '350,000' }, thousands)).toEqual({
+      display: '100,000',
+      caret: 7,
     })
   })
 

@@ -224,6 +224,7 @@ function PatientDetailPage() {
 
           <RecipeEditor
             clinicId={clinicId}
+            initialDoctorId={patient.primaryDoctorId}
             key={`recipe-${recipeEditorSession}`}
             onOpenChange={setRecipeEditorOpen}
             open={isRecipeEditorOpen}
@@ -234,6 +235,7 @@ function PatientDetailPage() {
           <CreateAppointmentDialog
             clinicId={clinicId}
             defaultDate={todayCalendarDate()}
+            initialDoctorId={patient.primaryDoctorId}
             initialPatient={{
               id: patient.id,
               fullName: patient.fullName,
