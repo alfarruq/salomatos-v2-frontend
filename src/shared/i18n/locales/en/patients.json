@@ -65,7 +65,8 @@
     "doctor": "Doctor",
     "lastAppointment": "Appointment",
     "remaining": "Outstanding",
-    "birthDate": "Date of birth"
+    "birthDate": "Date of birth",
+    "debt": "Debt"
   },
   "empty": {
     "title": "No patients yet",

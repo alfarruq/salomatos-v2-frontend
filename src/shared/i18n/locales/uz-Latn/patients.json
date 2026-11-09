@@ -65,7 +65,8 @@
     "doctor": "Shifokor",
     "lastAppointment": "Qabul",
     "remaining": "Qoldiq",
-    "birthDate": "Tug'ilgan sana"
+    "birthDate": "Tug'ilgan sana",
+    "debt": "Qarz"
   },
   "empty": {
     "title": "Hozircha bemor yo'q",

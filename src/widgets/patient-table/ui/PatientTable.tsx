@@ -14,6 +14,7 @@ import { PatientSearchInput, usePatientSearch } from '@/features/patient-search'
 import { TreatmentComposer } from '@/features/treatment-composer'
 import { PAGE_SIZE } from '@/shared/api/pagination'
 import { cn } from '@/shared/lib/cn'
+import { formatSom } from '@/shared/lib/money'
 import { PHONE_QUERY, useMediaQuery } from '@/shared/lib/useMediaQuery'
 import {
   Button,
@@ -501,7 +502,7 @@ function PatientCards({
   rows: PatientListItem[]
   onOpenPatient: (patientId: PatientId) => void
 }) {
-  const { t } = useTranslation(['patients', 'common'])
+  const { t, i18n } = useTranslation(['patients', 'common'])
 
   return (
     <ul aria-label={t('patients:title')} className="divide-y divide-border rounded-card bg-surface">
@@ -526,6 +527,12 @@ function PatientCards({
               {patient.phoneNumber === null ? null : (
                 <span className="text-callout text-text-secondary tabular-nums">
                   {`+998-${formatSubscriber(subscriberDigitsOf(patient.phoneNumber))}`}
+                </span>
+              )}
+              {patient.debt === null || patient.debt <= 0 ? null : (
+                <span className="text-callout font-medium text-warning tabular-nums">
+                  {t('patients:column.debt')}:{' '}
+                  {formatSom(patient.debt, i18n.language, t('common:currency.som'))}
                 </span>
               )}
             </span>

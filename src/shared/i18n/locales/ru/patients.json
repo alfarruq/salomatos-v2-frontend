@@ -65,7 +65,8 @@
     "doctor": "Врач",
     "lastAppointment": "Приём",
     "remaining": "Остаток",
-    "birthDate": "Дата рождения"
+    "birthDate": "Дата рождения",
+    "debt": "Долг"
   },
   "empty": {
     "title": "Пациентов пока нет",

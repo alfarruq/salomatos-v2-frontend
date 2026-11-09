@@ -65,7 +65,8 @@
     "doctor": "Шифокор",
     "lastAppointment": "Қабул",
     "remaining": "Қолдиқ",
-    "birthDate": "Туғилган сана"
+    "birthDate": "Туғилган сана",
+    "debt": "Қарз"
   },
   "empty": {
     "title": "Ҳозирча бемор йўқ",
