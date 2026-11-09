@@ -1,4 +1,5 @@
 import { type CalendarDate, parseCalendarDate, toCalendarDate } from './calendarDate'
+import { dateFormat } from './dateFormat'
 
 /**
  * Shared by the statistics and finance reports: the same period presets,
@@ -63,7 +64,7 @@ export function bucketLabel(start: string, bucket: ReportBucket, locale: string)
   if (date === null) return start
   const options: Intl.DateTimeFormatOptions =
     bucket === 'month' ? { month: 'short' } : { day: 'numeric', month: 'short' }
-  return new Intl.DateTimeFormat(locale, options).format(date)
+  return dateFormat(locale, options).format(date)
 }
 
 /** A known Monday, so ISO weekday n is that date plus n − 1 days. */
@@ -71,7 +72,5 @@ const REFERENCE_MONDAY = '2024-01-01'
 
 export function weekdayLabel(isoWeekday: number, locale: string): string {
   const date = parseCalendarDate(addDays(REFERENCE_MONDAY, isoWeekday - 1))
-  return date === null
-    ? String(isoWeekday)
-    : new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date)
+  return date === null ? String(isoWeekday) : dateFormat(locale, { weekday: 'short' }).format(date)
 }

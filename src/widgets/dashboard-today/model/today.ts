@@ -3,9 +3,12 @@ import type { Appointment } from '@/entities/appointment'
 export interface TodayCounts {
   total: number
   completed: number
-  /** Not yet completed — the only other status an appointment has. */
+  /** Still to be seen: neither completed, nor cancelled, nor a no-show. */
   remaining: number
 }
+
+/** A visit that will not happen any more, or already has. */
+const CLOSED: ReadonlySet<Appointment['status']> = new Set(['completed', 'cancelled', 'no_show'])
 
 /**
  * Today's queue for whoever is looking: only `date`'s rows, only `doctorId`'s
@@ -27,21 +30,22 @@ export function todaysQueue(
 
 export function countToday(queue: readonly Appointment[]): TodayCounts {
   const completed = queue.filter((appointment) => appointment.status === 'completed').length
-  return { total: queue.length, completed, remaining: queue.length - completed }
+  const remaining = queue.filter((appointment) => !CLOSED.has(appointment.status)).length
+  return { total: queue.length, completed, remaining }
 }
 
 /**
- * The first not-yet-completed appointment at or after `nowTime` (`HH:mm`,
- * clinic time). One already past its slot but still open is not "next" —
- * it is late, and the list's own status column already says so.
+ * The first still-open appointment at or after `nowTime` (`HH:mm`, clinic
+ * time). One already past its slot but still open is not "next" — it is
+ * late, and the list's own status column already says so. A cancelled visit
+ * or a no-show is never next.
  */
 export function findNextAppointment(
   queue: readonly Appointment[],
   nowTime: string,
 ): Appointment | null {
   return (
-    queue.find(
-      (appointment) => appointment.status !== 'completed' && appointment.time >= nowTime,
-    ) ?? null
+    queue.find((appointment) => !CLOSED.has(appointment.status) && appointment.time >= nowTime) ??
+    null
   )
 }

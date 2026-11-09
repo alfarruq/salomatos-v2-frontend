@@ -1,3 +1,5 @@
+import { dateFormat } from './dateFormat'
+
 /**
  * Instants — a moment in time, as opposed to a calendar date.
  *
@@ -5,7 +7,8 @@
  *
  *   The backend always sends UTC ISO-8601. One source of truth.
  *   Conversion happens only at display time. Business logic stays in UTC.
- *   Formatting is `Intl`, never hand-rolled. Every language formats differently.
+ *   Formatting is `Intl` through `dateFormat`, which only fills in Uzbek
+ *   where the browser lacks the data. Every language formats differently.
  *   The zone is the clinic's, not the browser's — staff travel, clinics do not.
  *
  * An appointment sliding by an hour is a serious incident in a medical system,
@@ -40,7 +43,7 @@ export interface FormatOptions {
 
 /** `21 avg 2026, 14:30` — the default for anything on a schedule. */
 export function formatDateTime(utcIso: string, { locale, timeZone }: FormatOptions): string {
-  return new Intl.DateTimeFormat(locale, {
+  return dateFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: timeZone ?? CLINIC_TZ,
@@ -49,7 +52,7 @@ export function formatDateTime(utcIso: string, { locale, timeZone }: FormatOptio
 
 /** `21 avg 2026` — when the time of day is not the point. */
 export function formatDate(utcIso: string, { locale, timeZone }: FormatOptions): string {
-  return new Intl.DateTimeFormat(locale, {
+  return dateFormat(locale, {
     dateStyle: 'medium',
     timeZone: timeZone ?? CLINIC_TZ,
   }).format(parseInstant(utcIso))
@@ -57,7 +60,7 @@ export function formatDate(utcIso: string, { locale, timeZone }: FormatOptions):
 
 /** `14:30` — for a column of appointment times, where the date is a heading. */
 export function formatTime(utcIso: string, { locale, timeZone }: FormatOptions): string {
-  return new Intl.DateTimeFormat(locale, {
+  return dateFormat(locale, {
     timeStyle: 'short',
     timeZone: timeZone ?? CLINIC_TZ,
   }).format(parseInstant(utcIso))

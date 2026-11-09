@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import * as v from 'valibot'
 import { Can, useSession } from '@/entities/session'
 import { BotAccessPanel } from '@/features/bot-access-manage'
+import { dateFormat } from '@/shared/lib/dateFormat'
 import { CLINIC_TZ } from '@/shared/lib/datetime'
 import { Card } from '@/shared/ui'
 import { DashboardToday } from '@/widgets/dashboard-today'
@@ -46,7 +47,7 @@ function DashboardPage() {
       <div className="flex flex-col gap-1">
         {/* Which day "today" is, in the clinic's zone (§14), not the browser's. */}
         <span className="text-callout text-text-tertiary first-letter:uppercase">
-          {new Intl.DateTimeFormat(i18n.language, {
+          {dateFormat(i18n.language, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',

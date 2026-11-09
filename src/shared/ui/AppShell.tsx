@@ -163,7 +163,9 @@ export function AppShell({
 
                 <div className="lg:hidden">{brand}</div>
 
-                <div className="ml-auto flex items-center gap-3">{headerActions}</div>
+                <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-3">
+                  {headerActions}
+                </div>
               </header>
 
               {/* `min-w-0` above and here so a wide table scrolls itself instead of

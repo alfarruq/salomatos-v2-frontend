@@ -36,6 +36,16 @@ describe('countToday', () => {
     ).toEqual({ total: 3, completed: 1, remaining: 2 })
   })
 
+  it('does not count a cancelled visit or a no-show as still to come', () => {
+    expect(
+      countToday([
+        appointment({ id: 'a-1', status: 'cancelled' }),
+        appointment({ id: 'a-2', status: 'no_show' }),
+        appointment({ id: 'a-3', status: 'arrived' }),
+      ]),
+    ).toEqual({ total: 3, completed: 0, remaining: 1 })
+  })
+
   it('is all zeros for an empty day', () => {
     expect(countToday([])).toEqual({ total: 0, completed: 0, remaining: 0 })
   })
@@ -71,6 +81,15 @@ describe('findNextAppointment', () => {
 
   it('skips past and completed appointments', () => {
     expect(findNextAppointment(queue, '09:30')?.id).toBe('a-3')
+  })
+
+  it('never offers a cancelled visit or a no-show as next', () => {
+    const day = [
+      appointment({ id: 'a-1', time: '10:00', status: 'cancelled' }),
+      appointment({ id: 'a-2', time: '10:30', status: 'no_show' }),
+      appointment({ id: 'a-3', time: '11:00' }),
+    ]
+    expect(findNextAppointment(day, '09:30')?.id).toBe('a-3')
   })
 
   it('counts an appointment due this very minute as next', () => {

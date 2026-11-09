@@ -1,3 +1,4 @@
+import { dateFormat } from './dateFormat'
 /**
  * Calendar dates — a day on a wall calendar, with no time and no zone.
  *
@@ -83,7 +84,7 @@ export function formatCalendarDate(value: CalendarDate, locale: string): string 
   const parsed = parseCalendarDate(value)
   if (parsed === null) return null
 
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(parsed)
+  return dateFormat(locale, { dateStyle: 'medium' }).format(parsed)
 }
 
 /**
