@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Поиск пациентов",
-    "placeholder": "Имя",
+    "placeholder": "Имя или телефон",
     "clear": "Очистить поиск"
   },
   "filters": {

@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Search patients",
-    "placeholder": "Name",
+    "placeholder": "Name or phone",
     "clear": "Clear search"
   },
   "filters": {

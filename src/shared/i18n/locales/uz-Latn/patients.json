@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Bemorlarni qidirish",
-    "placeholder": "Ism",
+    "placeholder": "Ism yoki telefon",
     "clear": "Qidiruvni tozalash"
   },
   "filters": {

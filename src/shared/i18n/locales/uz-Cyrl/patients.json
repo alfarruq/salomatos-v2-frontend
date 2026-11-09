@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Беморларни қидириш",
-    "placeholder": "Исм",
+    "placeholder": "Исм ёки телефон",
     "clear": "Қидирувни тозалаш"
   },
   "filters": {
