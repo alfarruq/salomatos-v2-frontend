@@ -13,4 +13,6 @@ export interface MedicineRow {
   meal: MealRelation
   durationAmount: string
   durationUnit: DurationUnit
+  /** Kept from a saved item; the editor has no field for it, so an edit must not wipe it. */
+  instructions?: string
 }

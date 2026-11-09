@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fetchSession, useSessionStore } from '@/entities/session'
 import { MOCK_PATIENTS, MOCK_PRESCRIPTIONS, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
@@ -15,6 +16,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
   signOut()
+  useSessionStore.getState().clear()
 })
 afterAll(() => server.close())
 
@@ -107,6 +109,7 @@ describe('PrescriptionCards', () => {
   })
 
   it('hands the right prescription to each action', async () => {
+    useSessionStore.getState().setSession(await fetchSession())
     const { onEdit, onDelete, onPrint } = renderCards()
 
     const card = (await screen.findByText('02.09.2026')).closest('div.flex.flex-col') as HTMLElement
@@ -117,6 +120,15 @@ describe('PrescriptionCards', () => {
     expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: NEWER }))
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: NEWER }))
     expect(onPrint).toHaveBeenCalledWith(expect.objectContaining({ id: NEWER }))
+  })
+
+  it('shows edit and delete only to staff who manage prescriptions', async () => {
+    renderCards()
+
+    const card = (await screen.findByText('02.09.2026')).closest('div.flex.flex-col') as HTMLElement
+    expect(within(card).getByRole('button', { name: 'Chop etish' })).toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: 'Tahrirlash' })).not.toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: "O'chirish" })).not.toBeInTheDocument()
   })
 
   it('invites a first prescription when there are none', async () => {

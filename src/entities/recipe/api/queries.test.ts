@@ -45,6 +45,7 @@ describe('fetchRecipes', () => {
     expect(recipes).toEqual([
       {
         id: MOCK_PRESCRIPTIONS[0]?.id,
+        doctorId: MOCK_PRESCRIPTIONS[0]?.doctor,
         doctorName: 'Sardor Usmonov',
         notes: null,
         clinicName: 'Chilonzor',
