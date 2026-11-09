@@ -24,7 +24,9 @@ export function LanguageSwitcher() {
           size="sm"
           variant="ghost"
         >
-          {current === null ? t('language.label') : LOCALE_LABELS[current]}
+          <span className="max-sm:sr-only sm:max-w-48 sm:truncate">
+            {current === null ? t('language.label') : LOCALE_LABELS[current]}
+          </span>
         </Button>
       }
     >

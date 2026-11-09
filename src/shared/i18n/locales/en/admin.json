@@ -26,7 +26,7 @@
     "typePlaceholder": "Not assigned",
     "deleteTitle": "Delete doctor",
     "deleteDescription": "Delete doctor “{{name}}”?",
-    "deleteWarning": "This cannot be undone. Deleting the doctor will also delete all data related to them: appointments, treatments and other records.",
+    "deleteWarning": "The doctor can no longer sign in or be booked. Appointments, treatments and other records stay, and the doctor can be reactivated later.",
     "deleteWait": "Delete ({{seconds}})",
     "deleteFailed": "Could not delete the doctor. Please try again.",
     "username": "Login",
@@ -57,7 +57,7 @@
     "filterEmpty": "No services of this type",
     "deleteTitle": "Delete service",
     "deleteDescription": "Delete “{{name}}”?",
-    "deleteWarning": "This cannot be undone. If any treatment or appointment history refers to this service, it is not confirmed whether that history is kept or deleted along with it.",
+    "deleteWarning": "If treatments or plans use this service, it is hidden from the price list instead and their history stays as it is.",
     "deleteWait": "Delete ({{seconds}})",
     "deleteFailed": "Could not delete the service. Please try again."
   },
@@ -106,7 +106,16 @@
     "emptyDescription": "Create an admin account for front-desk staff.",
     "deleteTitle": "Delete admin",
     "deleteDescription": "Delete admin \"{{name}}\"?",
-    "deleteWarning": "This cannot be undone. The admin will no longer be able to sign in.",
-    "deleteFailed": "Could not delete the admin. Please try again."
+    "deleteWarning": "The admin can no longer sign in. Their past work stays, and they can be reactivated later.",
+    "deleteFailed": "Could not delete the admin. Please try again.",
+    "editTitle": "Edit admin",
+    "editDescription": "Change the admin's details or set a new password. A new password signs them out everywhere.",
+    "editFailed": "Could not save the changes. Try again."
+  },
+  "staff": {
+    "reactivate": "Reactivate",
+    "reactivateFailed": "Could not reactivate. Try again.",
+    "inactiveTitle_one": "Deactivated ({{count}})",
+    "inactiveTitle_other": "Deactivated ({{count}})"
   }
 }

@@ -3,6 +3,8 @@ import * as v from 'valibot'
 import { httpClient } from '@/shared/api/httpClient'
 import { fetchAllPages, type Page } from '@/shared/api/pagination'
 import { cachePolicy } from '@/shared/config/cache'
+import type { CalendarDate } from '@/shared/lib/calendarDate'
+import { clinicInstantOf } from '@/shared/lib/datetime'
 import { toTreatment, treatmentPageSchema, treatmentSchema } from '../model/schema'
 import type { Treatment, TreatmentListFilters } from '../model/types'
 
@@ -31,6 +33,12 @@ export async function fetchTreatments(
   return rows.map(toTreatment)
 }
 
+function nextDay(date: CalendarDate): CalendarDate {
+  const next = new Date(`${date}T00:00:00Z`)
+  next.setUTCDate(next.getUTCDate() + 1)
+  return next.toISOString().slice(0, 10)
+}
+
 function toPageQuery(filters: TreatmentListFilters): string {
   const params = new URLSearchParams({ page: String(filters.page) })
   if (filters.patientId !== null) params.set('patient', filters.patientId)
@@ -42,6 +50,11 @@ function toPageQuery(filters: TreatmentListFilters): string {
       params.set('status', filters.status === 'inProgress' ? 'in_progress' : 'completed')
     }
   }
+  // Days are the clinic's (§14): midnight in Tashkent, sent as UTC instants; "to" is inclusive.
+  if (filters.dateFrom !== null)
+    params.set('performed_from', clinicInstantOf(filters.dateFrom, '00:00'))
+  if (filters.dateTo !== null)
+    params.set('performed_to', clinicInstantOf(nextDay(filters.dateTo), '00:00'))
   return params.toString()
 }
 

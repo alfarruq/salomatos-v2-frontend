@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Bemorlarni qidirish",
-    "placeholder": "Ism",
+    "placeholder": "Ism yoki telefon",
     "clear": "Qidiruvni tozalash"
   },
   "filters": {
@@ -65,7 +65,8 @@
     "doctor": "Shifokor",
     "lastAppointment": "Qabul",
     "remaining": "Qoldiq",
-    "birthDate": "Tug'ilgan sana"
+    "birthDate": "Tug'ilgan sana",
+    "debt": "Qarz"
   },
   "empty": {
     "title": "Hozircha bemor yo'q",
@@ -112,7 +113,7 @@
     "galleryEmpty": "Hozircha rasm yo'q",
     "galleryEmptyDescription": "Bu bemor uchun qo'shilgan rasmlar shu yerda ko'rinadi.",
     "galleryImage": "Rasm",
-    "galleryDropHere": "Rasmlarni shu yerga tashlang",
+    "galleryDropHere": "Rentgen, surat yoki hujjatlarni shu yerga tashlang",
     "galleryOrBrowse": "yoki tanlash uchun bosing",
     "galleryUploading": "Yuklanmoqda...",
     "galleryUploadFailed": "Rasmni yuklab bo'lmadi. Qayta urinib ko'ring.",
@@ -123,7 +124,14 @@
       "appointment": "Qabul",
       "treatment": "Muolaja",
       "prescription": "Retsept"
-    }
+    },
+    "galleryKind": "Fayl turi",
+    "galleryTooth": "Tish",
+    "galleryNoTooth": "Tishsiz",
+    "galleryToothNumber": "{{tooth}}-tish",
+    "galleryUnsupported": "Faqat JPG, PNG, WEBP, PDF va DICOM fayllarni yuklash mumkin.",
+    "galleryOpen": "Yuklab olish",
+    "galleryDownloadFailed": "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
   },
   "gender": {
     "male": "Erkak",
@@ -143,5 +151,22 @@
     "failed": "Bemorni arxivlab bo'lmadi. Qayta urinib ko'ring.",
     "forbidden": "Bemorlarni arxivlashga ruxsatingiz yo'q.",
     "done": "Bemor arxivlandi"
+  },
+  "medicalHistory": {
+    "title": "Tibbiy anamnez",
+    "edit": "Tahrirlash",
+    "empty": "Anamnez hali to'ldirilmagan. Davolashdan oldin allergiyani so'rang.",
+    "noAllergies": "Allergiya aniqlanmagan.",
+    "allergies": "Allergiya",
+    "chronicConditions": "Surunkali kasalliklar",
+    "currentMedications": "Qabul qilayotgan dorilari",
+    "pregnancy": "Homiladorlik",
+    "pregnancyYes": "Homilador",
+    "pregnancyNo": "Homilador emas",
+    "pregnancyUnknown": "So'ralmagan",
+    "notes": "Izoh",
+    "description": "Shifokor davolashdan oldin bilishi kerak bo'lgan allergiya, kasallik va dorilar.",
+    "failed": "Anamnezni saqlab bo'lmadi. Qayta urinib ko'ring.",
+    "allergiesPlaceholder": "Masalan: penitsillin, lidokain, lateks"
   }
 }

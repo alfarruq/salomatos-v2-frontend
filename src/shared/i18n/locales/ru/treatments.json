@@ -99,7 +99,9 @@
     "noMatch": "Подходящих лечений нет",
     "noMatchDescription": "Попробуйте изменить фильтры.",
     "clear": "Сбросить фильтры",
-    "patientLoading": "Пациент"
+    "patientLoading": "Пациент",
+    "dateFrom": "С даты",
+    "dateTo": "По дату"
   },
   "status": {
     "done": "Выполнено",

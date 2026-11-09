@@ -31,7 +31,9 @@ export function ScopeSwitcher({ session }: { session: Session }) {
           size="sm"
           variant="ghost"
         >
-          {session.isAllBranches ? t('scope.allBranches') : session.scopeName}
+          <span className="max-sm:sr-only sm:max-w-48 sm:truncate">
+            {session.isAllBranches ? t('scope.allBranches') : session.scopeName}
+          </span>
         </Button>
       }
     >

@@ -2,34 +2,34 @@ import { useTranslation } from 'react-i18next'
 import type { Appointment } from '@/entities/appointment'
 import { ApiError } from '@/shared/api/errors'
 import { Alert, Button, Dialog } from '@/shared/ui'
-import { useDeleteAppointment } from '../model/useDeleteAppointment'
+import { useCancelAppointment } from '../model/useCancelAppointment'
 
-export interface DeleteAppointmentDialogProps {
+export interface CancelAppointmentDialogProps {
   clinicId: string
   appointment: Appointment
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function DeleteAppointmentDialog({
+export function CancelAppointmentDialog({
   clinicId,
   appointment,
   open,
   onOpenChange,
-}: DeleteAppointmentDialogProps) {
+}: CancelAppointmentDialogProps) {
   const { t } = useTranslation(['appointments', 'common'])
-  const { mutate, isPending, error, reset } = useDeleteAppointment(clinicId)
+  const { mutate, isPending, error, reset } = useCancelAppointment(clinicId)
 
   const errorMessage =
     error === null
       ? null
       : error instanceof ApiError && error.kind === 'network'
         ? t('common:error.network')
-        : t('appointments:delete.failed')
+        : t('appointments:cancel.failed')
 
   return (
     <Dialog
-      description={t('appointments:delete.description', { name: appointment.fullName })}
+      description={t('appointments:cancel.description', { name: appointment.fullName })}
       footer={
         <>
           <Button
@@ -40,20 +40,20 @@ export function DeleteAppointmentDialog({
             }}
             variant="secondary"
           >
-            {t('common:action.cancel')}
+            {t('appointments:cancel.keep')}
           </Button>
           <Button
             isLoading={isPending}
             onClick={() => mutate(appointment.id, { onSuccess: () => onOpenChange(false) })}
-            variant="danger"
+            variant="primary"
           >
-            {t('common:action.delete')}
+            {t('appointments:cancel.confirm')}
           </Button>
         </>
       }
       onOpenChange={onOpenChange}
       open={open}
-      title={t('appointments:delete.title')}
+      title={t('appointments:cancel.title')}
     >
       {errorMessage === null ? null : <Alert title={errorMessage} tone="danger" />}
     </Dialog>

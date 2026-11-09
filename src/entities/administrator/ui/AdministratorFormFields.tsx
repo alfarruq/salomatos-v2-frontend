@@ -6,12 +6,15 @@ import type { AdministratorFormInput } from '../model/formSchema'
 export interface AdministratorFormFieldsProps {
   form: UseFormReturn<AdministratorFormInput>
   isDisabled?: boolean
+  /** `edit` treats an empty password as "keep the current one". */
+  mode?: 'create' | 'edit'
 }
 
 /** An admin's writable fields, and nothing else — no submit, no mutation. */
 export function AdministratorFormFields({
   form,
   isDisabled = false,
+  mode = 'create',
 }: AdministratorFormFieldsProps) {
   const { t } = useTranslation(['admin', 'validation'])
 
@@ -71,9 +74,12 @@ export function AdministratorFormFields({
       </Field>
 
       <Field
+        description={mode === 'edit' ? t('admin:doctor.passwordKeep') : undefined}
         error={message(errors.password?.message)}
-        isRequired
-        label={t('admin:administrator.password')}
+        isRequired={mode === 'create'}
+        label={
+          mode === 'create' ? t('admin:administrator.password') : t('admin:doctor.newPassword')
+        }
       >
         {/* `new-password` stops the browser from filling in the superadmin's own login. */}
         <PasswordInput

@@ -16,7 +16,11 @@ import { clearAccessToken, setAccessToken } from './tokenStore'
 export function restoreSession(): boolean {
   const token = storage.get('accessToken')
   if (token === null || isJwtExpired(token)) {
-    clearSession()
+    clearAccessToken()
+    storage.remove('accessToken')
+    // A live refresh token still restores the session: the first request trades it (`refreshSession`).
+    const refresh = storage.get('refreshToken')
+    if (refresh === null || isJwtExpired(refresh, 0)) storage.remove('refreshToken')
     return false
   }
   setAccessToken(token)

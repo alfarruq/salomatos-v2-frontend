@@ -54,7 +54,7 @@ describe('restoreSession', () => {
     expect(getAccessToken()).toBeNull()
   })
 
-  it('clears both tokens and returns false for an expired token', () => {
+  it('clears both tokens for an expired token with an unusable refresh token', () => {
     storage.set('accessToken', tokenExpiringIn(-3600))
     storage.set('refreshToken', 'a-refresh-token')
 
@@ -62,5 +62,16 @@ describe('restoreSession', () => {
     expect(getAccessToken()).toBeNull()
     expect(storage.get('accessToken')).toBeNull()
     expect(storage.get('refreshToken')).toBeNull()
+  })
+
+  it('keeps a live refresh token so the first request can trade it', () => {
+    const refresh = tokenExpiringIn(86_400)
+    storage.set('accessToken', tokenExpiringIn(-3600))
+    storage.set('refreshToken', refresh)
+
+    expect(restoreSession()).toBe(false)
+    expect(getAccessToken()).toBeNull()
+    expect(storage.get('accessToken')).toBeNull()
+    expect(storage.get('refreshToken')).toBe(refresh)
   })
 })

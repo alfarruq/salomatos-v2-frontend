@@ -16,6 +16,11 @@ export const APPOINTMENT_STATUSES = [
 
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number]
 
+/** The visit is over one way or another; nothing is left to cancel. */
+export function isClosedAppointmentStatus(status: AppointmentStatus): boolean {
+  return status === 'completed' || status === 'no_show' || status === 'cancelled'
+}
+
 /**
  * A booked visit (`AppointmentSerializer`).
  *

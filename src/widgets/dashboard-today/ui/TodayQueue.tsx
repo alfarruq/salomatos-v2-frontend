@@ -2,9 +2,11 @@ import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type Appointment, AppointmentStatusBadge } from '@/entities/appointment'
+import { AdvanceStatusButton, nextStatusOf } from '@/features/appointment-status-advance'
 import { cn } from '@/shared/lib/cn'
 
 export interface TodayQueueProps {
+  clinicId: string
   queue: readonly Appointment[]
   nextId: string | null
 }
@@ -18,28 +20,35 @@ const rowGrid =
  * patient, so Enter, focus and middle-click all work without extra code; a
  * walk-in with no patient record yet has nowhere to go and is plain text.
  */
-export function TodayQueue({ queue, nextId }: TodayQueueProps) {
+export function TodayQueue({ clinicId, queue, nextId }: TodayQueueProps) {
   const { t } = useTranslation('dashboard')
 
   return (
     <div className="flex flex-col">
-      <div
-        aria-hidden="true"
-        className={cn(
-          rowGrid,
-          'border-b border-border px-3 pb-2 text-caption text-text-tertiary max-sm:hidden',
-        )}
-      >
-        <span>{t('queue.time')}</span>
-        <span>{t('queue.patient')}</span>
-        <span className="hidden sm:block">{t('queue.doctor')}</span>
-        <span>{t('queue.status')}</span>
+      <div aria-hidden="true" className="flex gap-2 border-b border-border pb-2 max-sm:hidden">
+        <div className={cn(rowGrid, 'min-w-0 flex-1 px-3 text-caption text-text-tertiary')}>
+          <span>{t('queue.time')}</span>
+          <span>{t('queue.patient')}</span>
+          <span className="hidden sm:block">{t('queue.doctor')}</span>
+          <span>{t('queue.status')}</span>
+        </div>
+        {/* Matches the action column of the rows below. */}
+        <span className="w-20 shrink-0" />
       </div>
 
       <ul aria-label={t('queue.title')} className="flex flex-col">
         {queue.map((appointment) => (
-          <li className="border-b border-border last:border-b-0" key={appointment.id}>
-            <QueueRow appointment={appointment} isNext={appointment.id === nextId} />
+          <li
+            className="flex items-center gap-2 border-b border-border last:border-b-0"
+            key={appointment.id}
+          >
+            <div className="min-w-0 flex-1">
+              <QueueRow appointment={appointment} isNext={appointment.id === nextId} />
+            </div>
+            {/* Beside the row, not inside it: a button inside the patient link would be invalid HTML. */}
+            <div className="flex shrink-0 justify-end sm:w-20">
+              <AdvanceStatusButton appointment={appointment} clinicId={clinicId} />
+            </div>
           </li>
         ))}
       </ul>
@@ -66,7 +75,10 @@ function QueueRow({ appointment, isNext }: { appointment: Appointment; isNext: b
         {isNext ? (
           <span className="text-caption font-medium text-accent-text">{t('queue.next')}</span>
         ) : null}
-        <AppointmentStatusBadge status={appointment.status} />
+        {/* On a phone the one-tap button beside the row already says where the visit is. */}
+        <span className={cn(nextStatusOf(appointment.status) !== null && 'max-sm:hidden')}>
+          <AppointmentStatusBadge status={appointment.status} />
+        </span>
       </span>
     </>
   )

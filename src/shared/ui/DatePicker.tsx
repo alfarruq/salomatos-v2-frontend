@@ -9,6 +9,7 @@ import {
   toCalendarDate,
 } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
+import { dateFormat } from '@/shared/lib/dateFormat'
 import { useFieldControl } from './Field'
 import { Popover } from './Popover'
 
@@ -93,12 +94,12 @@ export function DatePicker({
     end: addDays(startOfWeekMonday(endOfMonth(focusedDate)), 6),
   })
 
-  const monthLabel = new Intl.DateTimeFormat(locale, {
+  const monthLabel = dateFormat(locale, {
     month: 'long',
     year: 'numeric',
   }).format(monthStart)
 
-  const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' })
+  const weekdayFormatter = dateFormat(locale, { weekday: 'short' })
   const weekdays = days.slice(0, 7).map((day) => weekdayFormatter.format(day))
 
   // Focus follows via the layout effect above, once the new day is in the DOM.

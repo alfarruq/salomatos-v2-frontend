@@ -11,6 +11,7 @@ import { CompensationDialog } from '@/features/doctor-compensation-set'
 import { CreateDoctorDialog } from '@/features/doctor-create'
 import { DeleteDoctorDialog } from '@/features/doctor-delete'
 import { EditDoctorDialog } from '@/features/doctor-edit'
+import { InactiveStaffList } from '@/features/staff-reactivate'
 import { currentMonth } from '@/shared/lib/calendarMonth'
 import {
   Button,
@@ -54,6 +55,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
   const [showingBot, setShowingBot] = useState<Doctor | null>(null)
 
   const query = useQuery(doctorQueries.list(clinicId))
+  const inactiveQuery = useQuery(doctorQueries.inactive(clinicId))
 
   return (
     <div className="flex flex-col gap-4">
@@ -166,6 +168,8 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
           </Table>
         )}
       </QueryBoundary>
+
+      <InactiveStaffList clinicId={clinicId} staff={inactiveQuery.data ?? []} />
 
       <CreateDoctorDialog
         canSetPay={managesPay}

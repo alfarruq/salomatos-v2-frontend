@@ -80,7 +80,7 @@ describe('PatientTable', () => {
 
     await screen.findByText('Aziza Karimova')
     const headers = screen.getAllByRole('columnheader').map((cell) => cell.textContent)
-    expect(headers).toEqual(['Ism', 'Telefon', "Tug'ilgan sana", 'Shifokor', 'Holat', ''])
+    expect(headers).toEqual(['Ism', 'Telefon', "Tug'ilgan sana", 'Shifokor', 'Qarz', ''])
   })
 
   it("counts the clinic's patients above the list", async () => {

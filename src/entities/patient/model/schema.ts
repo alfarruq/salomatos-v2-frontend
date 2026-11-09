@@ -9,6 +9,13 @@ const optionalText = v.pipe(
   v.transform((value) => (value === null || value.trim() === '' ? null : value)),
 )
 
+/** DRF sends `DecimalField` as a string; null when the caller may not see money. */
+const debt = v.pipe(
+  v.optional(v.nullable(v.union([v.string(), v.number()])), null),
+  v.transform((value) => (value === null ? null : Number(value))),
+  v.check((value) => value === null || Number.isFinite(value)),
+)
+
 /** The wire contract for `PatientSerializer`, validated at runtime (ADR-006). */
 export const patientSchema = v.object({
   id: v.pipe(v.string(), v.uuid()),
@@ -25,6 +32,7 @@ export const patientSchema = v.object({
   primary_doctor_name: optionalText,
   archived_at: v.optional(v.nullable(v.string()), null),
   created_at: v.optional(v.nullable(v.string()), null),
+  debt,
 })
 
 export const patientPageSchema = pageSchema(patientSchema)
@@ -52,6 +60,7 @@ export function toPatient(response: PatientResponse): Patient {
     primaryDoctorName: response.primary_doctor_name,
     status: response.archived_at === null ? 'active' : 'archived',
     createdAt: response.created_at,
+    debt: response.debt,
   }
 }
 

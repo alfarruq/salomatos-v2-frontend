@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Search patients",
-    "placeholder": "Name",
+    "placeholder": "Name or phone",
     "clear": "Clear search"
   },
   "filters": {
@@ -65,7 +65,8 @@
     "doctor": "Doctor",
     "lastAppointment": "Appointment",
     "remaining": "Outstanding",
-    "birthDate": "Date of birth"
+    "birthDate": "Date of birth",
+    "debt": "Debt"
   },
   "empty": {
     "title": "No patients yet",
@@ -112,7 +113,7 @@
     "galleryEmpty": "No photos yet",
     "galleryEmptyDescription": "Photos added for this patient will appear here.",
     "galleryImage": "Photo",
-    "galleryDropHere": "Drop photos here",
+    "galleryDropHere": "Drop X-rays, photos or documents here",
     "galleryOrBrowse": "or click to browse",
     "galleryUploading": "Uploading...",
     "galleryUploadFailed": "Could not upload the photo. Please try again.",
@@ -123,7 +124,14 @@
       "appointment": "Appointment",
       "treatment": "Treatment",
       "prescription": "Prescription"
-    }
+    },
+    "galleryKind": "File type",
+    "galleryTooth": "Tooth",
+    "galleryNoTooth": "No tooth",
+    "galleryToothNumber": "Tooth {{tooth}}",
+    "galleryUnsupported": "Only JPG, PNG, WEBP, PDF and DICOM files can be uploaded.",
+    "galleryOpen": "Download",
+    "galleryDownloadFailed": "Could not download the file. Try again."
   },
   "gender": {
     "male": "Male",
@@ -143,5 +151,22 @@
     "failed": "Could not archive the patient. Please try again.",
     "forbidden": "You don't have permission to archive patients.",
     "done": "Patient archived"
+  },
+  "medicalHistory": {
+    "title": "Medical history",
+    "edit": "Edit",
+    "empty": "No medical history recorded yet. Ask about allergies before treatment.",
+    "noAllergies": "No known allergies.",
+    "allergies": "Allergies",
+    "chronicConditions": "Chronic conditions",
+    "currentMedications": "Current medications",
+    "pregnancy": "Pregnancy",
+    "pregnancyYes": "Pregnant",
+    "pregnancyNo": "Not pregnant",
+    "pregnancyUnknown": "Not asked",
+    "notes": "Notes",
+    "description": "Allergies, conditions and medications the doctor must know before treatment.",
+    "failed": "Could not save the medical history. Try again.",
+    "allergiesPlaceholder": "For example: penicillin, lidocaine, latex"
   }
 }

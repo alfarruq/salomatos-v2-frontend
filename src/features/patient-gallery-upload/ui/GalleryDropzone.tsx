@@ -1,10 +1,23 @@
 import { Loader2, Upload } from 'lucide-react'
 import { type DragEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ATTACHMENT_KINDS, type AttachmentKind } from '@/entities/attachment'
 import type { PatientId } from '@/entities/patient'
 import { cn } from '@/shared/lib/cn'
-import { toast } from '@/shared/ui'
+import { Select, TEETH, toast } from '@/shared/ui'
 import { useUploadGalleryImage } from '../model/useUploadGalleryImage'
+
+/** What the backend stores (`imaging.CONTENT_TYPES`); anything else would be served as a blob of bytes. */
+const ACCEPTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'dcm'] as const
+const ACCEPT = ACCEPTED_EXTENSIONS.map((extension) => `.${extension}`).join(',')
+
+function isAccepted(file: File): boolean {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return (ACCEPTED_EXTENSIONS as readonly string[]).includes(extension)
+}
+
+/** Radix Select needs a real value for "no tooth". */
+const NO_TOOTH = 'none'
 
 export interface GalleryDropzoneProps {
   clinicId: string
@@ -24,18 +37,27 @@ export function GalleryDropzone({ clinicId, patientId }: GalleryDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDraggingOver, setDraggingOver] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
+  const [kind, setKind] = useState<AttachmentKind>('xray')
+  const [tooth, setTooth] = useState<string>(NO_TOOTH)
   const isUploading = pendingCount > 0
 
   async function uploadFiles(files: FileList | null) {
     if (files === null) return
-    const images = Array.from(files).filter((file) => file.type.startsWith('image/'))
+    const all = Array.from(files)
+    const images = all.filter(isAccepted)
+    if (images.length < all.length) toast.error(t('patients:detail.galleryUnsupported'))
     if (images.length === 0) return
 
     setPendingCount((count) => count + images.length)
     await Promise.all(
       images.map(async (file) => {
         try {
-          await mutateAsync({ patientId, file })
+          await mutateAsync({
+            patientId,
+            file,
+            kind,
+            tooth: tooth === NO_TOOTH ? null : Number(tooth),
+          })
         } catch {
           toast.error(t('patients:detail.galleryUploadFailed'))
         } finally {
@@ -62,7 +84,35 @@ export function GalleryDropzone({ clinicId, patientId }: GalleryDropzoneProps) {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-3">
+      {/* Chosen before the drop: every file in this batch is filed under them. */}
+      <div className="flex flex-wrap gap-2">
+        <Select
+          aria-label={t('patients:detail.galleryKind')}
+          className="w-auto min-w-40"
+          onValueChange={(value) => setKind(value as AttachmentKind)}
+          options={ATTACHMENT_KINDS.map((value) => ({
+            value,
+            label: t(`patients:attachmentKind.${value}`),
+          }))}
+          size="sm"
+          value={kind}
+        />
+        <Select
+          aria-label={t('patients:detail.galleryTooth')}
+          className="w-auto min-w-32"
+          onValueChange={setTooth}
+          options={[
+            { value: NO_TOOTH, label: t('patients:detail.galleryNoTooth') },
+            ...TEETH.map((meta) => ({
+              value: String(meta.fdi),
+              label: t('patients:detail.galleryToothNumber', { tooth: meta.fdi }),
+            })),
+          ]}
+          size="sm"
+          value={tooth}
+        />
+      </div>
       <button
         aria-busy={isUploading || undefined}
         className={cn(
@@ -96,7 +146,7 @@ export function GalleryDropzone({ clinicId, patientId }: GalleryDropzoneProps) {
       </button>
 
       <input
-        accept="image/*"
+        accept={ACCEPT}
         aria-hidden="true"
         className="sr-only"
         multiple

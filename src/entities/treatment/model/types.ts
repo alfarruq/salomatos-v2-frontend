@@ -18,6 +18,9 @@ export interface TreatmentListFilters {
   /** A service id. */
   treatmentTypeId: string | null
   status: TreatmentStatus | null
+  /** Clinic-calendar days, both inclusive. */
+  dateFrom: CalendarDate | null
+  dateTo: CalendarDate | null
 }
 
 export const defaultTreatmentListFilters: TreatmentListFilters = {
@@ -26,6 +29,8 @@ export const defaultTreatmentListFilters: TreatmentListFilters = {
   doctorId: null,
   treatmentTypeId: null,
   status: null,
+  dateFrom: null,
+  dateTo: null,
 }
 
 /** One performed procedure (`ProcedureSerializer`) — the slice keeps its old name. */

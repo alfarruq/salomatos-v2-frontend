@@ -52,8 +52,8 @@ Har doim, har faylda, har vazifada amal qiladi.
 |---|---|---|
 | `salomat:locale` | qo'llab-quvvatlanadigan til kodi | Sir emas, PHI emas. Refreshdan keyin til saqlanishi kerak. |
 | `salomat:theme` | `system` \| `light` \| `dark` | Sir emas, PHI emas. Refreshdan keyin tanlangan tema saqlanishi kerak. |
-| `salomat:access_token` | JWT access token | Refreshdan keyin sessiya saqlanishi uchun. Backend'da refresh endpoint yo'q (ADR: `auth-session-storage`, ADR-003 ni almashtiradi). |
-| `salomat:refresh_token` | JWT refresh token | Backend refresh endpoint qo'shganda ishlatiladi. Hozircha faqat saqlanadi. |
+| `salomat:access_token` | JWT access token | Refreshdan keyin sessiya saqlanishi uchun (ADR: `auth-session-storage`, ADR-003 ni almashtiradi). |
+| `salomat:refresh_token` | JWT refresh token | `POST v1/auth/refresh/` orqali yangi juftlikka almashtiriladi (`shared/api/refreshSession`). Logout'da serverda bekor qilinadi. |
 | `salomat:sidebar_collapsed` | `"true"` yoki yo'q | Layout sozlamasi, PHI emas, sir emas. Refreshdan keyin sidebar holati saqlanishi kerak. |
 
 → Web Storage'ga to'g'ridan-to'g'ri murojaat **taqiqlangan** — faqat `shared/lib/storage` orqali (§10). Yangi kalit qo'shish = allowlist'ni kengaytirish = **to'xta va so'ra** (§9).
@@ -63,7 +63,7 @@ Har doim, har faylda, har vazifada amal qiladi.
 **Sessiya (token) hayot sikli.** Kanonik kod §10 da.
 - Login: `access_token` → `storage.set('accessToken', ...)` **va** RAM'dagi auth store. `refresh_token` → `storage.set('refreshToken', ...)`.
 - Ilova yuklanishi (route guard'dan oldin): storage'da `access_token` bor va JWT `exp` hali o'tmagan bo'lsa → RAM'ga yuklanadi, foydalanuvchi o'z sahifasida qoladi. Yo'q yoki muddati o'tgan bo'lsa → ikkala token o'chiriladi → login sahifasi.
-- `401` javob: ikkala token storage'dan o'chiriladi + `queryClient.clear()` → login sahifasi. (Refresh endpoint qo'shilganda bu yerga single-flight refresh keladi — o'shanda backend kontraktini so'ra.)
+- `401` javob: avval single-flight refresh (`shared/api/refreshSession`) va so'rov bir marta qaytariladi. Refresh ham rad etilsa: ikkala token storage'dan o'chiriladi + `queryClient.clear()` → login sahifasi.
 - Logout va klinika almashtirish: `storage.remove('accessToken')` + `storage.remove('refreshToken')` + `queryClient.clear()` + RAM'dagi auth holati tozalanadi.
 - Token hech qachon URL'ga, logga, Sentry'ga, xato xabariga tushmaydi.
 - `exp` faqat UX uchun o'qiladi (imzo frontendda tekshirilmaydi) — haqiqiy tekshiruv backend'da.

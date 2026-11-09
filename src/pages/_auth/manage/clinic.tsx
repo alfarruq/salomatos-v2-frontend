@@ -37,13 +37,13 @@ function ClinicSection() {
       query={query}
     >
       {(clinic) => (
-        <div className="flex flex-col gap-6">
-          <ClinicSummaryCard clinic={clinic} />
-          <Can permission="clinic:manage">
-            {/* Keyed by id so switching branch resets the form to that branch's profile. */}
-            <EditClinicForm clinic={clinic} clinicId={clinicId} key={clinic.id} />
-          </Can>
-        </div>
+        // The read-only card only for those who cannot edit: beside the form it
+        // showed the saved hours ("closed" before the first save) next to the
+        // form's defaults, two answers to one question.
+        <Can fallback={<ClinicSummaryCard clinic={clinic} />} permission="clinic:manage">
+          {/* Keyed by id so switching branch resets the form to that branch's profile. */}
+          <EditClinicForm clinic={clinic} clinicId={clinicId} key={clinic.id} />
+        </Can>
       )}
     </QueryBoundary>
   )

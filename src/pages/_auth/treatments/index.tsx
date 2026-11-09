@@ -10,6 +10,7 @@ import { Button } from '@/shared/ui'
 import { TreatmentTable } from '@/widgets/treatment-table'
 
 const uuid = v.optional(v.pipe(v.string(), v.uuid()))
+const day = v.optional(v.pipe(v.string(), v.isoDate()))
 
 /**
  * Shareable view state (§3): UUIDs, a page and a status — never a name.
@@ -21,6 +22,8 @@ const treatmentsSearchSchema = v.object({
   doctor: uuid,
   type: uuid,
   status: v.optional(v.picklist(['done', 'inProgress', 'voided'])),
+  from: day,
+  to: day,
 })
 
 type TreatmentsSearch = v.InferOutput<typeof treatmentsSearchSchema>
@@ -49,6 +52,8 @@ function TreatmentsPage() {
     doctorId: search.doctor ?? null,
     treatmentTypeId: search.type ?? null,
     status: search.status ?? null,
+    dateFrom: search.from ?? null,
+    dateTo: search.to ?? null,
   }
 
   return (
@@ -90,6 +95,8 @@ function TreatmentsPage() {
               ...(next.doctorId === null ? {} : { doctor: next.doctorId }),
               ...(next.treatmentTypeId === null ? {} : { type: next.treatmentTypeId }),
               ...(next.status === null ? {} : { status: next.status }),
+              ...(next.dateFrom === null ? {} : { from: next.dateFrom }),
+              ...(next.dateTo === null ? {} : { to: next.dateTo }),
             }),
             to: '/treatments',
           })

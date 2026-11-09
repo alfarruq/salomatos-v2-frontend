@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { MOCK_PROCEDURES, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
@@ -58,5 +59,25 @@ describe('fetchTreatmentPage', () => {
     const page = await fetchTreatmentPage({ ...defaultTreatmentListFilters, status: 'voided' })
 
     expect(page.count).toBe(0)
+  })
+
+  it("sends the clinic's days as an inclusive range of UTC instants", async () => {
+    let query: URLSearchParams | undefined
+    server.use(
+      http.get('/api/v1/procedures/', ({ request }) => {
+        query = new URL(request.url).searchParams
+        return HttpResponse.json({ count: 0, next: null, previous: null, results: [] })
+      }),
+    )
+
+    await fetchTreatmentPage({
+      ...defaultTreatmentListFilters,
+      dateFrom: '2026-11-01',
+      dateTo: '2026-11-30',
+    })
+
+    // Tashkent is UTC+5; "to" is exclusive on the server, so it is the next midnight.
+    expect(query?.get('performed_from')).toBe('2026-10-31T19:00:00.000Z')
+    expect(query?.get('performed_to')).toBe('2026-11-30T19:00:00.000Z')
   })
 })

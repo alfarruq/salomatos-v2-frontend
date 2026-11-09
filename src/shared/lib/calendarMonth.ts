@@ -1,4 +1,5 @@
 import { parseCalendarDate } from './calendarDate'
+import { dateFormat } from './dateFormat'
 import { clinicNow } from './datetime'
 
 /** `yyyy-MM`: a month on a wall calendar, with no zone — see `calendarDate.ts`. */
@@ -19,7 +20,5 @@ export function shiftMonth(month: CalendarMonth, delta: number): CalendarMonth {
 
 export function monthLabel(month: CalendarMonth, locale: string): string {
   const date = parseCalendarDate(`${month}-01`)
-  return date === null
-    ? month
-    : new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(date)
+  return date === null ? month : dateFormat(locale, { month: 'long', year: 'numeric' }).format(date)
 }

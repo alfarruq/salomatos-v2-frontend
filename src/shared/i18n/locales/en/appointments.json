@@ -41,10 +41,12 @@
     "title": "Edit appointment",
     "failed": "Could not save the changes. Please try again."
   },
-  "delete": {
-    "title": "Delete appointment",
-    "description": "Delete the appointment for “{{name}}”?",
-    "failed": "Could not delete the appointment. Please try again."
+  "cancel": {
+    "title": "Cancel appointment",
+    "description": "Cancel the appointment of \"{{name}}\"? It stays in the list as cancelled.",
+    "confirm": "Cancel appointment",
+    "keep": "Keep it",
+    "failed": "Could not cancel the appointment. Try again."
   },
   "filter": {
     "doctor": "Doctor",
@@ -86,5 +88,10 @@
   },
   "pagination": {
     "summary": "{{from}}–{{to}} of {{count}}"
+  },
+  "advance": {
+    "arrived": "Arrived",
+    "completed": "Done",
+    "failed": "Could not change the status. Try again."
   }
 }

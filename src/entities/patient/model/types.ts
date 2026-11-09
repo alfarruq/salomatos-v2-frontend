@@ -26,6 +26,8 @@ export interface Patient {
   status: PatientStatus
   /** UTC ISO-8601 instant; format at display time (§14). */
   createdAt: string | null
+  /** Charged minus paid, in so'm; negative is credit. Null when the caller may not see money. */
+  debt: number | null
 }
 
 /** Kept as an alias so the table's row type reads as what it is. */

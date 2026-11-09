@@ -30,7 +30,7 @@
   },
   "search": {
     "label": "Беморларни қидириш",
-    "placeholder": "Исм",
+    "placeholder": "Исм ёки телефон",
     "clear": "Қидирувни тозалаш"
   },
   "filters": {
@@ -65,7 +65,8 @@
     "doctor": "Шифокор",
     "lastAppointment": "Қабул",
     "remaining": "Қолдиқ",
-    "birthDate": "Туғилган сана"
+    "birthDate": "Туғилган сана",
+    "debt": "Қарз"
   },
   "empty": {
     "title": "Ҳозирча бемор йўқ",
@@ -112,7 +113,7 @@
     "galleryEmpty": "Ҳозирча расм йўқ",
     "galleryEmptyDescription": "Бу бемор учун қўшилган расмлар шу ерда кўринади.",
     "galleryImage": "Расм",
-    "galleryDropHere": "Расмларни шу ерга ташланг",
+    "galleryDropHere": "Рентген, сурат ёки ҳужжатларни шу ерга ташланг",
     "galleryOrBrowse": "ёки танлаш учун босинг",
     "galleryUploading": "Юкланмоқда...",
     "galleryUploadFailed": "Расмни юклаб бўлмади. Қайта уриниб кўринг.",
@@ -123,7 +124,14 @@
       "appointment": "Қабул",
       "treatment": "Муолажа",
       "prescription": "Рецепт"
-    }
+    },
+    "galleryKind": "Файл тури",
+    "galleryTooth": "Тиш",
+    "galleryNoTooth": "Тишсиз",
+    "galleryToothNumber": "{{tooth}}-тиш",
+    "galleryUnsupported": "Фақат JPG, PNG, WEBP, PDF ва DICOM файлларни юклаш мумкин.",
+    "galleryOpen": "Юклаб олиш",
+    "galleryDownloadFailed": "Файлни юклаб бўлмади. Қайта уриниб кўринг."
   },
   "gender": {
     "male": "Эркак",
@@ -143,5 +151,22 @@
     "failed": "Беморни архивлаб бўлмади. Қайта уриниб кўринг.",
     "forbidden": "Беморларни архивлашга рухсатингиз йўқ.",
     "done": "Бемор архивланди"
+  },
+  "medicalHistory": {
+    "title": "Тиббий анамнез",
+    "edit": "Таҳрирлаш",
+    "empty": "Анамнез ҳали тўлдирилмаган. Даволашдан олдин аллергияни сўранг.",
+    "noAllergies": "Аллергия аниқланмаган.",
+    "allergies": "Аллергия",
+    "chronicConditions": "Сурункали касалликлар",
+    "currentMedications": "Қабул қилаётган дорилари",
+    "pregnancy": "Ҳомиладорлик",
+    "pregnancyYes": "Ҳомиладор",
+    "pregnancyNo": "Ҳомиладор эмас",
+    "pregnancyUnknown": "Сўралмаган",
+    "notes": "Изоҳ",
+    "description": "Шифокор даволашдан олдин билиши керак бўлган аллергия, касаллик ва дорилар.",
+    "failed": "Анамнезни сақлаб бўлмади. Қайта уриниб кўринг.",
+    "allergiesPlaceholder": "Масалан: пенициллин, лидокаин, латекс"
   }
 }

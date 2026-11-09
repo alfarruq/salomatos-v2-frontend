@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import * as v from 'valibot'
 import { Can, useSession } from '@/entities/session'
 import { BotAccessPanel } from '@/features/bot-access-manage'
-import { CLINIC_TZ } from '@/shared/lib/datetime'
+import { dateFormat } from '@/shared/lib/dateFormat'
+import { CLINIC_TZ, clinicNow } from '@/shared/lib/datetime'
 import { Card } from '@/shared/ui'
+import { DashboardMoney } from '@/widgets/dashboard-money'
 import { DashboardToday } from '@/widgets/dashboard-today'
 
 /** An id only (§3): a doctor's id is not PHI, a name would be needless. */
@@ -46,7 +48,7 @@ function DashboardPage() {
       <div className="flex flex-col gap-1">
         {/* Which day "today" is, in the clinic's zone (§14), not the browser's. */}
         <span className="text-callout text-text-tertiary first-letter:uppercase">
-          {new Intl.DateTimeFormat(i18n.language, {
+          {dateFormat(i18n.language, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
@@ -55,6 +57,11 @@ function DashboardPage() {
         </span>
         <h1 className="text-title1 text-text">{t('nav.dashboard')}</h1>
       </div>
+
+      {/* Owner and front desk; a doctor's own money is on their earnings page. */}
+      <Can permission="report:view">
+        <DashboardMoney clinicId={clinicId} today={clinicNow().date} />
+      </Can>
 
       {isDoctor ? (
         <DashboardToday clinicId={clinicId} doctorId={session.membershipId} />

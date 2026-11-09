@@ -6,7 +6,7 @@ export interface BarChartDatum {
   /** Axis and tooltip label. */
   label: string
   value: number
-  /** A part of `value` drawn inside its bar, e.g. "completed" of "booked". */
+  /** A part of `value` drawn inside its bar, e.g. "completed" of "booked". In `paired` mode, a second series. */
   part?: number
 }
 
@@ -21,6 +21,12 @@ export interface BarChartProps {
   maxAxisLabels?: number
   /** Tooltip and table text for a value, e.g. money. */
   formatValue?: (value: number) => string
+  /**
+   * Draw `part` as its own column beside `value` instead of inside it. For two
+   * independent series: money collected on a day can exceed the work billed
+   * that day (old debt paid), and drawn inside the bar it would vanish.
+   */
+  paired?: boolean
   className?: string
 }
 
@@ -39,9 +45,13 @@ export function BarChart({
   partLabel,
   maxAxisLabels = 8,
   formatValue = String,
+  paired = false,
   className,
 }: BarChartProps) {
-  const max = Math.max(1, ...data.map((datum) => datum.value))
+  const max = Math.max(
+    1,
+    ...data.map((datum) => (paired ? Math.max(datum.value, datum.part ?? 0) : datum.value)),
+  )
   // Half as many labels on a phone: "12 okt" needs about a tenth of 360px.
   const axisLabels = useMediaQuery(PHONE_QUERY) ? Math.ceil(maxAxisLabels / 2) : maxAxisLabels
   const labelStep = Math.max(1, Math.ceil(data.length / axisLabels))
@@ -57,23 +67,39 @@ export function BarChart({
 
       <div aria-hidden="true" className="flex h-48 items-end gap-1 border-b border-border">
         {data.map((datum, index) => (
-          <div className="group relative flex h-full min-w-0 flex-1 items-end" key={datum.key}>
-            <div
-              className={cn(
-                'relative w-full rounded-t transition-opacity duration-150 ease-out-apple group-hover:opacity-80',
-                // A single series is the solid accent; the tint only means "the rest" beside a part.
-                partLabel === undefined ? 'bg-accent' : 'bg-accent/35',
-              )}
-              style={{ height: `${(datum.value / max) * 100}%` }}
-            >
-              {datum.part === undefined || datum.value === 0 ? null : (
+          <div
+            className="group relative flex h-full min-w-0 flex-1 items-end gap-px"
+            key={datum.key}
+          >
+            {paired ? (
+              <>
                 <div
-                  className="absolute inset-x-0 bottom-0 rounded-t bg-accent"
-                  // A part larger than its whole (e.g. old debt paid this month) fills the bar, never overflows it.
-                  style={{ height: `${Math.min(1, datum.part / datum.value) * 100}%` }}
+                  className="w-1/2 rounded-t bg-accent/35 transition-opacity duration-150 ease-out-apple group-hover:opacity-80"
+                  style={{ height: `${(datum.value / max) * 100}%` }}
                 />
-              )}
-            </div>
+                <div
+                  className="w-1/2 rounded-t bg-accent transition-opacity duration-150 ease-out-apple group-hover:opacity-80"
+                  style={{ height: `${((datum.part ?? 0) / max) * 100}%` }}
+                />
+              </>
+            ) : (
+              <div
+                className={cn(
+                  'relative w-full rounded-t transition-opacity duration-150 ease-out-apple group-hover:opacity-80',
+                  // A single series is the solid accent; the tint only means "the rest" beside a part.
+                  partLabel === undefined ? 'bg-accent' : 'bg-accent/35',
+                )}
+                style={{ height: `${(datum.value / max) * 100}%` }}
+              >
+                {datum.part === undefined || datum.value === 0 ? null : (
+                  <div
+                    className="absolute inset-x-0 bottom-0 rounded-t bg-accent"
+                    // A part larger than its whole (e.g. old debt paid this month) fills the bar, never overflows it.
+                    style={{ height: `${Math.min(1, datum.part / datum.value) * 100}%` }}
+                  />
+                )}
+              </div>
+            )}
             <div
               className={cn(
                 'pointer-events-none absolute bottom-full z-10 mb-2 hidden flex-col gap-1 group-hover:flex',

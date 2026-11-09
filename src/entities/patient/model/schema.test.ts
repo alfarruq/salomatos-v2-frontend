@@ -22,6 +22,13 @@ describe('toPatient', () => {
     expect(patient.primaryDoctorId).toBeNull()
   })
 
+  it('reads the debt DRF sends as a decimal string', () => {
+    expect(toPatient(v.parse(patientSchema, { ...MOCK_PATIENTS[0], debt: '200.00' })).debt).toBe(
+      200,
+    )
+    expect(toPatient(v.parse(patientSchema, MOCK_PATIENTS[0])).debt).toBeNull()
+  })
+
   it('marks an archived card', () => {
     const patient = toPatient(
       v.parse(patientSchema, { ...MOCK_PATIENTS[0], archived_at: '2026-09-01T00:00:00Z' }),

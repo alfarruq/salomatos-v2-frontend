@@ -6,6 +6,7 @@ import type { PatientListItem } from '@/entities/patient'
 import { PatientAvatar, PatientStatusBadge } from '@/entities/patient'
 import { Can } from '@/entities/session'
 import { formatCalendarDate } from '@/shared/lib/calendarDate'
+import { formatSom } from '@/shared/lib/money'
 import { DropdownMenu, DropdownMenuItem, formatSubscriber, subscriberDigitsOf } from '@/shared/ui'
 
 /**
@@ -49,6 +50,10 @@ export function usePatientColumns({ onEdit, onArchive }: UsePatientColumnsOption
             {/* Caption-sized initials in the 32px circle leave room around the letters. */}
             <PatientAvatar className="text-caption" name={info.getValue()} size="md" />
             <span className="text-text">{info.getValue()}</span>
+            {/* Only the exception gets a badge: "active" on every row would be noise. */}
+            {info.row.original.status === 'archived' ? (
+              <PatientStatusBadge status="archived" />
+            ) : null}
           </div>
         ),
       }),
@@ -77,12 +82,18 @@ export function usePatientColumns({ onEdit, onArchive }: UsePatientColumnsOption
         cell: (info) => info.getValue() ?? EMPTY,
       }),
 
-      column.accessor('status', {
-        header: () => t('column.status'),
-        // Only the exception gets a badge: "active" on every row would be noise.
+      column.accessor('debt', {
+        header: () => t('column.debt'),
+        meta: { align: 'right' },
+        // Who owes money is what the desk checks before booking; a settled or credit balance stays quiet.
         cell: (info) => {
-          const status = info.getValue()
-          return status === 'archived' ? <PatientStatusBadge status={status} /> : EMPTY
+          const debt = info.getValue()
+          if (debt === null || debt <= 0) return EMPTY
+          return (
+            <span className="font-medium whitespace-nowrap text-warning tabular-nums">
+              {formatSom(debt, locale, t('common:currency.som'))}
+            </span>
+          )
         },
       }),
 

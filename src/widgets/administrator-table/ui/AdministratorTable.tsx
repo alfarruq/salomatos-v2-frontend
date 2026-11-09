@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type Administrator, administratorQueries } from '@/entities/administrator'
 import { CreateAdministratorDialog } from '@/features/administrator-create'
 import { DeleteAdministratorDialog } from '@/features/administrator-delete'
+import { EditAdministratorDialog } from '@/features/administrator-edit'
+import { InactiveStaffList } from '@/features/staff-reactivate'
 import {
   Button,
   EmptyState,
@@ -29,16 +31,17 @@ export interface AdministratorTableProps {
 const EMPTY = '—'
 
 /**
- * The clinic's admin accounts. No edit action yet: the server's
- * `AdminService.update_admin` calls a repository method that does not exist,
- * so every PATCH to `/clinic/admins/{id}/` fails until that is fixed.
+ * The clinic's admin accounts: edit (including a new password), deactivate,
+ * and bring a deactivated one back.
  */
 export function AdministratorTable({ clinicId }: AdministratorTableProps) {
   const { t } = useTranslation(['admin', 'common'])
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [deleting, setDeleting] = useState<Administrator | null>(null)
+  const [editing, setEditing] = useState<Administrator | null>(null)
 
   const query = useQuery(administratorQueries.list(clinicId))
+  const inactiveQuery = useQuery(administratorQueries.inactive(clinicId))
 
   return (
     <div className="flex flex-col gap-4">
@@ -84,7 +87,7 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
                 <TableHead>{t('admin:administrator.username')}</TableHead>
                 <TableHead>{t('admin:administrator.phoneNumber')}</TableHead>
                 <TableHead>{t('admin:administrator.email')}</TableHead>
-                <TableHead align="right">{t('common:action.delete')}</TableHead>
+                <TableHead align="right">{t('common:action.edit')}</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -102,6 +105,14 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
                   <TableCell align="right">
                     <div className="flex justify-end gap-1">
                       <Button
+                        aria-label={`${t('common:action.edit')} — ${administrator.fullName}`}
+                        onClick={() => setEditing(administrator)}
+                        size="sm"
+                        variant="ghost"
+                      >
+                        <Pencil aria-hidden="true" className="size-4" />
+                      </Button>
+                      <Button
                         aria-label={`${t('common:action.delete')} — ${administrator.fullName}`}
                         onClick={() => setDeleting(administrator)}
                         size="sm"
@@ -118,11 +129,24 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
         )}
       </QueryBoundary>
 
+      <InactiveStaffList clinicId={clinicId} staff={inactiveQuery.data ?? []} />
+
       <CreateAdministratorDialog
         clinicId={clinicId}
         onOpenChange={setCreateOpen}
         open={isCreateOpen}
       />
+
+      {editing === null ? null : (
+        <EditAdministratorDialog
+          administrator={editing}
+          clinicId={clinicId}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null)
+          }}
+          open
+        />
+      )}
 
       {deleting === null ? null : (
         <DeleteAdministratorDialog

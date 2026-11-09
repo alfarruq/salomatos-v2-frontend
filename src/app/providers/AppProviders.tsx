@@ -27,8 +27,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
     configureApi({
       onUnauthorized: () => {
         /*
-         * ADR-003 (revised): bearer tokens with no refresh route, so there is
-         * nothing to exchange — an expired token is a logout nobody chose.
+         * Reached only after `httpClient` failed to refresh the token, so the
+         * session really is over.
          *
          * The token goes first: anything still in flight should stop being
          * sent as an authenticated request. `clearSession` drops it from
