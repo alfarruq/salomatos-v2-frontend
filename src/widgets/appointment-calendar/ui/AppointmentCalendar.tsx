@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Ban, ChevronLeft, ChevronRight, Pencil, Plus } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -7,10 +7,11 @@ import {
   type AppointmentFilters,
   AppointmentStatusBadge,
   appointmentQueries,
+  isClosedAppointmentStatus,
 } from '@/entities/appointment'
 import { doctorQueries } from '@/entities/doctor'
+import { CancelAppointmentDialog } from '@/features/appointment-cancel'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
-import { DeleteAppointmentDialog } from '@/features/appointment-delete'
 import { EditAppointmentDialog } from '@/features/appointment-edit'
 import { PAGE_SIZE, type Page } from '@/shared/api/pagination'
 import { formatCalendarDate, parseCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
@@ -67,7 +68,7 @@ const EMPTY = '—'
  * The clinic's schedule — day, week or all appointments — with the actions
  * that manage it.
  *
- * A widget rather than a page section (§3.1): create, edit and delete each
+ * A widget rather than a page section (§3.1): create, edit and cancel each
  * live in their own feature, and this is where they compose.
  */
 export function AppointmentCalendar({
@@ -82,7 +83,7 @@ export function AppointmentCalendar({
   const { t, i18n } = useTranslation(['appointments', 'common'])
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Appointment | null>(null)
-  const [deleting, setDeleting] = useState<Appointment | null>(null)
+  const [cancelling, setCancelling] = useState<Appointment | null>(null)
 
   const openAppointment = (appointment: Appointment) => onOpenPatient(appointment.patientId)
 
@@ -342,7 +343,7 @@ export function AppointmentCalendar({
             return (
               <AppointmentWeekBoard
                 appointments={matched}
-                onDelete={setDeleting}
+                onCancel={setCancelling}
                 onEdit={setEditing}
                 onOpen={openAppointment}
                 referenceDate={filters.date}
@@ -361,7 +362,7 @@ export function AppointmentCalendar({
             return (
               <AppointmentList
                 appointments={sorted}
-                onDelete={setDeleting}
+                onCancel={setCancelling}
                 onEdit={setEditing}
                 onOpen={openAppointment}
                 showDate={filters.view !== 'day'}
@@ -425,17 +426,19 @@ export function AppointmentCalendar({
                         >
                           <Pencil aria-hidden="true" className="size-4" />
                         </Button>
-                        <Button
-                          aria-label={`${t('common:action.delete')} — ${appointment.fullName}`}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setDeleting(appointment)
-                          }}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Trash2 aria-hidden="true" className="size-4" />
-                        </Button>
+                        {isClosedAppointmentStatus(appointment.status) ? null : (
+                          <Button
+                            aria-label={`${t('appointments:cancel.confirm')} — ${appointment.fullName}`}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setCancelling(appointment)
+                            }}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <Ban aria-hidden="true" className="size-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -481,12 +484,12 @@ export function AppointmentCalendar({
         />
       )}
 
-      {deleting === null ? null : (
-        <DeleteAppointmentDialog
-          appointment={deleting}
+      {cancelling === null ? null : (
+        <CancelAppointmentDialog
+          appointment={cancelling}
           clinicId={clinicId}
           onOpenChange={(open) => {
-            if (!open) setDeleting(null)
+            if (!open) setCancelling(null)
           }}
           open
         />
@@ -503,14 +506,14 @@ function AppointmentList({
   appointments,
   showDate,
   onEdit,
-  onDelete,
+  onCancel,
   onOpen,
 }: {
   appointments: Appointment[]
   showDate: boolean
   onOpen: (appointment: Appointment) => void
   onEdit: (appointment: Appointment) => void
-  onDelete: (appointment: Appointment) => void
+  onCancel: (appointment: Appointment) => void
 }) {
   const { t, i18n } = useTranslation(['appointments', 'common'])
 
@@ -560,15 +563,17 @@ function AppointmentList({
             >
               <Pencil aria-hidden="true" className="size-4" />
             </Button>
-            <Button
-              aria-label={`${t('common:action.delete')} — ${appointment.fullName}`}
-              className="size-11 px-0"
-              onClick={() => onDelete(appointment)}
-              size="sm"
-              variant="ghost"
-            >
-              <Trash2 aria-hidden="true" className="size-4" />
-            </Button>
+            {isClosedAppointmentStatus(appointment.status) ? null : (
+              <Button
+                aria-label={`${t('appointments:cancel.confirm')} — ${appointment.fullName}`}
+                className="size-11 px-0"
+                onClick={() => onCancel(appointment)}
+                size="sm"
+                variant="ghost"
+              >
+                <Ban aria-hidden="true" className="size-4" />
+              </Button>
+            )}
           </div>
         </li>
       ))}

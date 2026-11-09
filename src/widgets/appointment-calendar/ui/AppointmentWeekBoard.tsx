@@ -1,6 +1,10 @@
-import { ChevronLeft, ChevronRight, CircleCheck, MoreVertical } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { Appointment } from '@/entities/appointment'
+import {
+  type Appointment,
+  AppointmentStatusBadge,
+  isClosedAppointmentStatus,
+} from '@/entities/appointment'
 import { doctorColorOf } from '@/entities/doctor'
 import { type CalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
@@ -13,7 +17,7 @@ export interface AppointmentWeekBoardProps {
   referenceDate: CalendarDate
   onOpen: (appointment: Appointment) => void
   onEdit: (appointment: Appointment) => void
-  onDelete: (appointment: Appointment) => void
+  onCancel: (appointment: Appointment) => void
 }
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
@@ -35,7 +39,7 @@ export function AppointmentWeekBoard({
   referenceDate,
   onOpen,
   onEdit,
-  onDelete,
+  onCancel,
 }: AppointmentWeekBoardProps) {
   const { t } = useTranslation(['appointments', 'common'])
   const dates = weekDatesOf(referenceDate)
@@ -52,25 +56,24 @@ export function AppointmentWeekBoard({
             <div className="flex flex-col gap-2">
               {dayAppointments.map((appointment) => {
                 const color = doctorColorOf(appointment.doctorId)
-                const isCompleted = appointment.status === 'completed'
+                const isClosed = isClosedAppointmentStatus(appointment.status)
                 return (
                   <div
                     className={cn(
                       'flex flex-col gap-1 rounded-card border border-border p-3',
-                      isCompleted ? 'bg-sunken' : 'bg-success/10',
+                      // Open visits stand out; finished, missed and cancelled ones recede.
+                      isClosed ? 'bg-sunken' : 'bg-success/10',
                     )}
                     key={appointment.id}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-1 text-callout font-semibold text-accent-text">
+                      <span
+                        className={cn(
+                          'text-callout font-semibold text-accent-text',
+                          appointment.status === 'cancelled' && 'text-text-tertiary line-through',
+                        )}
+                      >
                         {appointment.time}
-                        {isCompleted ? (
-                          <CircleCheck
-                            aria-label={t('appointments:status.completed')}
-                            className="size-4 text-text-secondary"
-                            role="img"
-                          />
-                        ) : null}
                       </span>
                       <DropdownMenu
                         trigger={
@@ -86,10 +89,15 @@ export function AppointmentWeekBoard({
                         <DropdownMenuItem onSelect={() => onEdit(appointment)}>
                           {t('common:action.edit')}
                         </DropdownMenuItem>
-                        <DropdownMenuItem isDestructive onSelect={() => onDelete(appointment)}>
-                          {t('common:action.delete')}
-                        </DropdownMenuItem>
+                        {isClosed ? null : (
+                          <DropdownMenuItem onSelect={() => onCancel(appointment)}>
+                            {t('appointments:cancel.confirm')}
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenu>
+                    </div>
+                    <div className="flex">
+                      <AppointmentStatusBadge status={appointment.status} />
                     </div>
                     <button
                       className="flex min-w-0 flex-col gap-1 rounded-control text-left hover:underline focus-visible:ring-2 focus-visible:ring-accent"

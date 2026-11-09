@@ -41,10 +41,12 @@
     "title": "Uchrashuvni tahrirlash",
     "failed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring."
   },
-  "delete": {
-    "title": "Uchrashuvni o'chirish",
-    "description": "\"{{name}}\" uchrashuvi o'chirilsinmi?",
-    "failed": "Uchrashuvni o'chirib bo'lmadi. Qayta urinib ko'ring."
+  "cancel": {
+    "title": "Uchrashuvni bekor qilish",
+    "description": "\"{{name}}\" uchrashuvi bekor qilinsinmi? U ro'yxatda \"Bekor qilingan\" bo'lib qoladi.",
+    "confirm": "Bekor qilish",
+    "keep": "Qoldirish",
+    "failed": "Uchrashuvni bekor qilib bo'lmadi. Qayta urinib ko'ring."
   },
   "filter": {
     "doctor": "Shifokor",

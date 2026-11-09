@@ -20,6 +20,7 @@ export {
   type AppointmentId,
   type AppointmentStatus,
   type AppointmentView,
+  isClosedAppointmentStatus,
 } from './model/types'
 export {
   AppointmentFormFields,
