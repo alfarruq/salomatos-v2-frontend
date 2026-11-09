@@ -41,5 +41,9 @@
     "pickPatient": "Bemorni tanlang:",
     "patientNotFound": "«{{name}}» bemorlar ro'yxatidan topilmadi. Bemorni qo'lda tanlang.",
     "chooseDoctorFirst": "Avval doktorni tanlang."
+  },
+  "notConfigured": {
+    "title": "Ovozli to'ldirish hali sozlanmagan",
+    "body": "Serverda AI kaliti (ANTHROPIC_API_KEY) qo'yilmagan. Klinika egasi kalitni backend .env fayliga qo'shib, serverni qayta ishga tushirishi kerak."
   }
 }
