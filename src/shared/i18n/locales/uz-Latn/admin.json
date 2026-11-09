@@ -26,7 +26,7 @@
     "typePlaceholder": "Tayinlanmagan",
     "deleteTitle": "Shifokorni o'chirish",
     "deleteDescription": "\"{{name}}\" shifokori o'chirilsinmi?",
-    "deleteWarning": "Bu amalni ortga qaytarib bo'lmaydi. Shifokor o'chirilsa, unga doir barcha ma'lumotlar ham o'chib ketadi: uchrashuvlar, davolashlar va boshqa yozuvlar.",
+    "deleteWarning": "Shifokor endi tizimga kira olmaydi va unga yozib bo'lmaydi. Uchrashuvlar, davolashlar va boshqa yozuvlar saqlanadi, keyin qayta faollashtirish mumkin.",
     "deleteWait": "O'chirish ({{seconds}})",
     "deleteFailed": "Shifokorni o'chirib bo'lmadi. Qayta urinib ko'ring.",
     "username": "Login",
@@ -57,7 +57,7 @@
     "filterEmpty": "Bu turdagi xizmat topilmadi",
     "deleteTitle": "Xizmatni o'chirish",
     "deleteDescription": "\"{{name}}\" o'chirilsinmi?",
-    "deleteWarning": "Bu amalni ortga qaytarib bo'lmaydi. Agar bu xizmatga bog'liq davolash yoki qabul tarixi bo'lsa, o'chirilganda ular saqlanib qolishi yoki yo'qolishi aniq emas.",
+    "deleteWarning": "Agar bu xizmat davolash yoki rejalarda ishlatilgan bo'lsa, u narxlar ro'yxatidan yashiriladi, tarix esa o'zgarmaydi.",
     "deleteWait": "O'chirish ({{seconds}})",
     "deleteFailed": "Xizmatni o'chirib bo'lmadi. Qayta urinib ko'ring."
   },
@@ -106,7 +106,16 @@
     "emptyDescription": "Qabulxona xodimi uchun admin hisobini yarating.",
     "deleteTitle": "Adminni o'chirish",
     "deleteDescription": "\"{{name}}\" admini o'chirilsinmi?",
-    "deleteWarning": "Bu amalni ortga qaytarib bo'lmaydi. Admin endi tizimga kira olmaydi.",
-    "deleteFailed": "Adminni o'chirib bo'lmadi. Qayta urinib ko'ring."
+    "deleteWarning": "Admin endi tizimga kira olmaydi. Uning oldingi ishlari saqlanadi, keyin qayta faollashtirish mumkin.",
+    "deleteFailed": "Adminni o'chirib bo'lmadi. Qayta urinib ko'ring.",
+    "editTitle": "Adminni tahrirlash",
+    "editDescription": "Admin ma'lumotlarini o'zgartiring yoki yangi parol bering. Yangi parol uni barcha qurilmalardan chiqaradi.",
+    "editFailed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring."
+  },
+  "staff": {
+    "reactivate": "Qayta faollashtirish",
+    "reactivateFailed": "Qayta faollashtirib bo'lmadi. Qayta urinib ko'ring.",
+    "inactiveTitle_one": "Faolsizlantirilganlar ({{count}})",
+    "inactiveTitle_other": "Faolsizlantirilganlar ({{count}})"
   }
 }

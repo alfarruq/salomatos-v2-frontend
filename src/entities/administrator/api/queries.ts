@@ -13,12 +13,17 @@ import type { Administrator } from '../model/types'
 export const administratorKeys = {
   scope: (clinicId: string) => ['clinics', clinicId, 'administrators'] as const,
   list: (clinicId: string) => [...administratorKeys.scope(clinicId), 'list'] as const,
+  inactive: (clinicId: string) => [...administratorKeys.scope(clinicId), 'inactive'] as const,
 }
 
-export async function fetchAdministrators(signal?: AbortSignal): Promise<Administrator[]> {
+/** Active admins by default; deactivated ones are listed apart so they can be brought back. */
+export async function fetchAdministrators(
+  signal?: AbortSignal,
+  isActive = true,
+): Promise<Administrator[]> {
   const init = signal === undefined ? {} : { signal }
   const rows = await fetchAllPages(
-    'v1/staff/?role=admin&page_size=100',
+    `v1/staff/?role=admin&is_active=${isActive}&page_size=100`,
     administratorSchema,
     (path) => httpClient<unknown>(path, init),
   )
@@ -31,6 +36,13 @@ export const administratorQueries = {
       queryKey: administratorKeys.list(clinicId),
       queryFn: ({ signal }) => fetchAdministrators(signal),
       // Staff, filed with doctors under §6.3.
+      ...cachePolicy.standard,
+    }),
+
+  inactive: (clinicId: string) =>
+    queryOptions({
+      queryKey: administratorKeys.inactive(clinicId),
+      queryFn: ({ signal }) => fetchAdministrators(signal, false),
       ...cachePolicy.standard,
     }),
 }
