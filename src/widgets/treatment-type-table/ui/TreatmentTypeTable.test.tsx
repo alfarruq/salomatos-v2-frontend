@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -76,6 +77,35 @@ describe('TreatmentTypeTable', () => {
 
     expect(screen.getByText('Implantatsiya')).toBeInTheDocument()
     expect(screen.queryByText('Plomba')).not.toBeInTheDocument()
+  })
+
+  it('leaves a service the server kept inactive off the price list', async () => {
+    const row = (id: string, name: string, isActive: boolean) => ({
+      id,
+      name,
+      price: '100000.00',
+      duration_minutes: 30,
+      category: null,
+      specialty: null,
+      is_active: isActive,
+    })
+    server.use(
+      http.get('/api/v1/services/', () =>
+        HttpResponse.json({
+          count: 2,
+          next: null,
+          previous: null,
+          results: [
+            row('00000000-0000-4000-8000-000000000a01', 'Faol xizmat', true),
+            row('00000000-0000-4000-8000-000000000a02', 'Eski xizmat', false),
+          ],
+        }),
+      ),
+    )
+    renderTable()
+
+    await screen.findByText('Faol xizmat')
+    expect(screen.queryByText('Eski xizmat')).not.toBeInTheDocument()
   })
 
   it('shows a message rather than an empty table when nothing matches', async () => {

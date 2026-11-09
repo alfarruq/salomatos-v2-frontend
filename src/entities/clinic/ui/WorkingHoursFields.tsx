@@ -31,7 +31,8 @@ export function WorkingHoursFields({ form, isDisabled = false }: WorkingHoursFie
               control={form.control}
               name={`hours.${day}.isOpen`}
               render={({ field }) => (
-                <div className="w-32">
+                // Wide enough for the longest day name (Chorshanba) beside the switch.
+                <div className="w-40">
                   <Switch
                     checked={field.value}
                     disabled={isDisabled}

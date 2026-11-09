@@ -15,12 +15,9 @@ export interface DeleteTreatmentTypeDialogProps {
 const CONFIRM_DELAY_SECONDS = 10
 
 /**
- * Unlike a doctor type (`DeleteDoctorTypeDialog`), nothing on this client
- * confirms that deleting a service is side-effect free — a `Treatment` may
- * point at it, and whether that relation is `SET_NULL` or `CASCADE` on the
- * backend is not visible from here. The warning and the delay below are the
- * mitigation available at this layer; they do not stand in for confirming the
- * actual backend behaviour.
+ * Deleting never rewrites history: a service that procedures or plans already
+ * use is only taken off the price list (made inactive) by the server, and its
+ * past rows keep their name and price. The delay still guards a misclick.
  */
 export function DeleteTreatmentTypeDialog({
   clinicId,

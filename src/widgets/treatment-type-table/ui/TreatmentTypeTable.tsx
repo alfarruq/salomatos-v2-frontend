@@ -124,7 +124,10 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
         }
         query={query}
       >
-        {(allServices) => {
+        {(everyService) => {
+          // A deleted service that history still uses is kept, inactive, by the
+          // server; it is off the price list all the same.
+          const allServices = everyService.filter((service) => service.isActive)
           const services =
             doctorTypeFilter === FILTER_ALL
               ? allServices

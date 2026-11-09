@@ -19,11 +19,8 @@ export interface EditClinicFormProps {
 }
 
 /**
- * First-time setup for the clinic's own profile.
- *
- * A plain form on the page rather than a dialog: there is nothing to compare
- * it against yet, and once it exists this screen is replaced by
- * `ClinicSummaryCard` — see `pages/_auth/manage/clinic.tsx`.
+ * The branch's own profile, as a plain form on the page. Those who cannot edit
+ * it see `ClinicSummaryCard` instead — see `pages/_auth/manage/clinic.tsx`.
  */
 export function EditClinicForm({ clinicId, clinic }: EditClinicFormProps) {
   const { t } = useTranslation(['admin', 'common'])
