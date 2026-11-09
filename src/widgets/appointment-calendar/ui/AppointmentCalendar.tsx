@@ -241,16 +241,15 @@ export function AppointmentCalendar({
               </Button>
             </div>
           ) : (
-            <>
-              <Input
-                aria-label={t('appointments:form.date')}
-                className="w-40"
-                onChange={(event) => selectDate(event.target.value)}
-                size="sm"
-                type="date"
-                value=""
-              />
-            </>
+            // The week's reference day, so the field never reads as an empty "mm/dd/yyyy".
+            <Input
+              aria-label={t('appointments:form.date')}
+              className="w-40"
+              onChange={(event) => selectDate(event.target.value)}
+              size="sm"
+              type="date"
+              value={filters.date}
+            />
           )}
 
           {isPhone ? null : doctorSelect}
