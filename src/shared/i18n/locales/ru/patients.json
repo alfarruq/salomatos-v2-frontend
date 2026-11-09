@@ -115,7 +115,7 @@
     "galleryEmpty": "Пока нет фото",
     "galleryEmptyDescription": "Фотографии, добавленные для этого пациента, появятся здесь.",
     "galleryImage": "Фото",
-    "galleryDropHere": "Перетащите фото сюда",
+    "galleryDropHere": "Перетащите сюда снимки, фото или документы",
     "galleryOrBrowse": "или нажмите, чтобы выбрать",
     "galleryUploading": "Загрузка...",
     "galleryUploadFailed": "Не удалось загрузить фото. Попробуйте ещё раз.",
@@ -126,7 +126,14 @@
       "appointment": "Запись",
       "treatment": "Лечение",
       "prescription": "Рецепт"
-    }
+    },
+    "galleryKind": "Тип файла",
+    "galleryTooth": "Зуб",
+    "galleryNoTooth": "Без зуба",
+    "galleryToothNumber": "Зуб {{tooth}}",
+    "galleryUnsupported": "Можно загрузить только JPG, PNG, WEBP, PDF и DICOM.",
+    "galleryOpen": "Скачать",
+    "galleryDownloadFailed": "Не удалось скачать файл. Попробуйте ещё раз."
   },
   "gender": {
     "male": "Мужской",

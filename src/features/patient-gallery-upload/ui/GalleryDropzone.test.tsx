@@ -64,7 +64,9 @@ describe('GalleryDropzone', () => {
   it('shows the drop prompt and the browse hint', async () => {
     renderDropzone()
 
-    expect(await screen.findByText('Rasmlarni shu yerga tashlang')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Rentgen, surat yoki hujjatlarni shu yerga tashlang'),
+    ).toBeInTheDocument()
     expect(screen.getByText('yoki tanlash uchun bosing')).toBeInTheDocument()
   })
 
@@ -73,21 +75,29 @@ describe('GalleryDropzone', () => {
     server.use(
       http.post('/api/v1/attachments/', async ({ request }) => {
         const form = await request.formData()
-        onRequest(form.get('patient'), form.get('file'))
+        onRequest(form.get('patient'), form.get('file'), form.get('kind'), form.get('tooth'))
         return HttpResponse.json(ATTACHMENT, { status: 201 })
       }),
     )
 
     const { container } = renderDropzone()
-    await screen.findByText('Rasmlarni shu yerga tashlang')
+    await screen.findByText('Rentgen, surat yoki hujjatlarni shu yerga tashlang')
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
     if (input === null) throw new Error('file input not found')
 
     await userEvent.upload(input, png('tooth.png'))
 
     await waitFor(() => expect(onRequest).toHaveBeenCalledTimes(1))
-    const [patient, image] = onRequest.mock.calls[0] as [string, unknown]
+    const [patient, image, kind, tooth] = onRequest.mock.calls[0] as [
+      string,
+      unknown,
+      string,
+      unknown,
+    ]
     expect(patient).toBe(PATIENT_ID)
+    // An X-ray of no particular tooth unless the picker says otherwise.
+    expect(kind).toBe('xray')
+    expect(tooth).toBeNull()
     // Not asserting the file's own identity past this point: jsdom's FormData
     // and undici's multipart parser (what MSW's `request.formData()` uses)
     // are different File/Blob realms, so a file attached here survives the
@@ -96,10 +106,12 @@ describe('GalleryDropzone', () => {
     expect(image).toBeTruthy()
 
     // Back to the idle prompt once the upload has landed — nothing left in flight.
-    expect(await screen.findByText('Rasmlarni shu yerga tashlang')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Rentgen, surat yoki hujjatlarni shu yerga tashlang'),
+    ).toBeInTheDocument()
   })
 
-  it('never reaches the server for a file that is not an image', async () => {
+  it('never reaches the server for a file type the clinic cannot store', async () => {
     const onRequest = vi.fn()
     server.use(
       http.post('/api/v1/attachments/', () => {
@@ -109,7 +121,7 @@ describe('GalleryDropzone', () => {
     )
 
     const { container } = renderDropzone()
-    await screen.findByText('Rasmlarni shu yerga tashlang')
+    await screen.findByText('Rentgen, surat yoki hujjatlarni shu yerga tashlang')
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
     if (input === null) throw new Error('file input not found')
 
@@ -128,12 +140,14 @@ describe('GalleryDropzone', () => {
     server.use(http.post('/api/v1/attachments/', () => HttpResponse.json({}, { status: 400 })))
 
     const { container } = renderDropzone()
-    await screen.findByText('Rasmlarni shu yerga tashlang')
+    await screen.findByText('Rentgen, surat yoki hujjatlarni shu yerga tashlang')
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
     if (input === null) throw new Error('file input not found')
 
     await userEvent.upload(input, png('tooth.png'))
 
-    expect(await screen.findByText('Rasmlarni shu yerga tashlang')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Rentgen, surat yoki hujjatlarni shu yerga tashlang'),
+    ).toBeInTheDocument()
   })
 })

@@ -113,7 +113,7 @@
     "galleryEmpty": "Ҳозирча расм йўқ",
     "galleryEmptyDescription": "Бу бемор учун қўшилган расмлар шу ерда кўринади.",
     "galleryImage": "Расм",
-    "galleryDropHere": "Расмларни шу ерга ташланг",
+    "galleryDropHere": "Рентген, сурат ёки ҳужжатларни шу ерга ташланг",
     "galleryOrBrowse": "ёки танлаш учун босинг",
     "galleryUploading": "Юкланмоқда...",
     "galleryUploadFailed": "Расмни юклаб бўлмади. Қайта уриниб кўринг.",
@@ -124,7 +124,14 @@
       "appointment": "Қабул",
       "treatment": "Муолажа",
       "prescription": "Рецепт"
-    }
+    },
+    "galleryKind": "Файл тури",
+    "galleryTooth": "Тиш",
+    "galleryNoTooth": "Тишсиз",
+    "galleryToothNumber": "{{tooth}}-тиш",
+    "galleryUnsupported": "Фақат JPG, PNG, WEBP, PDF ва DICOM файлларни юклаш мумкин.",
+    "galleryOpen": "Юклаб олиш",
+    "galleryDownloadFailed": "Файлни юклаб бўлмади. Қайта уриниб кўринг."
   },
   "gender": {
     "male": "Эркак",

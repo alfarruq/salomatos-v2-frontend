@@ -113,7 +113,7 @@
     "galleryEmpty": "Hozircha rasm yo'q",
     "galleryEmptyDescription": "Bu bemor uchun qo'shilgan rasmlar shu yerda ko'rinadi.",
     "galleryImage": "Rasm",
-    "galleryDropHere": "Rasmlarni shu yerga tashlang",
+    "galleryDropHere": "Rentgen, surat yoki hujjatlarni shu yerga tashlang",
     "galleryOrBrowse": "yoki tanlash uchun bosing",
     "galleryUploading": "Yuklanmoqda...",
     "galleryUploadFailed": "Rasmni yuklab bo'lmadi. Qayta urinib ko'ring.",
@@ -124,7 +124,14 @@
       "appointment": "Qabul",
       "treatment": "Muolaja",
       "prescription": "Retsept"
-    }
+    },
+    "galleryKind": "Fayl turi",
+    "galleryTooth": "Tish",
+    "galleryNoTooth": "Tishsiz",
+    "galleryToothNumber": "{{tooth}}-tish",
+    "galleryUnsupported": "Faqat JPG, PNG, WEBP, PDF va DICOM fayllarni yuklash mumkin.",
+    "galleryOpen": "Yuklab olish",
+    "galleryDownloadFailed": "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
   },
   "gender": {
     "male": "Erkak",

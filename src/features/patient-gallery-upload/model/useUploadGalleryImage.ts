@@ -14,6 +14,8 @@ export interface UploadGalleryImageInput {
   patientId: PatientId
   file: File
   kind?: AttachmentKind
+  /** FDI number when the image is of one tooth. */
+  tooth?: number | null
 }
 
 /** Multipart, unlike every other write: `attachments/` takes the file itself. */
@@ -21,10 +23,12 @@ async function uploadGalleryImage({
   patientId,
   file,
   kind = 'photo',
+  tooth = null,
 }: UploadGalleryImageInput): Promise<Attachment> {
   const body = new FormData()
   body.append('patient', patientId)
   body.append('kind', kind)
+  if (tooth !== null) body.append('tooth', String(tooth))
   body.append('file', file)
 
   const raw = await httpClient<unknown>('v1/attachments/', { method: 'POST', body })

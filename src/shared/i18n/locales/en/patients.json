@@ -113,7 +113,7 @@
     "galleryEmpty": "No photos yet",
     "galleryEmptyDescription": "Photos added for this patient will appear here.",
     "galleryImage": "Photo",
-    "galleryDropHere": "Drop photos here",
+    "galleryDropHere": "Drop X-rays, photos or documents here",
     "galleryOrBrowse": "or click to browse",
     "galleryUploading": "Uploading...",
     "galleryUploadFailed": "Could not upload the photo. Please try again.",
@@ -124,7 +124,14 @@
       "appointment": "Appointment",
       "treatment": "Treatment",
       "prescription": "Prescription"
-    }
+    },
+    "galleryKind": "File type",
+    "galleryTooth": "Tooth",
+    "galleryNoTooth": "No tooth",
+    "galleryToothNumber": "Tooth {{tooth}}",
+    "galleryUnsupported": "Only JPG, PNG, WEBP, PDF and DICOM files can be uploaded.",
+    "galleryOpen": "Download",
+    "galleryDownloadFailed": "Could not download the file. Try again."
   },
   "gender": {
     "male": "Male",
