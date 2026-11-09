@@ -88,5 +88,10 @@
   },
   "pagination": {
     "summary": "{{count}} tadan {{from}}–{{to}}"
+  },
+  "advance": {
+    "arrived": "Keldi",
+    "completed": "Tugadi",
+    "failed": "Holatni o'zgartirib bo'lmadi. Qayta urinib ko'ring."
   }
 }

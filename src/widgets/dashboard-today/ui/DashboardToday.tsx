@@ -128,7 +128,11 @@ export function DashboardToday({ clinicId, doctorId, doctorFilter }: DashboardTo
           query={query}
         >
           {(queue) => (
-            <TodayQueue nextId={findNextAppointment(queue, now.time)?.id ?? null} queue={queue} />
+            <TodayQueue
+              clinicId={clinicId}
+              nextId={findNextAppointment(queue, now.time)?.id ?? null}
+              queue={queue}
+            />
           )}
         </QueryBoundary>
       </Card>

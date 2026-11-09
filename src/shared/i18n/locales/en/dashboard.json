@@ -32,5 +32,12 @@
   "next": {
     "label": "Next patient",
     "openCard": "Open card"
+  },
+  "money": {
+    "title": "Today's money",
+    "collected": "Collected today",
+    "billed": "Work done today",
+    "debt": "Total owed",
+    "more": "Finance"
   }
 }

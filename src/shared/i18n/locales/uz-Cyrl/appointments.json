@@ -88,5 +88,10 @@
   },
   "pagination": {
     "summary": "{{count}} тадан {{from}}–{{to}}"
+  },
+  "advance": {
+    "arrived": "Келди",
+    "completed": "Тугади",
+    "failed": "Ҳолатни ўзгартириб бўлмади. Қайта уриниб кўринг."
   }
 }

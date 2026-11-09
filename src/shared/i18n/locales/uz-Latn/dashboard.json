@@ -32,5 +32,12 @@
   "next": {
     "label": "Keyingi bemor",
     "openCard": "Kartasini ochish"
+  },
+  "money": {
+    "title": "Bugungi pul",
+    "collected": "Bugungi tushum",
+    "billed": "Bugun bajarilgan ish",
+    "debt": "Umumiy qarz",
+    "more": "Moliya"
   }
 }

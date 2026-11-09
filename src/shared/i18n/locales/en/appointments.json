@@ -88,5 +88,10 @@
   },
   "pagination": {
     "summary": "{{from}}–{{to}} of {{count}}"
+  },
+  "advance": {
+    "arrived": "Arrived",
+    "completed": "Done",
+    "failed": "Could not change the status. Try again."
   }
 }

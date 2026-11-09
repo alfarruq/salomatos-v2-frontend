@@ -88,5 +88,10 @@
   },
   "pagination": {
     "summary": "{{from}}–{{to}} из {{count}}"
+  },
+  "advance": {
+    "arrived": "Пришёл",
+    "completed": "Завершено",
+    "failed": "Не удалось изменить статус. Попробуйте ещё раз."
   }
 }
