@@ -969,6 +969,39 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 })
   }),
 
+  http.get('/api/v1/branches/:id/doctors/', ({ request, params }) => {
+    const scope = guard(request, 'branch:manage')
+    if (scope instanceof Response) return scope
+    const branch = table('clinics').find((clinic) => clinic.id === params.id)
+    if (branch === undefined) return notFound()
+    const doctors = table('staff').filter(
+      (row) =>
+        row.role === 'doctor' &&
+        row.is_active !== false &&
+        (typeof row.clinic === 'string' ? row.clinic : MOCK_CLINICS.main.id) === branch.id,
+    )
+    return HttpResponse.json(doctors.map((row) => ({ id: row.id, full_name: row.full_name })))
+  }),
+
+  // `apps/tenancy/moves.py`: all or nothing, and only patients without a balance.
+  http.post('/api/v1/branches/:id/move-patients/', async ({ request, params }) => {
+    const scope = guard(request, 'branch:manage')
+    if (scope instanceof Response) return scope
+    const branch = table('clinics').find((clinic) => clinic.id === params.id)
+    if (branch === undefined) return notFound()
+    const body = await bodyOf(request)
+    const wanted = Array.isArray(body.patients) ? body.patients : []
+    const rows = table('patients').filter((row) => wanted.includes(row.id) && inScope(row, scope))
+    if (rows.length === 0 || rows.length !== wanted.length) {
+      return validation({ patients: 'does_not_exist' })
+    }
+    if (rows.some((row) => row.debt !== undefined && row.debt !== null && Number(row.debt) !== 0)) {
+      return validation({ patients: 'not_movable' })
+    }
+    for (const row of rows) Object.assign(row, { clinic: branch.id, primary_doctor: body.doctor })
+    return HttpResponse.json({ moved: rows.length })
+  }),
+
   http.post('/api/v1/branches/:id/reactivate/', ({ request, params }) => {
     const scope = guard(request, 'branch:manage')
     if (scope instanceof Response) return scope

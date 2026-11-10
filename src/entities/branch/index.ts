@@ -1,4 +1,10 @@
-export { branchKeys, branchQueries, fetchBranches } from './api/queries'
+export {
+  type BranchDoctor,
+  branchKeys,
+  branchQueries,
+  fetchBranchDoctors,
+  fetchBranches,
+} from './api/queries'
 export {
   type BranchFormInput,
   branchFormFieldOf,

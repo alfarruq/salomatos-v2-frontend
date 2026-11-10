@@ -6,6 +6,7 @@ import { type Branch, branchQueries } from '@/entities/branch'
 import { CloseBranchDialog, ReopenBranchButton } from '@/features/branch-close'
 import { CreateBranchDialog } from '@/features/branch-create'
 import { EditBranchDialog } from '@/features/branch-edit'
+import { MovePatientsDialog } from '@/features/branch-move-patients'
 import {
   Badge,
   Button,
@@ -36,6 +37,7 @@ export function BranchTable({ clinicId, currentBranch }: BranchTableProps) {
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<Branch | null>(null)
   const [closing, setClosing] = useState<Branch | null>(null)
+  const [movingTo, setMovingTo] = useState<Branch | null>(null)
 
   const query = useQuery(branchQueries.list(clinicId))
 
@@ -116,6 +118,11 @@ export function BranchTable({ clinicId, currentBranch }: BranchTableProps) {
                       >
                         <Pencil aria-hidden="true" className="size-4" />
                       </Button>
+                      {branch.isActive && branch.id !== currentBranch.id ? (
+                        <Button onClick={() => setMovingTo(branch)} size="sm" variant="ghost">
+                          {t('admin:branch.move.action')}
+                        </Button>
+                      ) : null}
                       {branch.isActive ? (
                         branch.id === currentBranch.id ? null : (
                           <Button onClick={() => setClosing(branch)} size="sm" variant="ghost">
@@ -149,6 +156,18 @@ export function BranchTable({ clinicId, currentBranch }: BranchTableProps) {
             if (!open) setEditing(null)
           }}
           open
+        />
+      )}
+
+      {movingTo === null ? null : (
+        <MovePatientsDialog
+          clinicId={clinicId}
+          currentBranchName={currentBranch.name}
+          onOpenChange={(open) => {
+            if (!open) setMovingTo(null)
+          }}
+          open
+          target={movingTo}
         />
       )}
 

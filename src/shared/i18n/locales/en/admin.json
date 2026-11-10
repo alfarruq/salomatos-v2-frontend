@@ -144,6 +144,25 @@
     "closeFailed": "Could not close the branch. Please try again.",
     "lastBranch": "The last open branch cannot be closed.",
     "reopen": "Reopen",
-    "workingIn": "You are working in the “{{name}}” branch. Switch branch at the top to manage another one."
+    "workingIn": "You are working in the “{{name}}” branch. Switch branch at the top to manage another one.",
+    "move": {
+      "action": "Move patients",
+      "title": "Move patients to “{{name}}”",
+      "description": "Patients of “{{from}}” move to “{{to}}” with their medical history, chart, prescriptions, images, plans and visits.",
+      "moneyStays": "Treatments and payments stay in the old branch, so its reports do not change. A patient with a balance or an unfinished treatment cannot be moved.",
+      "doctor": "Doctor in the new branch",
+      "doctorPlaceholder": "Choose a doctor",
+      "noDoctors": "This branch has no doctors yet. Add one first.",
+      "search": "Search patients",
+      "empty": "No patients found",
+      "hasBalance": "Balance {{amount}}",
+      "submit_one": "Move {{count}} patient",
+      "submit_other": "Move {{count}} patients",
+      "done_one": "{{count}} patient moved.",
+      "done_other": "{{count}} patients moved.",
+      "notMovable": "Some patients have a balance or an unfinished treatment. Settle it in this branch first.",
+      "doctorBusy": "The doctor already has an appointment at one of these patients' visit times.",
+      "failed": "Could not move the patients. Please try again."
+    }
   }
 }

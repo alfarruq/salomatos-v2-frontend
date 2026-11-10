@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -78,5 +79,40 @@ describe('BranchTable', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Filialni yopish' }))
 
     expect(await screen.findByText('Yopilgan')).toBeInTheDocument()
+  })
+})
+
+describe('Moving patients', () => {
+  it('sends the chosen patients and doctor to the target branch', async () => {
+    const doctorId = '00000000-0000-4000-8000-000000009999'
+    server.use(
+      http.get('/api/v1/branches/:id/doctors/', () =>
+        HttpResponse.json([{ id: doctorId, full_name: 'Dr Yunus' }]),
+      ),
+    )
+    const bodies: unknown[] = []
+    server.events.on('request:start', async ({ request }) => {
+      if (new URL(request.url).pathname.endsWith('/move-patients/')) {
+        bodies.push(await request.clone().json())
+      }
+    })
+    renderTable()
+
+    const other = (await screen.findByText(MOCK_CLINICS.second.name)).closest('tr')
+    if (other === null) throw new Error('row missing')
+    await userEvent.click(within(other).getByRole('button', { name: "Bemorlarni ko'chirish" }))
+    const dialog = await screen.findByRole('dialog')
+
+    await userEvent.click(await within(dialog).findByRole('combobox', { name: /shifokor/i }))
+    await userEvent.click(await screen.findByRole('option', { name: 'Dr Yunus' }))
+    const boxes = await within(dialog).findAllByRole('checkbox')
+    const movable = boxes.find((box) => !box.hasAttribute('disabled'))
+    if (movable === undefined) throw new Error('no movable patient in fixtures')
+    await userEvent.click(movable)
+    await userEvent.click(within(dialog).getByRole('button', { name: /ta bemorni ko'chirish/ }))
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ doctor: doctorId })
+    expect(await within(dialog).findByText(/ko'chirildi/)).toBeInTheDocument()
   })
 })
