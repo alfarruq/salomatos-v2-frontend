@@ -214,6 +214,21 @@ function newId(): string {
   return `00000000-0000-4000-9000-${String(sequence).padStart(12, '0')}`
 }
 
+function toBranchRow(clinic: Row): Row {
+  const inBranch = (row: Row) =>
+    (typeof row.clinic === 'string' ? row.clinic : MOCK_CLINICS.main.id) === clinic.id
+  return {
+    id: clinic.id,
+    name: clinic.name,
+    phone_number: clinic.phone_number ?? '',
+    address: clinic.address ?? '',
+    timezone: clinic.timezone ?? 'Asia/Tashkent',
+    is_active: clinic.is_active !== false,
+    staff_count: table('staff').filter((row) => inBranch(row) && row.role !== 'owner').length,
+    patient_count: table('patients').filter(inBranch).length,
+  }
+}
+
 function inScope(row: Row, scope: Scope): boolean {
   // Rows without a clinic column (staff, services, specialties) belong to the main branch.
   const clinic = typeof row.clinic === 'string' ? row.clinic : MOCK_CLINICS.main.id
@@ -893,6 +908,74 @@ export const handlers = [
     const user = authenticate(request)
     if (user === null) return unauthorized()
     return HttpResponse.json(MOCK_USERS[user])
+  }),
+
+  // `apps/tenancy/branches.py`: the owner's organization; the mock has one.
+  http.get('/api/v1/branches/', ({ request }) => {
+    const scope = guard(request, 'branch:manage', true)
+    if (scope instanceof Response) return scope
+    return HttpResponse.json(table('clinics').map(toBranchRow))
+  }),
+
+  http.post('/api/v1/branches/', async ({ request }) => {
+    const scope = guard(request, 'branch:manage')
+    if (scope instanceof Response) return scope
+    const body = await bodyOf(request)
+    const missing = required(body, ['name'])
+    if (missing !== null) return missing
+    const name = String(body.name).trim()
+    if (
+      table('clinics').some((clinic) => String(clinic.name).toLowerCase() === name.toLowerCase())
+    ) {
+      return validation({ name: 'duplicate' })
+    }
+    const branch: Row = {
+      id: newId(),
+      name,
+      phone_number: body.phone_number ?? '',
+      address: body.address ?? '',
+      timezone: 'Asia/Tashkent',
+      working_hours: {},
+      is_active: true,
+    }
+    table('clinics').push(branch)
+    return HttpResponse.json(toBranchRow(branch), { status: 201 })
+  }),
+
+  http.patch('/api/v1/branches/:id/', async ({ request, params }) => {
+    const scope = guard(request, 'branch:manage')
+    if (scope instanceof Response) return scope
+    const branch = table('clinics').find((clinic) => clinic.id === params.id)
+    if (branch === undefined) return notFound()
+    const { name, phone_number, address } = await bodyOf(request)
+    Object.assign(branch, {
+      ...(name === undefined ? {} : { name }),
+      ...(phone_number === undefined ? {} : { phone_number }),
+      ...(address === undefined ? {} : { address }),
+    })
+    return HttpResponse.json(toBranchRow(branch))
+  }),
+
+  http.delete('/api/v1/branches/:id/', ({ request, params }) => {
+    const scope = guard(request, 'branch:manage')
+    if (scope instanceof Response) return scope
+    const branch = table('clinics').find((clinic) => clinic.id === params.id)
+    if (branch === undefined) return notFound()
+    const othersOpen = table('clinics').some(
+      (clinic) => clinic.id !== branch.id && clinic.is_active,
+    )
+    if (!othersOpen) return validation({ branch: 'last_branch' })
+    branch.is_active = false
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('/api/v1/branches/:id/reactivate/', ({ request, params }) => {
+    const scope = guard(request, 'branch:manage')
+    if (scope instanceof Response) return scope
+    const branch = table('clinics').find((clinic) => clinic.id === params.id)
+    if (branch === undefined) return notFound()
+    branch.is_active = true
+    return HttpResponse.json(toBranchRow(branch))
   }),
 
   http.get('/api/v1/clinic/', ({ request }) => {
