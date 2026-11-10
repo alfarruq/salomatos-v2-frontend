@@ -7,6 +7,7 @@ import type { TenantScope } from '@/shared/api/tenantScope'
  * from the server are dropped, not trusted.
  */
 export const PERMISSIONS = [
+  'branch:manage',
   'clinic:view',
   'clinic:manage',
   'staff:view',

@@ -25,6 +25,7 @@ import { Route as AuthFinanceRecurringRouteImport } from './pages/_auth/finance/
 import { Route as AuthManageIndexRouteImport } from './pages/_auth/manage/index'
 import { Route as AuthManageAdminsRouteImport } from './pages/_auth/manage/admins'
 import { Route as AuthManageBotRouteImport } from './pages/_auth/manage/bot'
+import { Route as AuthManageBranchesRouteImport } from './pages/_auth/manage/branches'
 import { Route as AuthManageClinicRouteImport } from './pages/_auth/manage/clinic'
 import { Route as AuthManageDoctorTypesRouteImport } from './pages/_auth/manage/doctor-types'
 import { Route as AuthManageDoctorsRouteImport } from './pages/_auth/manage/doctors'
@@ -113,6 +114,11 @@ const AuthManageBotRoute = AuthManageBotRouteImport.update({
   path: '/bot',
   getParentRoute: () => AuthManageRoute,
 } as any)
+const AuthManageBranchesRoute = AuthManageBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => AuthManageRoute,
+} as any)
 const AuthManageClinicRoute = AuthManageClinicRouteImport.update({
   id: '/clinic',
   path: '/clinic',
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/finance/recurring': typeof AuthFinanceRecurringRoute
   '/manage/admins': typeof AuthManageAdminsRoute
   '/manage/bot': typeof AuthManageBotRoute
+  '/manage/branches': typeof AuthManageBranchesRoute
   '/manage/clinic': typeof AuthManageClinicRoute
   '/manage/doctor-types': typeof AuthManageDoctorTypesRoute
   '/manage/doctors': typeof AuthManageDoctorsRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/finance/recurring': typeof AuthFinanceRecurringRoute
   '/manage/admins': typeof AuthManageAdminsRoute
   '/manage/bot': typeof AuthManageBotRoute
+  '/manage/branches': typeof AuthManageBranchesRoute
   '/manage/clinic': typeof AuthManageClinicRoute
   '/manage/doctor-types': typeof AuthManageDoctorTypesRoute
   '/manage/doctors': typeof AuthManageDoctorsRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/_auth/finance/recurring': typeof AuthFinanceRecurringRoute
   '/_auth/manage/admins': typeof AuthManageAdminsRoute
   '/_auth/manage/bot': typeof AuthManageBotRoute
+  '/_auth/manage/branches': typeof AuthManageBranchesRoute
   '/_auth/manage/clinic': typeof AuthManageClinicRoute
   '/_auth/manage/doctor-types': typeof AuthManageDoctorTypesRoute
   '/_auth/manage/doctors': typeof AuthManageDoctorsRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/finance/recurring'
     | '/manage/admins'
     | '/manage/bot'
+    | '/manage/branches'
     | '/manage/clinic'
     | '/manage/doctor-types'
     | '/manage/doctors'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/finance/recurring'
     | '/manage/admins'
     | '/manage/bot'
+    | '/manage/branches'
     | '/manage/clinic'
     | '/manage/doctor-types'
     | '/manage/doctors'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/_auth/finance/recurring'
     | '/_auth/manage/admins'
     | '/_auth/manage/bot'
+    | '/_auth/manage/branches'
     | '/_auth/manage/clinic'
     | '/_auth/manage/doctor-types'
     | '/_auth/manage/doctors'
@@ -426,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthManageBotRouteImport
       parentRoute: typeof AuthManageRoute
     }
+    '/_auth/manage/branches': {
+      id: '/_auth/manage/branches'
+      path: '/branches'
+      fullPath: '/manage/branches'
+      preLoaderRoute: typeof AuthManageBranchesRouteImport
+      parentRoute: typeof AuthManageRoute
+    }
     '/_auth/manage/clinic': {
       id: '/_auth/manage/clinic'
       path: '/clinic'
@@ -508,6 +527,7 @@ const AuthFinanceRouteWithChildren = AuthFinanceRoute._addFileChildren(
 interface AuthManageRouteChildren {
   AuthManageAdminsRoute: typeof AuthManageAdminsRoute
   AuthManageBotRoute: typeof AuthManageBotRoute
+  AuthManageBranchesRoute: typeof AuthManageBranchesRoute
   AuthManageClinicRoute: typeof AuthManageClinicRoute
   AuthManageDoctorTypesRoute: typeof AuthManageDoctorTypesRoute
   AuthManageDoctorsRoute: typeof AuthManageDoctorsRoute
@@ -518,6 +538,7 @@ interface AuthManageRouteChildren {
 const AuthManageRouteChildren: AuthManageRouteChildren = {
   AuthManageAdminsRoute: AuthManageAdminsRoute,
   AuthManageBotRoute: AuthManageBotRoute,
+  AuthManageBranchesRoute: AuthManageBranchesRoute,
   AuthManageClinicRoute: AuthManageClinicRoute,
   AuthManageDoctorTypesRoute: AuthManageDoctorTypesRoute,
   AuthManageDoctorsRoute: AuthManageDoctorsRoute,

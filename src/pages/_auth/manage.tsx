@@ -15,6 +15,7 @@ const SECTIONS = [
   { to: '/manage/admins', labelKey: 'admin:nav.admins' },
   { to: '/manage/services', labelKey: 'admin:nav.services' },
   { to: '/manage/clinic', labelKey: 'admin:nav.clinic' },
+  { to: '/manage/branches', labelKey: 'admin:nav.branches', permission: 'branch:manage' },
   { to: '/manage/bot', labelKey: 'admin:nav.bot' },
 ] as const
 
@@ -37,12 +38,25 @@ export const Route = createFileRoute('/_auth/manage')({
 
 function AdminLayout() {
   const { t } = useTranslation(['admin', 'common'])
+  const { session } = Route.useRouteContext()
+  const sections = SECTIONS.filter(
+    (section) => !('permission' in section) || session.permissions.has(section.permission),
+  )
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-title1 text-text">{t('admin:title')}</h1>
         <p className="text-callout text-text-secondary">{t('admin:subtitle')}</p>
+        {/*
+         * Staff, prices and the profile below belong to one branch. Said only when
+         * there is more than one, so a single-branch clinic never meets the word.
+         */}
+        {session.memberships.length > 1 ? (
+          <p className="text-callout text-text-secondary">
+            {t('admin:branch.workingIn', { name: session.scopeName })}
+          </p>
+        ) : null}
       </div>
 
       {/*
@@ -51,7 +65,7 @@ function AdminLayout() {
        */}
       <nav aria-label={t('admin:title')}>
         <ul className="flex gap-1 overflow-x-auto border-b border-border">
-          {SECTIONS.map((section) => (
+          {sections.map((section) => (
             <li className="shrink-0" key={section.to}>
               <Link
                 activeProps={{ 'data-active': 'true' }}

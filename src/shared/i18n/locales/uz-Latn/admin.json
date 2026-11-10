@@ -7,7 +7,8 @@
     "clinic": "Klinika",
     "doctorTypes": "Shifokor turlari",
     "admins": "Adminlar",
-    "bot": "Telegram bot"
+    "bot": "Telegram bot",
+    "branches": "Filiallar"
   },
   "doctor": {
     "fullName": "F. I. Sh.",
@@ -117,5 +118,51 @@
     "reactivateFailed": "Qayta faollashtirib bo'lmadi. Qayta urinib ko'ring.",
     "inactiveTitle_one": "Faolsizlantirilganlar ({{count}})",
     "inactiveTitle_other": "Faolsizlantirilganlar ({{count}})"
+  },
+  "branch": {
+    "name": "Filial",
+    "namePlaceholder": "Yunusobod",
+    "phoneNumber": "Telefon raqami",
+    "address": "Manzil",
+    "description": "Har bir filialning o'z xodimlari, narxlari va bemorlari bor. Bitta filialli klinikaga bu yerda hech narsa kerak emas.",
+    "create": "Filial qo'shish",
+    "createTitle": "Yangi filial",
+    "createDescription": "Faqat nomi majburiy. Ish vaqti filialga o'tgandan keyin «Klinika» bo'limida kiritiladi.",
+    "createFailed": "Filialni qo'shib bo'lmadi. Qayta urinib ko'ring.",
+    "copyCatalog": "Narxlar ro'yxati va shifokor turlarini «{{name}}» filialidan nusxalash",
+    "editTitle": "Filialni tahrirlash",
+    "saveFailed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring.",
+    "empty": "Hali filial yo'q",
+    "emptyDescription": "Ishlashni boshlash uchun filial qo'shing.",
+    "staff": "Xodimlar",
+    "patients": "Bemorlar",
+    "current": "Joriy",
+    "closed": "Yopilgan",
+    "close": "Filialni yopish",
+    "closeTitle": "Filialni yopish",
+    "closeDescription": "«{{name}}» yopilsinmi? Uning xodimlari unga kira olmaydi. Bemorlar, qabullar va to'lovlar saqlanadi, filialni qayta ochish mumkin.",
+    "closeFailed": "Filialni yopib bo'lmadi. Qayta urinib ko'ring.",
+    "lastBranch": "Oxirgi ochiq filialni yopib bo'lmaydi.",
+    "reopen": "Qayta ochish",
+    "workingIn": "Siz «{{name}}» filialida ishlayapsiz. Boshqa filialni boshqarish uchun yuqoridan filialni almashtiring.",
+    "move": {
+      "action": "Bemorlarni ko'chirish",
+      "title": "Bemorlarni «{{name}}» filialiga ko'chirish",
+      "description": "«{{from}}» filiali bemorlari tibbiy tarixi, tish kartasi, retseptlari, rasmlari, rejalari va qabullari bilan «{{to}}» filialiga o'tadi.",
+      "moneyStays": "Davolash va to'lovlar eski filialda qoladi, uning hisobotlari o'zgarmaydi. Qarzi yoki haqdorligi bor, yoki davolashi tugallanmagan bemorni ko'chirib bo'lmaydi.",
+      "doctor": "Yangi filialdagi shifokor",
+      "doctorPlaceholder": "Shifokorni tanlang",
+      "noDoctors": "Bu filialda hali shifokor yo'q. Avval shifokor qo'shing.",
+      "search": "Bemorlarni qidirish",
+      "empty": "Bemor topilmadi",
+      "hasBalance": "Balans {{amount}}",
+      "submit_one": "{{count}} ta bemorni ko'chirish",
+      "submit_other": "{{count}} ta bemorni ko'chirish",
+      "done_one": "{{count}} ta bemor ko'chirildi.",
+      "done_other": "{{count}} ta bemor ko'chirildi.",
+      "notMovable": "Ba'zi bemorlarning balansi 0 emas yoki davolashi tugallanmagan. Avval shu filialda hisob-kitobni yoping.",
+      "doctorBusy": "Shifokorning shu bemorlar qabuli vaqtida boshqa qabuli bor.",
+      "failed": "Bemorlarni ko'chirib bo'lmadi. Qayta urinib ko'ring."
+    }
   }
 }

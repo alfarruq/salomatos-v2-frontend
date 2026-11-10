@@ -44,6 +44,7 @@ export const MOCK_CLINICS = {
 } as const
 
 const OWNER_PERMISSIONS = [
+  'branch:manage',
   'clinic:view',
   'clinic:manage',
   'staff:view',
@@ -114,6 +115,7 @@ const DOCTOR_PERMISSIONS = [
 const ADMIN_PERMISSIONS = OWNER_PERMISSIONS.filter(
   (p) =>
     ![
+      'branch:manage',
       'clinic:manage',
       // Management (Boshqaruv) and statistics are the owner's.
       'staff:manage',
