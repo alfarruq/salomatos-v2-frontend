@@ -58,7 +58,7 @@ describe('fetchPatients', () => {
     expect(page.results.map((patient) => patient.fullName)).toEqual(['Bekzod Aliyev'])
     // 🔴 §3: a patient's name in a URL ends up in access logs and browser history.
     expect(urls.join(' ')).not.toContain('bekzod')
-    expect(body).toEqual({ query: 'bekzod', include_archived: false })
+    expect(body).toEqual({ query: 'bekzod', include_archived: false, include_leads: false })
   })
 
   it('filters by primary doctor', async () => {

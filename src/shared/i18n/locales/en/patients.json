@@ -28,6 +28,15 @@
     "description": "Changes are saved immediately.",
     "failed": "Could not save the changes. Please try again."
   },
+  "register": {
+    "title": "Register as a patient",
+    "description": "Fill in the patient's details before the first procedure.",
+    "submit": "Save and continue"
+  },
+  "lead": {
+    "title": "Not a patient yet",
+    "body": "This person has only booked a visit. Their full details are entered at the first procedure, and they then join the patient list."
+  },
   "search": {
     "label": "Search patients",
     "placeholder": "Name or phone",

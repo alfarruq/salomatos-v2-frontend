@@ -8,6 +8,7 @@ import {
   toAppointment,
   toAppointmentPayload,
 } from '@/entities/appointment'
+import { patientKeys } from '@/entities/patient'
 import { httpClient } from '@/shared/api/httpClient'
 
 async function createAppointment(input: AppointmentFormInput): Promise<Appointment> {
@@ -29,10 +30,14 @@ export function useCreateAppointment(clinicId: string) {
 
   return useMutation({
     mutationFn: createAppointment,
-    onSuccess: () => {
+    onSuccess: (_appointment, input) => {
       // The whole scope, not just the current view: a new appointment can
       // land on a date the day/week filter currently open isn't showing.
       void queryClient.invalidateQueries({ queryKey: appointmentKeys.scope(clinicId) })
+      // Someone new was stored as a lead; the booking search must find them next time.
+      if (input.patientId === '') {
+        void queryClient.invalidateQueries({ queryKey: patientKeys.scope(clinicId) })
+      }
     },
   })
 }

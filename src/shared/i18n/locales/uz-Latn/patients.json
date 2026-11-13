@@ -28,6 +28,15 @@
     "description": "O'zgarishlar darhol saqlanadi.",
     "failed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring."
   },
+  "register": {
+    "title": "Bemor sifatida ro'yxatga olish",
+    "description": "Birinchi muolajadan oldin bemor ma'lumotlarini to'ldiring.",
+    "submit": "Saqlash va davom etish"
+  },
+  "lead": {
+    "title": "Hali bemor emas",
+    "body": "Bu odam faqat uchrashuvga yozilgan. Birinchi muolaja qo'shilganda to'liq ma'lumotlari kiritiladi va u bemorlar ro'yxatiga o'tadi."
+  },
   "search": {
     "label": "Bemorlarni qidirish",
     "placeholder": "Ism yoki telefon",

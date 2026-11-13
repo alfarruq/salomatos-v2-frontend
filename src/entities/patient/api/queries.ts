@@ -57,7 +57,11 @@ export async function fetchPatients(
             ...init,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: search, include_archived: filters.archived }),
+            body: JSON.stringify({
+              query: search,
+              include_archived: filters.archived,
+              include_leads: filters.includeLeads ?? false,
+            }),
           },
         )
       : await httpClient<unknown>(`v1/patients/${toQueryString(filters)}`, init)
