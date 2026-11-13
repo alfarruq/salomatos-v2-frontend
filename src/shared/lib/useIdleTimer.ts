@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-/** §13.4. Twelve minutes is short because the screen it protects is in a public room. */
-export const IDLE_TIMEOUT_MS = 12 * 60 * 1000
+/** §13.4. 90 minutes by explicit owner decision (was 12); the screen is still cleared when it fires. */
+export const IDLE_TIMEOUT_MS = 90 * 60 * 1000
 
 /** How long before the timeout the user is warned. */
 export const IDLE_WARNING_MS = 60 * 1000
@@ -41,7 +41,7 @@ export interface UseIdleTimerOptions {
  *
  * The threat is mundane and constant: a reception desk computer left open with
  * a patient record on it while the person who opened it walks away. That is why
- * the timeout is minutes rather than hours, and why reaching it clears the
+ * the timeout is bounded, and why reaching it clears the
  * cache rather than only dimming the screen.
  */
 export function useIdleTimer({
