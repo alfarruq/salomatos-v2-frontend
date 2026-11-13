@@ -1,7 +1,16 @@
 import { X } from 'lucide-react'
-import { Controller, type UseFormReturn } from 'react-hook-form'
+import { Controller, type UseFormReturn, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Button, DatePicker, Field, Input, Select, type SelectOption, Textarea } from '@/shared/ui'
+import {
+  Button,
+  DatePicker,
+  Field,
+  Input,
+  PhoneInput,
+  Select,
+  type SelectOption,
+  Textarea,
+} from '@/shared/ui'
 import type { AppointmentFormInput } from '../model/formSchema'
 import { APPOINTMENT_STATUSES } from '../model/types'
 
@@ -62,6 +71,11 @@ export interface AppointmentFormFieldsProps {
   patientPicker: AppointmentPatientPickerProps
   /** Absent hides the service select. */
   treatmentType?: AppointmentTreatmentTypeProps
+  /**
+   * Lets a typed name with no picked patient be booked as someone new: a phone
+   * field appears under it. Only a new booking — the server refuses it on edit.
+   */
+  allowNewPatient?: boolean
 }
 
 /**
@@ -75,6 +89,7 @@ export function AppointmentFormFields({
   showStatus = false,
   patientPicker,
   treatmentType,
+  allowNewPatient = false,
 }: AppointmentFormFieldsProps) {
   const { t } = useTranslation(['appointments', 'validation'])
 
@@ -84,6 +99,9 @@ export function AppointmentFormFields({
   }
 
   const errors = form.formState.errors
+  const typedName = useWatch({ control: form.control, name: 'fullName' })
+  const isNewPatient =
+    allowNewPatient && patientPicker.linkedPatientName === null && typedName.trim() !== ''
 
   return (
     <div className="flex flex-col gap-4">
@@ -98,7 +116,7 @@ export function AppointmentFormFields({
             ? undefined
             : t('appointments:form.fullNameLinkedHint')
         }
-        error={message(errors.patientId?.message)}
+        error={message(errors.patientId?.message ?? errors.fullName?.message)}
         isRequired
         label={t('appointments:form.patient')}
       >
@@ -159,6 +177,28 @@ export function AppointmentFormFields({
           )}
         </div>
       </Field>
+
+      {isNewPatient ? (
+        <Field
+          description={t('appointments:form.newPatientHint')}
+          error={message(errors.phoneNumber?.message)}
+          isRequired
+          label={t('appointments:form.newPatientPhone')}
+        >
+          <Controller
+            control={form.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <PhoneInput
+                disabled={isDisabled}
+                name={field.name}
+                onChange={field.onChange}
+                value={field.value}
+              />
+            )}
+          />
+        </Field>
+      ) : null}
 
       <Field
         error={message(errors.doctorId?.message)}

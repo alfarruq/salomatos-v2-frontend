@@ -27,7 +27,9 @@
     "notes": "Notes",
     "duration": "Length, minutes",
     "chooseDoctorFirst": "Choose a doctor first",
-    "noServices": "This doctor has no services in the price list yet."
+    "noServices": "This doctor has no services in the price list yet.",
+    "newPatientPhone": "New person's phone",
+    "newPatientHint": "If nobody is found, they are booked as someone new. They join the patient list at the first procedure."
   },
   "create": {
     "title": "New appointment",

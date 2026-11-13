@@ -1,6 +1,7 @@
+import * as v from 'valibot'
 import { describe, expect, it } from 'vitest'
 import { mockId } from '@/shared/api/mocks/fixtures'
-import { emptyAppointmentForm, toAppointmentPayload } from './formSchema'
+import { appointmentFormSchema, emptyAppointmentForm, toAppointmentPayload } from './formSchema'
 
 const BASE = {
   ...emptyAppointmentForm,
@@ -33,5 +34,37 @@ describe('toAppointmentPayload', () => {
       service: null,
       status: 'scheduled',
     })
+  })
+})
+
+function messagesOf(result: v.SafeParseResult<typeof appointmentFormSchema>, field: string) {
+  return result.success ? [] : v.flatten(result.issues).nested?.[field]
+}
+
+describe('someone new (lead)', () => {
+  const NEW = { ...BASE, patientId: '', fullName: ' Walk In ', phoneNumber: '+998901112233' }
+
+  it('sends new_patient instead of a patient id', () => {
+    const payload = toAppointmentPayload(NEW)
+
+    expect(payload.patient).toBeUndefined()
+    expect(payload.new_patient).toEqual({ full_name: 'Walk In', phone_number: '+998901112233' })
+  })
+
+  it('needs a picked patient or a phone', () => {
+    const result = v.safeParse(appointmentFormSchema, { ...NEW, phoneNumber: '' })
+
+    expect(result.success).toBe(false)
+    expect(messagesOf(result, 'patientId')).toEqual(['validation.patientRequired'])
+  })
+
+  it('checks the new phone is Uzbek', () => {
+    const result = v.safeParse(appointmentFormSchema, { ...NEW, phoneNumber: '+1555' })
+
+    expect(messagesOf(result, 'phoneNumber')).toEqual(['validation.phoneUz'])
+  })
+
+  it('accepts a picked patient with no phone', () => {
+    expect(v.safeParse(appointmentFormSchema, BASE).success).toBe(true)
   })
 })

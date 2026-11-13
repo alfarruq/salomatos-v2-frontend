@@ -26,6 +26,11 @@ export interface Patient {
   status: PatientStatus
   /** UTC ISO-8601 instant; format at display time (§14). */
   createdAt: string | null
+  /**
+   * Only booked a visit (name and phone). Kept out of the patient list; the
+   * full patient form is filled at the first procedure, which registers them.
+   */
+  isLead: boolean
   /** Charged minus paid, in so'm; negative is credit. Null when the caller may not see money. */
   debt: number | null
 }
@@ -45,6 +50,8 @@ export interface PatientFilters {
   /** A doctor's staff id. */
   doctorId: string | null
   archived: boolean
+  /** Also find people who only booked a visit — the booking dialog's search, not the patient list. */
+  includeLeads?: boolean
   page: number
 }
 

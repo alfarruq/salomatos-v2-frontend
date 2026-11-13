@@ -41,6 +41,7 @@ import { VoidTreatmentDialog } from '@/features/treatment-void'
 import { ageOn, formatCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
 import {
+  Alert,
   Button,
   Card,
   ErrorState,
@@ -66,6 +67,8 @@ function PatientDetailPage() {
   const { clinicId } = Route.useRouteContext()
   const navigate = useNavigate()
   const [isEditOpen, setEditOpen] = useState(false)
+  // A lead fills the patient form before the first procedure; the composer opens after.
+  const [isRegisterOpen, setRegisterOpen] = useState(false)
   const [isArchiveOpen, setArchiveOpen] = useState(false)
   const [isAppointmentOpen, setAppointmentOpen] = useState(false)
   // Here rather than in the tabs: the header's button and the table both open it.
@@ -94,6 +97,11 @@ function PatientDetailPage() {
    */
   const isValidId = UUID_PATTERN.test(patientId)
   const query = useQuery({ ...patientQueries.detail(clinicId, patientId), enabled: isValidId })
+
+  const startTreatment = () => {
+    if (query.data?.isLead === true) setRegisterOpen(true)
+    else openComposer()
+  }
 
   if (!isValidId) {
     return (
@@ -135,7 +143,7 @@ function PatientDetailPage() {
                 <Button
                   className="max-md:hidden"
                   iconLeft={<Stethoscope aria-hidden="true" className="size-4" />}
-                  onClick={openComposer}
+                  onClick={startTreatment}
                   size="sm"
                   variant="primary"
                 >
@@ -189,11 +197,17 @@ function PatientDetailPage() {
             </div>
           </div>
 
+          {patient.isLead ? (
+            <Alert title={t('patients:lead.title')} tone="info">
+              {t('patients:lead.body')}
+            </Alert>
+          ) : null}
+
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="flex flex-col gap-6">
               <PatientSidebar
                 onNewAppointment={() => setAppointmentOpen(true)}
-                onNewTreatment={openComposer}
+                onNewTreatment={startTreatment}
                 onWritePrescription={openRecipeEditor}
                 patient={patient}
               />
@@ -215,7 +229,7 @@ function PatientDetailPage() {
               </Can>
             </div>
             <PatientTabs
-              onOpenComposer={openComposer}
+              onOpenComposer={startTreatment}
               onOpenRecipeEditor={openRecipeEditor}
               patient={patient}
             />
@@ -251,6 +265,15 @@ function PatientDetailPage() {
             }}
             onOpenChange={setAppointmentOpen}
             open={isAppointmentOpen}
+          />
+
+          <EditPatientDialog
+            clinicId={clinicId}
+            onOpenChange={setRegisterOpen}
+            onSaved={openComposer}
+            open={isRegisterOpen}
+            patient={patient}
+            register
           />
 
           <EditPatientDialog

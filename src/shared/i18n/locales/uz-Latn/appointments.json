@@ -27,7 +27,9 @@
     "notes": "Izoh",
     "duration": "Davomiyligi, daqiqa",
     "chooseDoctorFirst": "Avval shifokorni tanlang",
-    "noServices": "Bu shifokor uchun narxlar ro'yxatida hali xizmat yo'q."
+    "noServices": "Bu shifokor uchun narxlar ro'yxatida hali xizmat yo'q.",
+    "newPatientPhone": "Yangi odamning telefoni",
+    "newPatientHint": "Topilmasa, yangi odam sifatida yoziladi. Bemorlar ro'yxatiga birinchi muolajada qo'shiladi."
   },
   "create": {
     "title": "Yangi uchrashuv",

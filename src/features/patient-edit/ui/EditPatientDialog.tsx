@@ -33,6 +33,11 @@ export interface EditPatientDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved?: () => void
+  /**
+   * Registers a lead (someone who only booked) as a patient: same form, filled
+   * before their first procedure.
+   */
+  register?: boolean
 }
 
 const FORM_ID = 'edit-patient-form'
@@ -43,6 +48,7 @@ export function EditPatientDialog({
   open,
   onOpenChange,
   onSaved,
+  register = false,
 }: EditPatientDialogProps) {
   const { t } = useTranslation(['patients', 'common'])
 
@@ -81,6 +87,7 @@ export function EditPatientDialog({
       {
         patientId: patient.id,
         input: values,
+        register,
       },
       {
         onSuccess: () => {
@@ -113,20 +120,20 @@ export function EditPatientDialog({
     <Dialog
       // Wider than the default: the doctor and the birth date share a row.
       className="max-w-xl"
-      description={t('patients:edit.description')}
+      description={t(register ? 'patients:register.description' : 'patients:edit.description')}
       footer={
         <>
           <Button disabled={isPending} onClick={() => onOpenChange(false)} variant="secondary">
             {t('common:action.cancel')}
           </Button>
           <Button form={FORM_ID} isLoading={isPending} type="submit" variant="primary">
-            {t('common:action.save')}
+            {register ? t('patients:register.submit') : t('common:action.save')}
           </Button>
         </>
       }
       onOpenChange={onOpenChange}
       open={open}
-      title={t('patients:edit.title')}
+      title={t(register ? 'patients:register.title' : 'patients:edit.title')}
     >
       <form className="flex flex-col gap-4" id={FORM_ID} noValidate onSubmit={handleSubmit}>
         {rootError ? <Alert title={rootError} tone="danger" /> : null}

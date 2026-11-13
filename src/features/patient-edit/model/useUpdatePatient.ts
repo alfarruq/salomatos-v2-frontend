@@ -14,14 +14,17 @@ import { httpClient } from '@/shared/api/httpClient'
 async function updatePatient({
   patientId,
   input,
+  register = false,
 }: {
   patientId: PatientId
   input: PatientFormInput
+  /** Saves the form and turns a lead (booked only) into a patient. */
+  register?: boolean
 }): Promise<PatientListItem> {
   const payload = toPatientPayload(input)
 
-  const raw = await httpClient<unknown>(`v1/patients/${patientId}/`, {
-    method: 'PATCH',
+  const raw = await httpClient<unknown>(`v1/patients/${patientId}/${register ? 'register/' : ''}`, {
+    method: register ? 'POST' : 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })

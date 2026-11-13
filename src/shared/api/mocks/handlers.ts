@@ -1163,6 +1163,7 @@ export const handlers = [
       (row) =>
         inScope(row, scope) &&
         (body.include_archived === true || row.archived_at === null) &&
+        (body.include_leads === true || row.is_lead !== true) &&
         (String(row.full_name).toLowerCase().includes(query) ||
           String(row.phone_number).includes(query)),
     )
@@ -1182,6 +1183,18 @@ export const handlers = [
     if (findRow('patients', params.id, scope) === null) return notFound()
     const row = medicalHistoryOf(String(params.id))
     Object.assign(row, await bodyOf(request), { updated_at: new Date().toISOString() })
+    return HttpResponse.json(row)
+  }),
+
+  // `PatientViewSet.register`: the patient form, filled for a lead at the first procedure.
+  http.post('/api/v1/patients/:id/register/', async ({ request, params }) => {
+    const scope = guard(request, 'patient:manage')
+    if (scope instanceof Response) return scope
+    const row = findRow('patients', params.id, scope)
+    if (row === null) return notFound()
+    const body = await bodyOf(request)
+    Object.assign(row, body, { id: row.id, is_lead: false })
+    if ('primary_doctor' in body) row.primary_doctor_name = staffNameOf(body.primary_doctor)
     return HttpResponse.json(row)
   }),
 
@@ -1210,6 +1223,7 @@ export const handlers = [
     {
       filter: (row, params) =>
         (params.get('archived') === 'true' ? row.archived_at !== null : row.archived_at === null) &&
+        (params.get('lead') === 'true' ? row.is_lead === true : row.is_lead !== true) &&
         byParam(row, params, 'primary_doctor', 'gender'),
       create: (body, scope) =>
         required(body, ['full_name']) ?? {
@@ -1226,6 +1240,7 @@ export const handlers = [
           primary_doctor_name: staffNameOf(body.primary_doctor),
           archived_at: null,
           created_at: new Date().toISOString(),
+          is_lead: false,
         },
       patch: (row, body) => {
         Object.assign(row, body, { id: row.id })
@@ -1254,6 +1269,30 @@ export const handlers = [
         )
       },
       create: (body, scope) => {
+        // Someone new is stored as a lead, outside the patient list (`AppointmentSerializer.create`).
+        const lead = body.new_patient
+        if (typeof lead === 'object' && lead !== null && !('patient' in body)) {
+          const { full_name, phone_number } = lead as Record<string, unknown>
+          const patientId = newId()
+          table('patients').unshift({
+            id: patientId,
+            clinic: scope.clinicId,
+            clinic_name: clinicNameOf(scope.clinicId),
+            full_name,
+            phone_number,
+            birth_date: null,
+            gender: '',
+            address: '',
+            notes: '',
+            primary_doctor: null,
+            primary_doctor_name: null,
+            archived_at: null,
+            created_at: new Date().toISOString(),
+            is_lead: true,
+          })
+          delete body.new_patient
+          body.patient = patientId
+        }
         const missing = required(body, ['patient', 'doctor', 'start_at'])
         if (missing !== null) return missing
         const start = new Date(String(body.start_at))

@@ -8,32 +8,65 @@ const TIME = /^([01]\d|2[0-3]):([0-5]\d)$/
 /**
  * The writable shape of an appointment — what `AppointmentSerializer` accepts.
  *
- * Every visit belongs to a registered patient: the server takes a patient id,
- * not a typed name, so a walk-in is registered first (two fields) and booked
- * after. `fullName` is only the picker's search text and display value.
+ * A visit is booked either for a picked patient (`patientId`) or for someone
+ * new: then `fullName` is their name and `phoneNumber` their phone, and the
+ * server stores them as a lead, outside the patient list, until the first
+ * procedure. Otherwise `fullName` is only the picker's search text.
  */
-export const appointmentFormSchema = v.object({
-  fullName: v.string(),
-  patientId: v.pipe(v.string(), v.minLength(1, 'validation.patientRequired')),
-  doctorId: v.pipe(v.string(), v.minLength(1, 'validation.required')),
-  serviceId: v.string(),
-  date: v.pipe(
-    v.string(),
-    v.minLength(1, 'validation.required'),
-    v.check((value) => parseCalendarDate(value) !== null, 'validation.invalid'),
+const UZ_PHONE = /^\+998\d{9}$/
+
+export const appointmentFormSchema = v.pipe(
+  v.object({
+    fullName: v.string(),
+    patientId: v.string(),
+    /** Only for someone new; '' when a patient is picked. */
+    phoneNumber: v.string(),
+    doctorId: v.pipe(v.string(), v.minLength(1, 'validation.required')),
+    serviceId: v.string(),
+    date: v.pipe(
+      v.string(),
+      v.minLength(1, 'validation.required'),
+      v.check((value) => parseCalendarDate(value) !== null, 'validation.invalid'),
+    ),
+    time: v.pipe(v.string(), v.regex(TIME, 'validation.invalid')),
+    /** Minutes, as the select holds it. */
+    durationMinutes: v.pipe(v.string(), v.regex(/^\d+$/, 'validation.invalid')),
+    notes: v.string(),
+    status: v.picklist(APPOINTMENT_STATUSES),
+  }),
+  v.forward(
+    v.partialCheck(
+      [['patientId'], ['phoneNumber']],
+      (input) => input.patientId !== '' || input.phoneNumber !== '',
+      'validation.patientRequired',
+    ),
+    ['patientId'],
   ),
-  time: v.pipe(v.string(), v.regex(TIME, 'validation.invalid')),
-  /** Minutes, as the select holds it. */
-  durationMinutes: v.pipe(v.string(), v.regex(/^\d+$/, 'validation.invalid')),
-  notes: v.string(),
-  status: v.picklist(APPOINTMENT_STATUSES),
-})
+  v.forward(
+    v.partialCheck(
+      [['patientId'], ['fullName']],
+      (input) => input.patientId !== '' || input.fullName.trim().length >= 2,
+      'validation.tooShort',
+    ),
+    ['fullName'],
+  ),
+  v.forward(
+    v.partialCheck(
+      [['patientId'], ['phoneNumber']],
+      (input) =>
+        input.patientId !== '' || input.phoneNumber === '' || UZ_PHONE.test(input.phoneNumber),
+      'validation.phoneUz',
+    ),
+    ['phoneNumber'],
+  ),
+)
 
 export type AppointmentFormInput = v.InferOutput<typeof appointmentFormSchema>
 
 export const emptyAppointmentForm: AppointmentFormInput = {
   fullName: '',
   patientId: '',
+  phoneNumber: '',
   doctorId: '',
   serviceId: '',
   date: '',
@@ -47,6 +80,7 @@ export function toAppointmentForm(appointment: Appointment): AppointmentFormInpu
   return {
     fullName: appointment.fullName,
     patientId: appointment.patientId,
+    phoneNumber: '',
     doctorId: appointment.doctorId,
     serviceId: appointment.serviceId ?? '',
     date: appointment.date,
@@ -63,13 +97,26 @@ export function toAppointmentForm(appointment: Appointment): AppointmentFormInpu
  * sent: on an edit the server keeps the stored end, so moving the start alone
  * could put the end before it.
  */
-export function toAppointmentPayload(input: AppointmentFormInput): Record<string, string | null> {
+export interface AppointmentPayload {
+  patient?: string
+  new_patient?: { full_name: string; phone_number: string }
+  doctor: string
+  service: string | null
+  start_at: string
+  end_at: string
+  notes: string
+  status: string
+}
+
+export function toAppointmentPayload(input: AppointmentFormInput): AppointmentPayload {
   const startAt = clinicInstantOf(input.date, input.time)
   const endAt = new Date(
     new Date(startAt).getTime() + Number(input.durationMinutes) * 60_000,
   ).toISOString()
   return {
-    patient: input.patientId,
+    ...(input.patientId === ''
+      ? { new_patient: { full_name: input.fullName.trim(), phone_number: input.phoneNumber } }
+      : { patient: input.patientId }),
     doctor: input.doctorId,
     service: input.serviceId === '' ? null : input.serviceId,
     start_at: startAt,
@@ -81,6 +128,8 @@ export function toAppointmentPayload(input: AppointmentFormInput): Record<string
 
 const SERVER_FIELD_NAMES: Record<string, keyof AppointmentFormInput> = {
   patient: 'patientId',
+  'new_patient.full_name': 'fullName',
+  'new_patient.phone_number': 'phoneNumber',
   doctor: 'doctorId',
   service: 'serviceId',
   start_at: 'time',

@@ -144,7 +144,12 @@ export function CreateAppointmentDialog({
   )
 
   const patientsQuery = useQuery({
-    ...patientQueries.list(clinicId, { ...defaultPatientFilters, search: debouncedPatientTerm }),
+    // Leads too: someone who booked before and calls again is picked, not entered twice.
+    ...patientQueries.list(clinicId, {
+      ...defaultPatientFilters,
+      search: debouncedPatientTerm,
+      includeLeads: true,
+    }),
     enabled: debouncedPatientTerm !== '',
   })
   const patientResults: AppointmentPatientResult[] = (patientsQuery.data?.results ?? []).map(
@@ -156,6 +161,7 @@ export function CreateAppointmentDialog({
     setPatientTerm('')
     form.setValue('patientId', patient.id, { shouldDirty: true })
     form.setValue('fullName', patient.fullName, { shouldDirty: true })
+    form.setValue('phoneNumber', '')
   }
 
   const handleUnlinkPatient = () => {
@@ -227,6 +233,7 @@ export function CreateAppointmentDialog({
       <form className="flex flex-col gap-4" id={FORM_ID} noValidate onSubmit={handleSubmit}>
         {rootError ? <Alert title={rootError} tone="danger" /> : null}
         <AppointmentFormFields
+          allowNewPatient
           doctorOptions={doctorOptions}
           form={form}
           isDisabled={isPending}
