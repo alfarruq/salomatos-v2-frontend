@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lineTotalOf, toNewTreatmentPayload } from './formSchema'
+import { isPaidInFull, paidOf, toNewTreatmentPayload } from './formSchema'
 import type { ComposerFields, TreatmentRow } from './types'
 
 const fields: ComposerFields = { doctorId: 'doctor-1', notes: 'Izoh' }
@@ -10,7 +10,7 @@ const row: TreatmentRow = {
   treatmentTypeId: 'service-1',
   treatmentTypeName: 'Implantatsiya',
   unitPrice: '1,200,000',
-  discountPercent: '10',
+  paidAmount: '',
   inProgress: false,
 }
 
@@ -22,7 +22,7 @@ describe('toNewTreatmentPayload', () => {
       service: 'service-1',
       tooth: 16,
       unit_price: '1200000',
-      discount_percent: '10',
+      paid_amount: '0',
       status: 'completed',
       notes: 'Izoh',
     })
@@ -33,15 +33,21 @@ describe('toNewTreatmentPayload', () => {
     expect(toNewTreatmentPayload(row, { ...fields, doctorId: '' }, 'p')).toBeNull()
   })
 
-  it('clamps a discount over 100 percent', () => {
+  it('never sends more paid than the line costs', () => {
     expect(
-      toNewTreatmentPayload({ ...row, discountPercent: '250' }, fields, 'p')?.discount_percent,
-    ).toBe('100')
+      toNewTreatmentPayload({ ...row, paidAmount: '5,000,000' }, fields, 'p')?.paid_amount,
+    ).toBe('1200000')
   })
 })
 
-describe('lineTotalOf', () => {
-  it('applies the discount the way the server will', () => {
-    expect(lineTotalOf(row)).toBe(1_080_000)
+describe('paid in full', () => {
+  it('is true only when the whole price has been taken', () => {
+    expect(isPaidInFull({ ...row, paidAmount: '1,200,000' })).toBe(true)
+    expect(isPaidInFull({ ...row, paidAmount: '600,000' })).toBe(false)
+    expect(isPaidInFull({ ...row, unitPrice: '0', paidAmount: '' })).toBe(false)
+  })
+
+  it('caps the amount at the price', () => {
+    expect(paidOf({ ...row, paidAmount: '9,999,999' })).toBe(1_200_000)
   })
 })

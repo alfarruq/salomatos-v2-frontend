@@ -140,7 +140,7 @@ export function CreatePatientDialog({
     const options = { shouldDirty: true, shouldValidate: true } as const
     let filled = 0
     const text = (
-      name: 'fullName' | 'phoneNumber' | 'birthDate' | 'address' | 'notes',
+      name: 'fullName' | 'phoneNumber' | 'birthDate' | 'workplace' | 'address' | 'notes',
       value: string,
     ) => {
       if (value === '') return
@@ -150,12 +150,9 @@ export function CreatePatientDialog({
     text('fullName', fields?.fullName ?? '')
     text('phoneNumber', fields?.phoneNumber ?? '')
     text('birthDate', fields?.birthDate ? toTypedDate(fields.birthDate) : '')
+    text('workplace', fields?.workplace ?? '')
     text('address', fields?.address ?? '')
     text('notes', draft.notes)
-    if (fields !== null && fields.gender !== '') {
-      form.setValue('gender', fields.gender, options)
-      filled += 1
-    }
     setVoiceNote(filled > 0 ? t('voice:result.filled') : t('voice:result.empty'))
   }
 
@@ -292,6 +289,7 @@ export function CreatePatientDialog({
           doctorOptions={doctorOptions}
           form={form}
           isDisabled={isPending}
+          showDoctor={onlyMe === null}
         />
         {offerTreatment ? (
           <Checkbox

@@ -228,8 +228,8 @@ const MAIN = MOCK_CLINICS.main
 const DOCTOR_MEMBERSHIP = MOCK_USERS.doctor.memberships[0].id
 
 export const MOCK_SPECIALTIES = [
-  { id: mockId(5, 1), clinic: MAIN.id, name: 'Stomatolog' },
-  { id: mockId(5, 2), clinic: MAIN.id, name: 'Ortodont' },
+  { id: mockId(5, 1), clinic: MAIN.id, name: 'Stomatolog', is_dental: true },
+  { id: mockId(5, 2), clinic: MAIN.id, name: 'Ortodont', is_dental: false },
 ]
 
 /** `StaffSerializer` rows. Ids are membership ids. */
@@ -245,6 +245,7 @@ export const MOCK_STAFF = [
     is_active: true,
     specialty: mockId(5, 1),
     specialty_name: 'Stomatolog',
+    specialty_is_dental: true,
     experience_years: 7,
     biography: '',
   },
@@ -322,7 +323,7 @@ export const MOCK_PATIENTS = [
     full_name: 'Aziza Karimova',
     phone_number: '+998901000001',
     birth_date: '1990-04-12',
-    gender: 'female',
+    workplace: 'Maktab №12',
     address: 'Chilonzor 5',
     notes: '',
     primary_doctor: DOCTOR_MEMBERSHIP,
@@ -337,7 +338,7 @@ export const MOCK_PATIENTS = [
     full_name: 'Bekzod Aliyev',
     phone_number: '+998901000002',
     birth_date: '1985-11-02',
-    gender: 'male',
+    workplace: '',
     address: '',
     notes: '',
     primary_doctor: mockId(4, 5),
@@ -352,7 +353,7 @@ export const MOCK_PATIENTS = [
     full_name: 'Gulnora Yusupova',
     phone_number: '+998901000003',
     birth_date: null,
-    gender: '',
+    workplace: '',
     address: '',
     notes: '',
     primary_doctor: null,
@@ -397,7 +398,6 @@ export const MOCK_PROCEDURES = [
     surfaces: ['O'],
     quantity: 1,
     unit_price: '350000.00',
-    discount_percent: '0.00',
     total: '350000.00',
     performed_at: '2026-08-10T06:00:00Z',
     status: 'completed',

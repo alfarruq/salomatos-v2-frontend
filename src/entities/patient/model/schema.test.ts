@@ -10,7 +10,7 @@ describe('toPatient', () => {
     expect(patient.id).toBe(MOCK_PATIENTS[0]?.id)
     expect(patient.fullName).toBe('Aziza Karimova')
     expect(patient.primaryDoctorName).toBe('Sardor Usmonov')
-    expect(patient.gender).toBe('female')
+    expect(patient.workplace).toBe('Maktab №12')
     expect(patient.status).toBe('active')
   })
 
@@ -18,7 +18,7 @@ describe('toPatient', () => {
     const patient = toPatient(v.parse(patientSchema, MOCK_PATIENTS[2]))
 
     expect(patient.address).toBeNull()
-    expect(patient.gender).toBeNull()
+    expect(patient.workplace).toBeNull()
     expect(patient.primaryDoctorId).toBeNull()
   })
 

@@ -5,6 +5,7 @@
   "password": "Password",
   "passwordUnavailable": "Unavailable — issue a new password",
   "copy": "Copy",
+  "copyBoth": "Copy login and password",
   "copied": "Copied",
   "copyFailed": "Could not copy",
   "linked": "Signed in to the bot",

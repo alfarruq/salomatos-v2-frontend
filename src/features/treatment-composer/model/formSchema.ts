@@ -8,24 +8,23 @@ export interface NewTreatmentPayload {
   service: string
   tooth: number | null
   unit_price: string
-  discount_percent: string
+  paid_amount: string
   status: 'in_progress' | 'completed'
   notes: string
-}
-
-/** 0–100, whole percent; anything else is not a discount the server accepts. */
-export function discountOf(row: Pick<TreatmentRow, 'discountPercent'>): number {
-  const value = Number(digitsOf(row.discountPercent) || '0')
-  return Math.min(Math.max(value, 0), 100)
 }
 
 export function priceOf(row: Pick<TreatmentRow, 'unitPrice'>): number {
   return Number(digitsOf(row.unitPrice) || '0')
 }
 
-/** What the line will cost, the same arithmetic the server does. Display only. */
-export function lineTotalOf(row: Pick<TreatmentRow, 'unitPrice' | 'discountPercent'>): number {
-  return Math.round(priceOf(row) * (1 - discountOf(row) / 100))
+/** Capped at the price: the server refuses more than the line costs. */
+export function paidOf(row: Pick<TreatmentRow, 'unitPrice' | 'paidAmount'>): number {
+  return Math.min(Number(digitsOf(row.paidAmount) || '0'), priceOf(row))
+}
+
+/** The "paid in full" tick is a view of the amount, not separate state. */
+export function isPaidInFull(row: Pick<TreatmentRow, 'unitPrice' | 'paidAmount'>): boolean {
+  return priceOf(row) > 0 && paidOf(row) === priceOf(row)
 }
 
 export function toNewTreatmentPayload(
@@ -41,7 +40,7 @@ export function toNewTreatmentPayload(
     service: row.treatmentTypeId,
     tooth: row.toothNumber,
     unit_price: String(priceOf(row)),
-    discount_percent: String(discountOf(row)),
+    paid_amount: String(paidOf(row)),
     status: row.inProgress ? 'in_progress' : 'completed',
     notes: fields.notes,
   }

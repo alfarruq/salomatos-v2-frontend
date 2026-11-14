@@ -3,8 +3,6 @@ import type { CalendarDate } from '@/shared/lib/calendarDate'
 /** UUID — the backend never exposes sequential ids. */
 export type PatientId = string
 
-export type PatientGender = 'male' | 'female'
-
 /** Patients are never deleted; an archived one is hidden from lists and can be restored. */
 export type PatientStatus = 'active' | 'archived'
 
@@ -17,7 +15,7 @@ export interface Patient {
   fullName: string
   phoneNumber: string | null
   birthDate: CalendarDate | null
-  gender: PatientGender | null
+  workplace: string | null
   address: string | null
   notes: string | null
   /** A staff (membership) id. */

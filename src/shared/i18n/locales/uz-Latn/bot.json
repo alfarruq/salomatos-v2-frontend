@@ -5,6 +5,7 @@
   "password": "Parol",
   "passwordUnavailable": "Ko'rinmaydi — yangi parol bering",
   "copy": "Nusxalash",
+  "copyBoth": "Login va parolni nusxalash",
   "copied": "Nusxalandi",
   "copyFailed": "Nusxalab bo'lmadi",
   "linked": "Botga kirgan",

@@ -27,8 +27,8 @@ describe('fetchDoctorTypes', () => {
     const types = await fetchDoctorTypes()
 
     expect(types).toEqual([
-      { id: MOCK_SPECIALTIES[0]?.id, name: 'Stomatolog' },
-      { id: MOCK_SPECIALTIES[1]?.id, name: 'Ortodont' },
+      { id: MOCK_SPECIALTIES[0]?.id, name: 'Stomatolog', isDental: true },
+      { id: MOCK_SPECIALTIES[1]?.id, name: 'Ortodont', isDental: false },
     ])
   })
 

@@ -48,8 +48,7 @@ export interface Treatment {
   quantity: number
   /** So'm, copied from the price list when the procedure was recorded. */
   unitPrice: number
-  discountPercent: number
-  /** `quantity × unitPrice × (1 − discount)`, as the server computed it. */
+  /** `quantity × unitPrice`, as the server computed it. */
   totalTreatmentCost: number
   /** UTC ISO-8601 instant. */
   performedAt: string

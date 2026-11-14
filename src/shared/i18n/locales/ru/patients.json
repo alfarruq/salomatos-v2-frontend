@@ -11,8 +11,7 @@
     "birthDate": "Дата рождения",
     "birthDatePlaceholder": "дд/мм/гггг",
     "address": "Адрес",
-    "gender": "Пол",
-    "genderPlaceholder": "Не указан",
+    "workplace": "Место работы",
     "notes": "Заметки"
   },
   "create": {
@@ -148,10 +147,6 @@
     "galleryUnsupported": "Можно загрузить только JPG, PNG, WEBP, PDF и DICOM.",
     "galleryOpen": "Скачать",
     "galleryDownloadFailed": "Не удалось скачать файл. Попробуйте ещё раз."
-  },
-  "gender": {
-    "male": "Мужской",
-    "female": "Женский"
   },
   "attachmentKind": {
     "xray": "Рентген",

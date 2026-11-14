@@ -1226,12 +1226,12 @@ export const handlers = [
       filter: (row, params) =>
         (params.get('archived') === 'true' ? row.archived_at !== null : row.archived_at === null) &&
         (params.get('lead') === 'true' ? row.is_lead === true : row.is_lead !== true) &&
-        byParam(row, params, 'primary_doctor', 'gender'),
+        byParam(row, params, 'primary_doctor'),
       create: (body, scope) =>
         required(body, ['full_name']) ?? {
           phone_number: '',
           birth_date: null,
-          gender: '',
+          workplace: '',
           address: '',
           notes: '',
           primary_doctor: null,
@@ -1283,7 +1283,7 @@ export const handlers = [
             full_name,
             phone_number,
             birth_date: null,
-            gender: '',
+            workplace: '',
             address: '',
             notes: '',
             primary_doctor: null,
@@ -1350,7 +1350,6 @@ export const handlers = [
         const service = serviceOf(body.service)
         const quantity = Number(body.quantity ?? 1)
         const unitPrice = Number(body.unit_price ?? service?.price ?? 0)
-        const discount = Number(body.discount_percent ?? 0)
         const doctor = body.doctor ?? membershipOf(scope.user)
         return {
           plan_item: null,
@@ -1359,12 +1358,14 @@ export const handlers = [
           surfaces: [],
           notes: '',
           ...body,
+          // Taken as a payment by the server, never echoed on the line.
+          paid_amount: undefined,
+          payment_method: undefined,
           doctor,
           doctor_name: staffNameOf(doctor),
           quantity,
           unit_price: unitPrice.toFixed(2),
-          discount_percent: discount.toFixed(2),
-          total: (quantity * unitPrice * (1 - discount / 100)).toFixed(2),
+          total: (quantity * unitPrice).toFixed(2),
           id: newId(),
           clinic: scope.clinicId,
           clinic_name: clinicNameOf(scope.clinicId),

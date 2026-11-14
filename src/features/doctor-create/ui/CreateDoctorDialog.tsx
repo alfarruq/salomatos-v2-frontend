@@ -11,7 +11,7 @@ import {
   doctorFormFieldOf,
   emptyDoctorForm,
 } from '@/entities/doctor'
-import { doctorTypeQueries, isDentalDoctorType } from '@/entities/doctor-type'
+import { doctorTypeQueries } from '@/entities/doctor-type'
 import {
   emptyPayTerms,
   PayTermsFields,
@@ -83,10 +83,8 @@ export function CreateDoctorDialog({
   }))
 
   const defaultDoctorTypeId = (doctorTypesQuery.data ?? []).find(
-    // Clinics type this name themselves ("Stamatolog" on the live one), so
-    // match the dental type, not one exact spelling. A clinic without one
-    // simply gets an unassigned select.
-    (doctorType) => isDentalDoctorType(doctorType.name),
+    // Every clinic has exactly one built-in dental type.
+    (doctorType) => doctorType.isDental,
   )?.id
 
   const { setValue } = form

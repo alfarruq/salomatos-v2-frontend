@@ -24,7 +24,6 @@
     "totalCostLabel": "Общая стоимость",
     "notesLabel": "Примечание",
     "priceLabel": "Цена",
-    "discountLabel": "Скидка",
     "voidReasonLabel": "Причина аннулирования"
   },
   "composer": {
@@ -35,7 +34,6 @@
     "toothHint": "Нажмите на карту, чтобы выбрать зуб",
     "treatmentTypePlaceholder": "Лечение",
     "chooseDoctorFirst": "Сначала выберите врача — виды лечения зависят от его специальности.",
-    "addTreatmentLabel": "Добавить вид лечения",
     "rowType": "Лечение",
     "rowCost": "Цена",
     "rowsTitle": "Добавленные процедуры ({{total}})",
@@ -56,11 +54,19 @@
     "patientPlaceholder": "Введите имя пациента",
     "patientClear": "Убрать пациента",
     "patientNoResults": "Пациент не найден",
-    "rowDiscount": "Скидка, %",
+    "rowPaid": "Оплачено, сум",
+    "rowPaidInFull": "Оплачено полностью",
+    "totalPaid": "Оплачено",
+    "totalDebt": "Остаток",
     "rowTotal": "Итого",
     "noServices": "В прайс-листе пока нет услуг для этого врача. Добавьте их в разделе «Управление → Услуги».",
     "rowInProgress": "В процессе",
-    "rowStage": "Статус"
+    "rowStage": "Статус",
+    "toothChartTitle": "Зубная карта",
+    "servicesTitle": "Услуги",
+    "serviceSearch": "Поиск услуги",
+    "serviceNoMatch": "Такой услуги нет",
+    "addService": "Добавить"
   },
   "chart": {
     "treated": "Лечение проведено",

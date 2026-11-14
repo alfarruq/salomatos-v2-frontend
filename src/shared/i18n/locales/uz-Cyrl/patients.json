@@ -11,8 +11,7 @@
     "birthDate": "Туғилган сана",
     "birthDatePlaceholder": "кк/оо/йййй",
     "address": "Манзил",
-    "gender": "Жинси",
-    "genderPlaceholder": "Кўрсатилмаган",
+    "workplace": "Иш жойи",
     "notes": "Изоҳ"
   },
   "create": {
@@ -146,10 +145,6 @@
     "galleryUnsupported": "Фақат JPG, PNG, WEBP, PDF ва DICOM файлларни юклаш мумкин.",
     "galleryOpen": "Юклаб олиш",
     "galleryDownloadFailed": "Файлни юклаб бўлмади. Қайта уриниб кўринг."
-  },
-  "gender": {
-    "male": "Эркак",
-    "female": "Аёл"
   },
   "attachmentKind": {
     "xray": "Рентген",

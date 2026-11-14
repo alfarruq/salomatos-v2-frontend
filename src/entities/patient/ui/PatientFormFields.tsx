@@ -15,6 +15,8 @@ export interface PatientFormFieldsProps {
   doctorOptions: SelectOption[]
   /** Rendered right under the name and phone, e.g. the new-patient dialog's lead suggestions. */
   afterContact?: ReactNode
+  /** Off for a doctor, who can only take patients for themselves: nothing to choose. */
+  showDoctor?: boolean
 }
 
 /**
@@ -34,6 +36,7 @@ export function PatientFormFields({
   isDisabled = false,
   doctorOptions,
   afterContact,
+  showDoctor = true,
 }: PatientFormFieldsProps) {
   const { t } = useTranslation(['patients', 'validation'])
 
@@ -77,22 +80,24 @@ export function PatientFormFields({
       {afterContact}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field error={message(errors.doctorId?.message)} label={t('patients:form.doctor')}>
-          <Controller
-            control={form.control}
-            name="doctorId"
-            render={({ field }) => (
-              <Select
-                disabled={isDisabled}
-                name={field.name}
-                onValueChange={field.onChange}
-                options={doctorOptions}
-                placeholder={t('patients:form.doctorPlaceholder')}
-                value={field.value}
-              />
-            )}
-          />
-        </Field>
+        {showDoctor ? (
+          <Field error={message(errors.doctorId?.message)} label={t('patients:form.doctor')}>
+            <Controller
+              control={form.control}
+              name="doctorId"
+              render={({ field }) => (
+                <Select
+                  disabled={isDisabled}
+                  name={field.name}
+                  onValueChange={field.onChange}
+                  options={doctorOptions}
+                  placeholder={t('patients:form.doctorPlaceholder')}
+                  value={field.value}
+                />
+              )}
+            />
+          </Field>
+        ) : null}
 
         <Field error={message(errors.birthDate?.message)} label={t('patients:form.birthDate')}>
           <Controller
@@ -112,28 +117,12 @@ export function PatientFormFields({
         </Field>
       </div>
 
-      <Field error={message(errors.address?.message)} label={t('patients:form.address')}>
-        <Input autoComplete="off" disabled={isDisabled} {...form.register('address')} />
+      <Field error={message(errors.workplace?.message)} label={t('patients:form.workplace')}>
+        <Input autoComplete="off" disabled={isDisabled} {...form.register('workplace')} />
       </Field>
 
-      <Field error={message(errors.gender?.message)} label={t('patients:form.gender')}>
-        <Controller
-          control={form.control}
-          name="gender"
-          render={({ field }) => (
-            <Select
-              disabled={isDisabled}
-              name={field.name}
-              onValueChange={field.onChange}
-              options={[
-                { value: 'male', label: t('patients:gender.male') },
-                { value: 'female', label: t('patients:gender.female') },
-              ]}
-              placeholder={t('patients:form.genderPlaceholder')}
-              value={field.value}
-            />
-          )}
-        />
+      <Field error={message(errors.address?.message)} label={t('patients:form.address')}>
+        <Input autoComplete="off" disabled={isDisabled} {...form.register('address')} />
       </Field>
 
       <Field error={message(errors.notes?.message)} label={t('patients:form.notes')}>

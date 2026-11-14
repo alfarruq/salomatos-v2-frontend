@@ -40,7 +40,7 @@ function nextRowId(): string {
 
 /**
  * Records the procedures done at a visit: pick teeth on the chart, a service
- * for each, adjust price or discount, save. Recorded lines are append-only, so
+ * for each, adjust the price, note what was paid, save. Recorded lines are append-only, so
  * there is no edit mode — a mistake is voided from the history.
  *
  * Reads its own reference data (doctors, the price list) so every call site
@@ -88,6 +88,7 @@ export function TreatmentComposer({
           : doctorsQuery.data.filter((doctor) => doctor.id === onlyMe)
       }
       initialDoctorId={onlyMe ?? initialDoctorId ?? null}
+      isDoctorFixed={onlyMe !== null}
       onOpenChange={onOpenChange}
       open={open}
       patientId={patientId}
@@ -111,6 +112,7 @@ function TreatmentComposerForm({
   open,
   onOpenChange,
   initialDoctorId,
+  isDoctorFixed,
   doctors,
   treatmentTypes,
 }: {
@@ -119,6 +121,8 @@ function TreatmentComposerForm({
   open: boolean
   onOpenChange: (open: boolean) => void
   initialDoctorId: string | null
+  /** The signed-in doctor, who can only record their own work: no select. */
+  isDoctorFixed: boolean
   doctors: Doctor[]
   treatmentTypes: TreatmentType[]
 }) {
@@ -157,6 +161,9 @@ function TreatmentComposerForm({
           (type) => type.doctorTypeId === null || type.doctorTypeId === specialty,
         )
 
+  // Only a dentist works tooth by tooth; everyone else picks from their services.
+  const isDental = selectedDoctor?.isDental === true
+
   const canSave = rows.length > 0 && doctorId !== '' && effectivePatientId !== null
 
   const doctorOptions = doctors.map((doctor) => ({
@@ -183,7 +190,7 @@ function TreatmentComposerForm({
         treatmentTypeId: type.id,
         treatmentTypeName: type.name,
         unitPrice: String(type.price),
-        discountPercent: '',
+        paidAmount: '',
         inProgress: false,
       },
     ])
@@ -336,17 +343,20 @@ function TreatmentComposerForm({
               />
             ) : null}
 
-            <Field isRequired label={t('treatments:composer.doctorLabel')}>
-              <Select
-                onValueChange={handleDoctorChange}
-                options={doctorOptions}
-                placeholder={t('treatments:composer.doctorPlaceholder')}
-                {...(doctorId === '' ? {} : { value: doctorId })}
-              />
-            </Field>
+            {/* A doctor records only their own work, so there is nothing to choose. */}
+            {isDoctorFixed ? null : (
+              <Field isRequired label={t('treatments:composer.doctorLabel')}>
+                <Select
+                  onValueChange={handleDoctorChange}
+                  options={doctorOptions}
+                  placeholder={t('treatments:composer.doctorPlaceholder')}
+                  {...(doctorId === '' ? {} : { value: doctorId })}
+                />
+              </Field>
+            )}
 
             <Field label={t('treatments:composer.notesLabel')}>
-              <Textarea onChange={(event) => setNotes(event.target.value)} rows={4} value={notes} />
+              <Textarea onChange={(event) => setNotes(event.target.value)} rows={3} value={notes} />
             </Field>
           </div>
 
@@ -355,19 +365,27 @@ function TreatmentComposerForm({
           ) : specialtyTypes.length === 0 ? (
             <ComposerHint>{t('treatments:composer.noServices')}</ComposerHint>
           ) : (
-            <div className="flex flex-col gap-4">
-              <ToothPicker
-                onAddTooth={handleAddRow}
-                onRemoveTooth={handleRemoveTooth}
-                rows={rows}
-                treatmentTypes={specialtyTypes}
-              />
-              {/* Work that is not on one tooth: a cleaning, a consultation. */}
-              <TreatmentTypeAdder
-                onAdd={(type) => handleAddRow(null, type)}
-                treatmentTypes={specialtyTypes}
-              />
-            </div>
+            <section className="flex flex-col gap-3 rounded-card border border-border p-4">
+              <h3 className="text-callout font-medium text-text">
+                {isDental
+                  ? t('treatments:composer.toothChartTitle')
+                  : t('treatments:composer.servicesTitle')}
+              </h3>
+              {isDental ? (
+                <ToothPicker
+                  onAddTooth={handleAddRow}
+                  onRemoveTooth={handleRemoveTooth}
+                  rows={rows}
+                  treatmentTypes={specialtyTypes}
+                />
+              ) : (
+                <TreatmentTypeAdder
+                  onAdd={(type) => handleAddRow(null, type)}
+                  rows={rows}
+                  treatmentTypes={specialtyTypes}
+                />
+              )}
+            </section>
           )}
         </div>
 

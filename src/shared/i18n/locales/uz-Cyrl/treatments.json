@@ -24,7 +24,6 @@
     "totalCostLabel": "Жами муолажа қиймати",
     "notesLabel": "Изоҳ",
     "priceLabel": "Нарх",
-    "discountLabel": "Чегирма",
     "voidReasonLabel": "Яроқсиз деб белгилаш сабаби"
   },
   "composer": {
@@ -35,7 +34,6 @@
     "toothHint": "Тиш танлаш учун харитага босинг",
     "treatmentTypePlaceholder": "Даволаш тури",
     "chooseDoctorFirst": "Аввал шифокорни танланг — даволаш турлари унинг мутахассислигига қараб чиқади.",
-    "addTreatmentLabel": "Даволаш турини қўшиш",
     "rowType": "Даволаш тури",
     "rowCost": "Нарх",
     "rowsTitle": "Киритилган муолажалар ({{total}})",
@@ -56,11 +54,19 @@
     "patientPlaceholder": "Бемор исмини ёзинг",
     "patientClear": "Беморни олиб ташлаш",
     "patientNoResults": "Бундай бемор топилмади",
-    "rowDiscount": "Чегирма, %",
+    "rowPaid": "Тўланган, сўм",
+    "rowPaidInFull": "Тўлиқ тўланди",
+    "totalPaid": "Тўланган",
+    "totalDebt": "Қолдиқ",
     "rowTotal": "Жами",
     "noServices": "Нархлар рўйхатида бу шифокор учун ҳали хизмат йўқ. Уларни «Бошқарув → Хизматлар» бўлимида қўшинг.",
     "rowInProgress": "Жараёнда",
-    "rowStage": "Ҳолат"
+    "rowStage": "Ҳолат",
+    "toothChartTitle": "Тиш харитаси",
+    "servicesTitle": "Хизматлар",
+    "serviceSearch": "Хизматни қидириш",
+    "serviceNoMatch": "Бундай хизмат топилмади",
+    "addService": "Қўшиш"
   },
   "chart": {
     "treated": "Даволанган",

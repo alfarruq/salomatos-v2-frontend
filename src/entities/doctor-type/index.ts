@@ -1,5 +1,4 @@
 export { doctorTypeKeys, doctorTypeQueries, fetchDoctorTypes } from './api/queries'
-export { isDentalDoctorType } from './model/dental'
 export {
   type DoctorTypeFormInput,
   doctorTypeFormFieldOf,

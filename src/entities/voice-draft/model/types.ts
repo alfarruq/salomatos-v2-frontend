@@ -12,7 +12,7 @@ export interface VoicePatientFields {
   phoneNumber: string
   /** `yyyy-MM-dd` or null. */
   birthDate: string | null
-  gender: '' | 'male' | 'female'
+  workplace: string
   address: string
 }
 
