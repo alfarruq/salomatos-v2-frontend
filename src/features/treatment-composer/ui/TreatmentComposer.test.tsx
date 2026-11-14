@@ -54,8 +54,7 @@ async function chooseDoctor(name: RegExp) {
 }
 
 async function addService(name: string) {
-  await userEvent.click(screen.getByRole('combobox', { name: "Davolash turini qo'shish" }))
-  await userEvent.click(await screen.findByRole('option', { name }))
+  await userEvent.click(await screen.findByRole('button', { name: `Qo'shish — ${name}` }))
 }
 
 describe('TreatmentComposer', () => {
@@ -74,28 +73,42 @@ describe('TreatmentComposer', () => {
     renderComposer()
     await chooseDoctor(/Nodira Karimova/)
 
-    await userEvent.click(screen.getByRole('combobox', { name: "Davolash turini qo'shish" }))
+    expect(await screen.findByRole('button', { name: "Qo'shish — Tozalash" })).toBeInTheDocument()
+    // "Plomba" is filed under the dentist's specialty.
+    expect(screen.queryByRole('button', { name: "Qo'shish — Plomba" })).not.toBeInTheDocument()
+  })
 
-    expect(await screen.findByRole('option', { name: 'Tozalash' })).toBeInTheDocument()
-    // "Plomba" is filed under the therapist's specialty.
-    expect(screen.queryByRole('option', { name: 'Plomba' })).not.toBeInTheDocument()
+  it('shows a dentist the tooth chart instead of the service list', async () => {
+    renderComposer()
+    await chooseDoctor(/Sardor Usmonov/)
+
+    expect(await screen.findByRole('button', { name: /^Tish 16/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Qo'shish — / })).not.toBeInTheDocument()
+  })
+
+  it('shows any other doctor the service list instead of the tooth chart', async () => {
+    renderComposer()
+    await chooseDoctor(/Nodira Karimova/)
+
+    expect(await screen.findByRole('button', { name: "Qo'shish — Tozalash" })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Tish 16/ })).not.toBeInTheDocument()
   })
 
   it("starts a row at the price list's figure", async () => {
     renderComposer()
-    await chooseDoctor(/Sardor Usmonov/)
-    await addService('Plomba')
+    await chooseDoctor(/Nodira Karimova/)
+    await addService('Tozalash')
 
-    expect(screen.getByRole('button', { name: "O'chirish — Plomba" })).toBeInTheDocument()
-    expect(screen.getByLabelText('Narx')).toHaveValue('350,000')
+    expect(screen.getByRole('button', { name: "O'chirish — Tozalash" })).toBeInTheDocument()
+    expect(screen.getByLabelText('Narx')).toHaveValue('200,000')
   })
 
   it('clears unsaved rows when the doctor switches to another specialty', async () => {
     renderComposer()
-    await chooseDoctor(/Sardor Usmonov/)
+    await chooseDoctor(/Nodira Karimova/)
     await addService('Tozalash')
 
-    await chooseDoctor(/Nodira Karimova/)
+    await chooseDoctor(/Sardor Usmonov/)
 
     expect(screen.queryByRole('button', { name: "O'chirish — Tozalash" })).not.toBeInTheDocument()
   })
@@ -109,7 +122,7 @@ describe('TreatmentComposer', () => {
       }),
     )
     renderComposer()
-    await chooseDoctor(/Sardor Usmonov/)
+    await chooseDoctor(/Nodira Karimova/)
     await addService('Tozalash')
     await userEvent.click(screen.getByRole('checkbox', { name: "To'liq to'landi" }))
 
@@ -118,7 +131,7 @@ describe('TreatmentComposer', () => {
     await waitFor(() => expect(posted).toHaveLength(1))
     expect(posted[0]).toEqual({
       patient: AZIZA,
-      doctor: mockId(4, 4),
+      doctor: mockId(4, 5),
       service: mockId(6, 2),
       tooth: null,
       unit_price: '200000',
@@ -133,7 +146,8 @@ describe('TreatmentComposer', () => {
     useSessionStore.getState().setSession(await fetchSession())
     renderComposer()
 
-    await screen.findByRole('combobox', { name: "Davolash turini qo'shish" }, { timeout: 5000 })
+    // The mock doctor is a dentist, so the chart stands where the services would.
+    await screen.findByRole('button', { name: /^Tish 16/ }, { timeout: 5000 })
 
     expect(screen.queryByRole('combobox', { name: 'Shifokor' })).not.toBeInTheDocument()
   })

@@ -34,7 +34,6 @@
     "toothHint": "Tish tanlash uchun xaritaga bosing",
     "treatmentTypePlaceholder": "Davolash turi",
     "chooseDoctorFirst": "Avval shifokorni tanlang — davolash turlari uning mutaxassisligiga qarab chiqadi.",
-    "addTreatmentLabel": "Davolash turini qo'shish",
     "rowType": "Davolash turi",
     "rowCost": "Narx",
     "rowsTitle": "Kiritilgan muolajalar ({{total}})",
@@ -62,7 +61,12 @@
     "rowTotal": "Jami",
     "noServices": "Narxlar ro'yxatida bu shifokor uchun hali xizmat yo'q. Ularni «Boshqaruv → Xizmatlar» bo'limida qo'shing.",
     "rowInProgress": "Jarayonda",
-    "rowStage": "Holat"
+    "rowStage": "Holat",
+    "toothChartTitle": "Tish xaritasi",
+    "servicesTitle": "Xizmatlar",
+    "serviceSearch": "Xizmatni qidirish",
+    "serviceNoMatch": "Bunday xizmat topilmadi",
+    "addService": "Qo'shish"
   },
   "chart": {
     "treated": "Davolangan",

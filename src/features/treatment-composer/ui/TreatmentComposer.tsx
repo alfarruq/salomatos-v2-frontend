@@ -161,6 +161,9 @@ function TreatmentComposerForm({
           (type) => type.doctorTypeId === null || type.doctorTypeId === specialty,
         )
 
+  // Only a dentist works tooth by tooth; everyone else picks from their services.
+  const isDental = selectedDoctor?.isDental === true
+
   const canSave = rows.length > 0 && doctorId !== '' && effectivePatientId !== null
 
   const doctorOptions = doctors.map((doctor) => ({
@@ -353,7 +356,7 @@ function TreatmentComposerForm({
             )}
 
             <Field label={t('treatments:composer.notesLabel')}>
-              <Textarea onChange={(event) => setNotes(event.target.value)} rows={4} value={notes} />
+              <Textarea onChange={(event) => setNotes(event.target.value)} rows={3} value={notes} />
             </Field>
           </div>
 
@@ -362,19 +365,27 @@ function TreatmentComposerForm({
           ) : specialtyTypes.length === 0 ? (
             <ComposerHint>{t('treatments:composer.noServices')}</ComposerHint>
           ) : (
-            <div className="flex flex-col gap-4">
-              <ToothPicker
-                onAddTooth={handleAddRow}
-                onRemoveTooth={handleRemoveTooth}
-                rows={rows}
-                treatmentTypes={specialtyTypes}
-              />
-              {/* Work that is not on one tooth: a cleaning, a consultation. */}
-              <TreatmentTypeAdder
-                onAdd={(type) => handleAddRow(null, type)}
-                treatmentTypes={specialtyTypes}
-              />
-            </div>
+            <section className="flex flex-col gap-3 rounded-card border border-border p-4">
+              <h3 className="text-callout font-medium text-text">
+                {isDental
+                  ? t('treatments:composer.toothChartTitle')
+                  : t('treatments:composer.servicesTitle')}
+              </h3>
+              {isDental ? (
+                <ToothPicker
+                  onAddTooth={handleAddRow}
+                  onRemoveTooth={handleRemoveTooth}
+                  rows={rows}
+                  treatmentTypes={specialtyTypes}
+                />
+              ) : (
+                <TreatmentTypeAdder
+                  onAdd={(type) => handleAddRow(null, type)}
+                  rows={rows}
+                  treatmentTypes={specialtyTypes}
+                />
+              )}
+            </section>
           )}
         </div>
 

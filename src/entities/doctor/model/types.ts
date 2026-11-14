@@ -15,6 +15,8 @@ export interface Doctor {
   /** A specialty id (`entities/doctor-type`). */
   doctorTypeId: string | null
   doctorTypeName: string | null
+  /** Their specialty is the clinic's built-in dental one: the treatment form shows the tooth chart. */
+  isDental: boolean
   experienceYears: number | null
   isActive: boolean
   currentPay: DoctorPay | null

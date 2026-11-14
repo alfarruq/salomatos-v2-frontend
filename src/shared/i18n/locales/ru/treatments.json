@@ -34,7 +34,6 @@
     "toothHint": "Нажмите на карту, чтобы выбрать зуб",
     "treatmentTypePlaceholder": "Лечение",
     "chooseDoctorFirst": "Сначала выберите врача — виды лечения зависят от его специальности.",
-    "addTreatmentLabel": "Добавить вид лечения",
     "rowType": "Лечение",
     "rowCost": "Цена",
     "rowsTitle": "Добавленные процедуры ({{total}})",
@@ -62,7 +61,12 @@
     "rowTotal": "Итого",
     "noServices": "В прайс-листе пока нет услуг для этого врача. Добавьте их в разделе «Управление → Услуги».",
     "rowInProgress": "В процессе",
-    "rowStage": "Статус"
+    "rowStage": "Статус",
+    "toothChartTitle": "Зубная карта",
+    "servicesTitle": "Услуги",
+    "serviceSearch": "Поиск услуги",
+    "serviceNoMatch": "Такой услуги нет",
+    "addService": "Добавить"
   },
   "chart": {
     "treated": "Лечение проведено",

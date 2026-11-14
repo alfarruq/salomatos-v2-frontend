@@ -228,8 +228,8 @@ const MAIN = MOCK_CLINICS.main
 const DOCTOR_MEMBERSHIP = MOCK_USERS.doctor.memberships[0].id
 
 export const MOCK_SPECIALTIES = [
-  { id: mockId(5, 1), clinic: MAIN.id, name: 'Stomatolog' },
-  { id: mockId(5, 2), clinic: MAIN.id, name: 'Ortodont' },
+  { id: mockId(5, 1), clinic: MAIN.id, name: 'Stomatolog', is_dental: true },
+  { id: mockId(5, 2), clinic: MAIN.id, name: 'Ortodont', is_dental: false },
 ]
 
 /** `StaffSerializer` rows. Ids are membership ids. */
@@ -245,6 +245,7 @@ export const MOCK_STAFF = [
     is_active: true,
     specialty: mockId(5, 1),
     specialty_name: 'Stomatolog',
+    specialty_is_dental: true,
     experience_years: 7,
     biography: '',
   },

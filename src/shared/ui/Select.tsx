@@ -102,7 +102,8 @@ export function Select({
         aria-describedby={field?.describedBy}
         aria-invalid={field?.isInvalid ?? undefined}
         className={cn(
-          'flex w-full items-center justify-between gap-2',
+          // Left-aligned and one line: a button centres and wraps a long label by default.
+          'flex w-full items-center justify-between gap-2 text-left',
           'rounded-control border border-border bg-sunken text-text',
           'transition-[border-color] duration-150 ease-out-apple',
           'hover:border-border-strong',
@@ -115,7 +116,7 @@ export function Select({
           className,
         )}
       >
-        <span className="flex min-w-0 items-center gap-2">
+        <span className="flex min-w-0 items-center gap-2 [&>span:last-child]:truncate">
           {icon === undefined ? null : (
             <span aria-hidden="true" className="shrink-0 text-text-secondary">
               {icon}

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { doctorTypeQueries, isDentalDoctorType } from '@/entities/doctor-type'
+import { doctorTypeQueries } from '@/entities/doctor-type'
 import {
   emptyTreatmentTypeForm,
   TreatmentTypeFormFields,
@@ -45,10 +45,8 @@ export function CreateTreatmentTypeDialog({
   }))
 
   const defaultDoctorTypeId = (doctorTypesQuery.data ?? []).find(
-    // Clinics type this name themselves ("Stamatolog" on the live one), so
-    // match the dental type, not one exact spelling. A clinic without one
-    // simply gets an unassigned select.
-    (doctorType) => isDentalDoctorType(doctorType.name),
+    // Every clinic has exactly one built-in dental type.
+    (doctorType) => doctorType.isDental,
   )?.id
 
   const { setValue } = form
