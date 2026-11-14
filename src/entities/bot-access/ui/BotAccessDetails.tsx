@@ -18,6 +18,12 @@ export function BotAccessDetails({ access }: BotAccessDetailsProps) {
     )
   }
 
+  // Two plain lines, so staff can paste them straight into a Telegram message to the patient.
+  const copyBoth = () => {
+    if (access.password === null) return
+    copy(`${t('login')}: ${access.login}\n${t('password')}: ${access.password}`)
+  }
+
   const rows = [
     { key: 'login', label: t('login'), value: access.login },
     { key: 'password', label: t('password'), value: access.password },
@@ -45,7 +51,17 @@ export function BotAccessDetails({ access }: BotAccessDetailsProps) {
           </div>
         ))}
       </dl>
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
+        {access.password === null ? null : (
+          <Button
+            iconLeft={<Copy aria-hidden="true" className="size-4" />}
+            onClick={copyBoth}
+            size="sm"
+            variant="secondary"
+          >
+            {t('copyBoth')}
+          </Button>
+        )}
         <Badge tone={access.isLinked ? 'success' : 'neutral'}>
           {access.isLinked ? t('linked') : t('notLinked')}
         </Badge>
