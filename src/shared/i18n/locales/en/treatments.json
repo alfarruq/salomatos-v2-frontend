@@ -24,7 +24,6 @@
     "totalCostLabel": "Total cost",
     "notesLabel": "Notes",
     "priceLabel": "Price",
-    "discountLabel": "Discount",
     "voidReasonLabel": "Void reason"
   },
   "composer": {
@@ -56,7 +55,10 @@
     "patientPlaceholder": "Type the patient's name",
     "patientClear": "Remove patient",
     "patientNoResults": "No patient found",
-    "rowDiscount": "Discount, %",
+    "rowPaid": "Paid, UZS",
+    "rowPaidInFull": "Paid in full",
+    "totalPaid": "Paid",
+    "totalDebt": "Balance due",
     "rowTotal": "Total",
     "noServices": "The price list has no services for this doctor yet. Add them under Manage → Services.",
     "rowInProgress": "In progress",

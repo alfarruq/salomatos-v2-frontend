@@ -19,7 +19,7 @@ export const voiceDraftSchema = v.object({
       full_name: v.string(),
       phone_number: v.string(),
       birth_date: v.nullable(v.string()),
-      gender: v.picklist(['', 'male', 'female']),
+      workplace: v.string(),
       address: v.string(),
     }),
   ),
@@ -68,7 +68,7 @@ export function toVoiceDraft(raw: v.InferOutput<typeof voiceDraftSchema>): Voice
             fullName: raw.patient_fields.full_name,
             phoneNumber: raw.patient_fields.phone_number,
             birthDate: raw.patient_fields.birth_date,
-            gender: raw.patient_fields.gender,
+            workplace: raw.patient_fields.workplace,
             address: raw.patient_fields.address,
           },
     procedures: raw.procedures.map((item) => ({

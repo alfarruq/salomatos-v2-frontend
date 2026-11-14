@@ -40,7 +40,7 @@ function nextRowId(): string {
 
 /**
  * Records the procedures done at a visit: pick teeth on the chart, a service
- * for each, adjust price or discount, save. Recorded lines are append-only, so
+ * for each, adjust the price, note what was paid, save. Recorded lines are append-only, so
  * there is no edit mode — a mistake is voided from the history.
  *
  * Reads its own reference data (doctors, the price list) so every call site
@@ -88,6 +88,7 @@ export function TreatmentComposer({
           : doctorsQuery.data.filter((doctor) => doctor.id === onlyMe)
       }
       initialDoctorId={onlyMe ?? initialDoctorId ?? null}
+      isDoctorFixed={onlyMe !== null}
       onOpenChange={onOpenChange}
       open={open}
       patientId={patientId}
@@ -111,6 +112,7 @@ function TreatmentComposerForm({
   open,
   onOpenChange,
   initialDoctorId,
+  isDoctorFixed,
   doctors,
   treatmentTypes,
 }: {
@@ -119,6 +121,8 @@ function TreatmentComposerForm({
   open: boolean
   onOpenChange: (open: boolean) => void
   initialDoctorId: string | null
+  /** The signed-in doctor, who can only record their own work: no select. */
+  isDoctorFixed: boolean
   doctors: Doctor[]
   treatmentTypes: TreatmentType[]
 }) {
@@ -183,7 +187,7 @@ function TreatmentComposerForm({
         treatmentTypeId: type.id,
         treatmentTypeName: type.name,
         unitPrice: String(type.price),
-        discountPercent: '',
+        paidAmount: '',
         inProgress: false,
       },
     ])
@@ -336,14 +340,17 @@ function TreatmentComposerForm({
               />
             ) : null}
 
-            <Field isRequired label={t('treatments:composer.doctorLabel')}>
-              <Select
-                onValueChange={handleDoctorChange}
-                options={doctorOptions}
-                placeholder={t('treatments:composer.doctorPlaceholder')}
-                {...(doctorId === '' ? {} : { value: doctorId })}
-              />
-            </Field>
+            {/* A doctor records only their own work, so there is nothing to choose. */}
+            {isDoctorFixed ? null : (
+              <Field isRequired label={t('treatments:composer.doctorLabel')}>
+                <Select
+                  onValueChange={handleDoctorChange}
+                  options={doctorOptions}
+                  placeholder={t('treatments:composer.doctorPlaceholder')}
+                  {...(doctorId === '' ? {} : { value: doctorId })}
+                />
+              </Field>
+            )}
 
             <Field label={t('treatments:composer.notesLabel')}>
               <Textarea onChange={(event) => setNotes(event.target.value)} rows={4} value={notes} />

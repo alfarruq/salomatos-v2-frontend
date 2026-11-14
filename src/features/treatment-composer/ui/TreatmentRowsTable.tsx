@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { cn } from '@/shared/lib/cn'
 import { formatSom } from '@/shared/lib/money'
-import { Button, Checkbox, Input, MoneyInput, Select } from '@/shared/ui'
-import { lineTotalOf } from '../model/formSchema'
+import { Button, Checkbox, MoneyInput, Select } from '@/shared/ui'
+import { isPaidInFull, paidOf, priceOf } from '../model/formSchema'
 import type { TreatmentRow } from '../model/types'
 
 export interface TreatmentRowsTableProps {
@@ -45,8 +45,9 @@ function Amount({ children }: { children: ReactNode }) {
 
 /**
  * The rows being recorded, added from `ToothPicker` above and edited here.
- * Price and discount start at the price list's figures and may be changed per
- * line; once saved, the line is append-only.
+ * The price starts at the price list's figure and may be changed per line.
+ * What the patient paid is typed per line, or ticked as "paid in full"; once
+ * saved, the line is append-only.
  */
 export function TreatmentRowsTable({
   rows,
@@ -61,7 +62,8 @@ export function TreatmentRowsTable({
   const typeOptions = treatmentTypes.map((type) => ({ value: type.id, label: type.name }))
   const columns = showToothColumn ? withTooth : withoutTooth
 
-  const total = rows.reduce((sum, row) => sum + lineTotalOf(row), 0)
+  const total = rows.reduce((sum, row) => sum + priceOf(row), 0)
+  const paid = rows.reduce((sum, row) => sum + paidOf(row), 0)
 
   return (
     <section aria-labelledby="treatment-rows-title" className="flex flex-col gap-3">
@@ -85,7 +87,7 @@ export function TreatmentRowsTable({
             {showToothColumn ? <span>{t('treatments:table.columnTooth')}</span> : null}
             <span>{t('treatments:composer.rowType')}</span>
             <span className="text-right">{t('treatments:composer.rowCost')}</span>
-            <span className="text-right">{t('treatments:composer.rowDiscount')}</span>
+            <span className="text-right">{t('treatments:composer.rowPaid')}</span>
             <span>{t('treatments:composer.rowStage')}</span>
             <span className="text-right">{t('treatments:composer.rowTotal')}</span>
             <span />
@@ -129,7 +131,12 @@ export function TreatmentRowsTable({
                         onRowChange(row.rowId, {
                           treatmentTypeId: type?.id ?? null,
                           treatmentTypeName: type?.name ?? row.treatmentTypeName,
-                          ...(type === undefined ? {} : { unitPrice: String(type.price) }),
+                          ...(type === undefined
+                            ? {}
+                            : {
+                                unitPrice: String(type.price),
+                                ...(isPaidInFull(row) ? { paidAmount: String(type.price) } : {}),
+                              }),
                         })
                       }}
                       options={typeOptions}
@@ -158,28 +165,38 @@ export function TreatmentRowsTable({
                     <MoneyInput
                       id={`${row.rowId}-cost`}
                       className="h-9 px-3 text-right text-callout pointer-coarse:min-h-11"
-                      onChange={(value) => onRowChange(row.rowId, { unitPrice: value })}
+                      onChange={(value) =>
+                        onRowChange(row.rowId, {
+                          unitPrice: value,
+                          // A line ticked "paid in full" stays so when the price changes.
+                          ...(isPaidInFull(row) ? { paidAmount: value } : {}),
+                        })
+                      }
                       placeholder="0"
                       value={row.unitPrice}
                     />
                   </div>
 
                   <div className="flex min-w-0 flex-col gap-1">
-                    <CellLabel htmlFor={`${row.rowId}-discount`}>
-                      {t('treatments:composer.rowDiscount')}
+                    <CellLabel htmlFor={`${row.rowId}-paid`}>
+                      {t('treatments:composer.rowPaid')}
                     </CellLabel>
-                    <Input
-                      className="text-right"
-                      id={`${row.rowId}-discount`}
-                      inputMode="numeric"
-                      onChange={(event) =>
+                    <MoneyInput
+                      id={`${row.rowId}-paid`}
+                      className="h-9 px-3 text-right text-callout pointer-coarse:min-h-11"
+                      onChange={(value) => onRowChange(row.rowId, { paidAmount: value })}
+                      placeholder="0"
+                      value={row.paidAmount}
+                    />
+                    <Checkbox
+                      checked={isPaidInFull(row)}
+                      id={`${row.rowId}-paid-in-full`}
+                      label={t('treatments:composer.rowPaidInFull')}
+                      onCheckedChange={(checked) =>
                         onRowChange(row.rowId, {
-                          discountPercent: event.target.value.replace(/\D/g, '').slice(0, 3),
+                          paidAmount: checked === true ? row.unitPrice : '',
                         })
                       }
-                      placeholder="0"
-                      size="sm"
-                      value={row.discountPercent}
                     />
                   </div>
 
@@ -196,7 +213,7 @@ export function TreatmentRowsTable({
                   <div className="flex min-w-0 flex-col gap-1 lg:items-end">
                     <CellLabel>{t('treatments:composer.rowTotal')}</CellLabel>
                     <span className="flex h-9 items-center text-callout">
-                      <Amount>{som(lineTotalOf(row))}</Amount>
+                      <Amount>{som(priceOf(row))}</Amount>
                     </span>
                   </div>
                 </li>
@@ -204,11 +221,31 @@ export function TreatmentRowsTable({
             })}
           </ul>
 
-          <dl className="mt-1 flex items-baseline justify-between gap-3 rounded-card bg-sunken p-3 text-callout lg:mt-3">
-            <dt className="text-caption text-text-tertiary">{t('treatments:composer.rowTotal')}</dt>
-            <dd className="font-medium">
-              <Amount>{som(total)}</Amount>
-            </dd>
+          <dl className="mt-1 grid grid-cols-3 gap-3 rounded-card bg-sunken p-3 text-callout lg:mt-3">
+            <div>
+              <dt className="text-caption text-text-tertiary">
+                {t('treatments:composer.rowTotal')}
+              </dt>
+              <dd className="font-medium">
+                <Amount>{som(total)}</Amount>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-caption text-text-tertiary">
+                {t('treatments:composer.totalPaid')}
+              </dt>
+              <dd className="font-medium">
+                <Amount>{som(paid)}</Amount>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-caption text-text-tertiary">
+                {t('treatments:composer.totalDebt')}
+              </dt>
+              <dd className="font-medium">
+                <Amount>{som(total - paid)}</Amount>
+              </dd>
+            </div>
           </dl>
         </div>
       )}

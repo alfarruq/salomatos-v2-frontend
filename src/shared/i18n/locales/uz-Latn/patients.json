@@ -11,8 +11,7 @@
     "birthDate": "Tug'ilgan sana",
     "birthDatePlaceholder": "kk/oo/yyyy",
     "address": "Manzil",
-    "gender": "Jinsi",
-    "genderPlaceholder": "Ko'rsatilmagan",
+    "workplace": "Ish joyi",
     "notes": "Izoh"
   },
   "create": {
@@ -141,10 +140,6 @@
     "galleryUnsupported": "Faqat JPG, PNG, WEBP, PDF va DICOM fayllarni yuklash mumkin.",
     "galleryOpen": "Yuklab olish",
     "galleryDownloadFailed": "Faylni yuklab bo'lmadi. Qayta urinib ko'ring."
-  },
-  "gender": {
-    "male": "Erkak",
-    "female": "Ayol"
   },
   "attachmentKind": {
     "xray": "Rentgen",

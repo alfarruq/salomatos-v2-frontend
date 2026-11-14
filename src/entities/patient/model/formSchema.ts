@@ -36,7 +36,6 @@ export const patientFormSchema = v.object({
   phoneNumber: v.pipe(v.string(), v.regex(UZ_PHONE, 'validation.phoneUz')),
   /** A staff id, or '' for "no primary doctor yet" — the serializer accepts null. */
   doctorId: v.string(),
-  gender: v.picklist(['', 'male', 'female']),
   /**
    * Held as typed, `dd/mm/yyyy`, and converted to the wire's `yyyy-MM-dd` in
    * `toPatientPayload`. Optional, but not a licence to send nonsense:
@@ -53,6 +52,8 @@ export const patientFormSchema = v.object({
       return date === null || date <= clinicNow().date
     }, 'validation.futureDate'),
   ),
+  /** Both optional: a patient can be registered with a name and a phone alone. */
+  workplace: v.string(),
   address: v.string(),
   notes: v.string(),
 })
@@ -63,8 +64,8 @@ export const emptyPatientForm: PatientFormInput = {
   fullName: '',
   phoneNumber: '',
   doctorId: '',
-  gender: '',
   birthDate: '',
+  workplace: '',
   address: '',
   notes: '',
 }
@@ -73,15 +74,15 @@ export const emptyPatientForm: PatientFormInput = {
 export function toPatientForm(
   patient: Pick<
     Patient,
-    'fullName' | 'phoneNumber' | 'birthDate' | 'address' | 'notes' | 'gender' | 'primaryDoctorId'
+    'fullName' | 'phoneNumber' | 'birthDate' | 'workplace' | 'address' | 'notes' | 'primaryDoctorId'
   >,
 ): PatientFormInput {
   return {
     fullName: patient.fullName,
     phoneNumber: patient.phoneNumber ?? '',
     doctorId: patient.primaryDoctorId ?? '',
-    gender: patient.gender ?? '',
     birthDate: patient.birthDate === null ? '' : toTypedDate(patient.birthDate),
+    workplace: patient.workplace ?? '',
     address: patient.address ?? '',
     notes: patient.notes ?? '',
   }
@@ -97,8 +98,8 @@ export function toPatientPayload(input: PatientFormInput): Record<string, string
     full_name: input.fullName,
     phone_number: input.phoneNumber,
     primary_doctor: input.doctorId === '' ? null : input.doctorId,
-    gender: input.gender,
     birth_date: parseTypedDate(input.birthDate),
+    workplace: input.workplace,
     address: input.address,
     notes: input.notes,
   }
@@ -108,8 +109,8 @@ const SERVER_FIELD_NAMES: Record<string, keyof PatientFormInput> = {
   full_name: 'fullName',
   phone_number: 'phoneNumber',
   primary_doctor: 'doctorId',
-  gender: 'gender',
   birth_date: 'birthDate',
+  workplace: 'workplace',
   address: 'address',
   notes: 'notes',
 }

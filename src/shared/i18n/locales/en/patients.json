@@ -11,8 +11,7 @@
     "birthDate": "Date of birth",
     "birthDatePlaceholder": "dd/mm/yyyy",
     "address": "Address",
-    "gender": "Gender",
-    "genderPlaceholder": "Not specified",
+    "workplace": "Workplace",
     "notes": "Notes"
   },
   "create": {
@@ -141,10 +140,6 @@
     "galleryUnsupported": "Only JPG, PNG, WEBP, PDF and DICOM files can be uploaded.",
     "galleryOpen": "Download",
     "galleryDownloadFailed": "Could not download the file. Try again."
-  },
-  "gender": {
-    "male": "Male",
-    "female": "Female"
   },
   "attachmentKind": {
     "xray": "X-ray",

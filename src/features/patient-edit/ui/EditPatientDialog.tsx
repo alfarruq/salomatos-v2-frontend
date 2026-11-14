@@ -26,7 +26,7 @@ export interface EditPatientDialogProps {
     | 'phoneNumber'
     | 'birthDate'
     | 'address'
-    | 'gender'
+    | 'workplace'
     | 'notes'
     | 'primaryDoctorId'
   >

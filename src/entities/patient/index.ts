@@ -33,7 +33,6 @@ export {
   defaultPatientFilters,
   type Patient,
   type PatientFilters,
-  type PatientGender,
   type PatientId,
   type PatientListItem,
   type PatientStatus,

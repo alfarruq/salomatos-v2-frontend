@@ -24,7 +24,6 @@
     "totalCostLabel": "Jami muolaja qiymati",
     "notesLabel": "Izoh",
     "priceLabel": "Narx",
-    "discountLabel": "Chegirma",
     "voidReasonLabel": "Yaroqsiz deb belgilash sababi"
   },
   "composer": {
@@ -56,7 +55,10 @@
     "patientPlaceholder": "Bemor ismini yozing",
     "patientClear": "Bemorni olib tashlash",
     "patientNoResults": "Bunday bemor topilmadi",
-    "rowDiscount": "Chegirma, %",
+    "rowPaid": "To'langan, so'm",
+    "rowPaidInFull": "To'liq to'landi",
+    "totalPaid": "To'langan",
+    "totalDebt": "Qoldiq",
     "rowTotal": "Jami",
     "noServices": "Narxlar ro'yxatida bu shifokor uchun hali xizmat yo'q. Ularni «Boshqaruv → Xizmatlar» bo'limida qo'shing.",
     "rowInProgress": "Jarayonda",
