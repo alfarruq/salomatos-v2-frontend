@@ -1163,7 +1163,9 @@ export const handlers = [
       (row) =>
         inScope(row, scope) &&
         (body.include_archived === true || row.archived_at === null) &&
-        (body.include_leads === true || row.is_lead !== true) &&
+        (body.only_leads === true
+          ? row.is_lead === true
+          : body.include_leads === true || row.is_lead !== true) &&
         (String(row.full_name).toLowerCase().includes(query) ||
           String(row.phone_number).includes(query)),
     )

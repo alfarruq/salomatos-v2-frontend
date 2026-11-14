@@ -103,6 +103,59 @@ describe('CreatePatientDialog', () => {
     expect(onCreated.mock.calls[0]?.[1]).toMatchObject({ addTreatment: false })
   })
 
+  it('offers a booked person and registers them instead of creating a duplicate', async () => {
+    const leadId = mockId(7, 99)
+    const lead = {
+      id: leadId,
+      clinic: 'clinic:test',
+      clinic_name: 'Test',
+      full_name: 'Bekzod Aliyev',
+      phone_number: '+998935550099',
+      birth_date: null,
+      gender: null,
+      address: '',
+      notes: '',
+      primary_doctor: null,
+      primary_doctor_name: null,
+      archived_at: null,
+      created_at: '2026-11-10T05:00:00Z',
+      is_lead: true,
+      last_appointment_at: '2026-11-12T05:00:00Z',
+    }
+    const searches: unknown[] = []
+    let registered: unknown = null
+    let created = false
+    server.use(
+      http.post('/api/v1/patients/search/', async ({ request }) => {
+        searches.push(await request.json())
+        return HttpResponse.json({ count: 1, next: null, previous: null, results: [lead] })
+      }),
+      http.post(`/api/v1/patients/${leadId}/register/`, async ({ request }) => {
+        registered = await request.json()
+        return HttpResponse.json({ ...lead, is_lead: false, last_appointment_at: null })
+      }),
+      http.post('/api/v1/patients/', () => {
+        created = true
+        return HttpResponse.json(lead, { status: 201 })
+      }),
+    )
+    const { onCreated } = renderDialog()
+
+    await userEvent.type(await screen.findByLabelText('F. I. Sh.'), 'Bekzod')
+    await userEvent.click(await screen.findByRole('button', { name: /Bekzod Aliyev/ }))
+    expect(searches[0]).toMatchObject({ query: 'Bekzod', only_leads: true })
+    expect(await screen.findByText('Uchrashuvga yozilgan odam tanlandi')).toBeInTheDocument()
+
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Shifokor' }))
+    await userEvent.click(await screen.findByRole('option', { name: 'Sardor Usmonov' }))
+    await userEvent.click(screen.getByRole('button', { name: "Bemor qo'shish" }))
+
+    await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce())
+    expect(created).toBe(false)
+    expect(registered).toMatchObject({ full_name: 'Bekzod Aliyev', phone_number: '+998935550099' })
+    expect(onCreated.mock.calls[0]?.[0]).toMatchObject({ id: leadId, isLead: false })
+  })
+
   it('hides the treatment checkbox unless the caller offers it', async () => {
     renderDialog()
 

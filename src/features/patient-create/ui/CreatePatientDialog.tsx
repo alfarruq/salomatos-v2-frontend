@@ -1,24 +1,29 @@
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
 import {
+  defaultPatientFilters,
   emptyPatientForm,
   PatientFormFields,
   type PatientFormInput,
   type PatientListItem,
   patientFormFieldOf,
   patientFormSchema,
+  patientQueries,
 } from '@/entities/patient'
 import { Can, useActsOnlyAs } from '@/entities/session'
 import { requestVoiceDraft, type VoiceDraft, VoicePanel, voiceKeys } from '@/entities/voice-draft'
 import { ApiError } from '@/shared/api/errors'
 import { toTypedDate } from '@/shared/lib/calendarDate'
+import { formatDate } from '@/shared/lib/datetime'
+import { useDebounce } from '@/shared/lib/useDebounce'
 
 import { Alert, Button, Checkbox, Dialog } from '@/shared/ui'
 import { useCreatePatient } from '../model/useCreatePatient'
+import { useRegisterLead } from '../model/useRegisterLead'
 
 export interface CreatePatientDialogProps {
   clinicId: string
@@ -50,7 +55,7 @@ export function CreatePatientDialog({
   offerTreatment = false,
   initialValues,
 }: CreatePatientDialogProps) {
-  const { t } = useTranslation(['patients', 'common', 'voice'])
+  const { t, i18n } = useTranslation(['patients', 'common', 'voice'])
   // Off on every opening: a treatment is a deliberate step, not a default.
   const [addTreatment, setAddTreatment] = useState(false)
   const willAddTreatment = offerTreatment && addTreatment
@@ -77,7 +82,40 @@ export function CreatePatientDialog({
     }
   }, [open, initialValues, form])
 
-  const { mutate, isPending } = useCreatePatient(clinicId)
+  const create = useCreatePatient(clinicId)
+  const registerLead = useRegisterLead(clinicId)
+  const isPending = create.isPending || registerLead.isPending
+
+  /*
+   * Someone who only booked a visit is not in the patient list, so the desk
+   * may not find them and press "New patient". While the name or phone is
+   * typed, matching bookings are offered; picking one registers that person
+   * instead of creating a duplicate. Search text stays out of the URL (§3).
+   */
+  const [lead, setLead] = useState<PatientListItem | null>(null)
+  const typedName = useWatch({ control: form.control, name: 'fullName' })
+  const typedPhone = useWatch({ control: form.control, name: 'phoneNumber' })
+  const phoneDigits = typedPhone.replace(/\D/g, '').replace(/^998/, '')
+  const term = useDebounce(
+    phoneDigits.length >= 4 ? phoneDigits : typedName.trim(),
+    LEAD_SEARCH_DEBOUNCE_MS,
+  )
+  const leadsQuery = useQuery({
+    ...patientQueries.list(clinicId, { ...defaultPatientFilters, search: term, onlyLeads: true }),
+    enabled: open && lead === null && term.length >= 2,
+  })
+  const leadMatches = lead === null && term.length >= 2 ? (leadsQuery.data?.results ?? []) : []
+
+  useEffect(() => {
+    if (open) setLead(null)
+  }, [open])
+
+  const pickLead = (picked: PatientListItem) => {
+    setLead(picked)
+    const options = { shouldDirty: true, shouldValidate: true } as const
+    form.setValue('fullName', picked.fullName, options)
+    if (picked.phoneNumber !== null) form.setValue('phoneNumber', picked.phoneNumber, options)
+  }
 
   const queryClient = useQueryClient()
   // Every call is billed and writes nothing, so it is never retried.
@@ -134,9 +172,9 @@ export function CreatePatientDialog({
     }
   }, [open, onlyMe, form])
 
-  const handleSubmit = form.handleSubmit((values) =>
-    mutate(values, {
-      onSuccess: (patient) => {
+  const handleSubmit = form.handleSubmit((values) => {
+    const callbacks = {
+      onSuccess: (patient: PatientListItem) => {
         const doctorId = values.doctorId === '' ? null : values.doctorId
         form.reset(emptyPatientForm)
         onOpenChange(false)
@@ -144,7 +182,7 @@ export function CreatePatientDialog({
         // be in any list yet (server-side filters), but it exists.
         onCreated?.(patient, { addTreatment: willAddTreatment, doctorId })
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         if (!(error instanceof ApiError)) return
 
         /*
@@ -166,8 +204,52 @@ export function CreatePatientDialog({
           })
         }
       },
-    }),
-  )
+    }
+    if (lead === null) create.mutate(values, callbacks)
+    else registerLead.mutate({ patientId: lead.id, input: values }, callbacks)
+  })
+
+  const leadPanel =
+    lead !== null ? (
+      <Alert title={t('patients:create.leadPicked')} tone="info">
+        <div className="flex flex-col items-start gap-2">
+          <span>{t('patients:create.leadPickedBody')}</span>
+          <Button disabled={isPending} onClick={() => setLead(null)} size="sm" variant="secondary">
+            {t('patients:create.leadUnpick')}
+          </Button>
+        </div>
+      </Alert>
+    ) : leadMatches.length > 0 ? (
+      <div className="flex flex-col gap-2">
+        <p className="text-caption text-text-secondary">{t('patients:create.leadMatches')}</p>
+        <ul className="flex flex-col gap-1 rounded-control border border-border bg-elevated p-1">
+          {leadMatches.map((match) => (
+            <li key={match.id}>
+              <button
+                className="flex w-full flex-col rounded-[8px] px-3 py-2 text-left hover:bg-sunken"
+                disabled={isPending}
+                onClick={() => pickLead(match)}
+                type="button"
+              >
+                <span className="text-body text-text">{match.fullName}</span>
+                <span className="text-caption text-text-secondary">
+                  {[
+                    match.phoneNumber,
+                    match.lastAppointmentAt === null
+                      ? null
+                      : t('patients:create.leadLastVisit', {
+                          date: formatDate(match.lastAppointmentAt, { locale: i18n.language }),
+                        }),
+                  ]
+                    .filter((part) => part !== null && part !== '')
+                    .join(' · ')}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null
 
   const rootError = form.formState.errors.root?.message
 
@@ -205,7 +287,12 @@ export function CreatePatientDialog({
             {voiceNote === null ? null : <Alert title={voiceNote} tone="info" />}
           </VoicePanel>
         </Can>
-        <PatientFormFields doctorOptions={doctorOptions} form={form} isDisabled={isPending} />
+        <PatientFormFields
+          afterContact={leadPanel}
+          doctorOptions={doctorOptions}
+          form={form}
+          isDisabled={isPending}
+        />
         {offerTreatment ? (
           <Checkbox
             checked={addTreatment}
@@ -221,3 +308,4 @@ export function CreatePatientDialog({
 
 /** The submit button lives in the dialog footer, outside the form element. */
 const FORM_ID = 'create-patient-form'
+const LEAD_SEARCH_DEBOUNCE_MS = 300
