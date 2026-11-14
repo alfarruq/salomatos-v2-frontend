@@ -34,7 +34,6 @@
     "toothHint": "Click the chart to pick a tooth",
     "treatmentTypePlaceholder": "Treatment",
     "chooseDoctorFirst": "Choose a doctor first — the treatments offered depend on their specialty.",
-    "addTreatmentLabel": "Add a treatment",
     "rowType": "Treatment",
     "rowCost": "Price",
     "rowsTitle": "Added treatments ({{total}})",
@@ -62,7 +61,12 @@
     "rowTotal": "Total",
     "noServices": "The price list has no services for this doctor yet. Add them under Manage → Services.",
     "rowInProgress": "In progress",
-    "rowStage": "Stage"
+    "rowStage": "Stage",
+    "toothChartTitle": "Tooth chart",
+    "servicesTitle": "Services",
+    "serviceSearch": "Search services",
+    "serviceNoMatch": "No matching service",
+    "addService": "Add"
   },
   "chart": {
     "treated": "Treated",
