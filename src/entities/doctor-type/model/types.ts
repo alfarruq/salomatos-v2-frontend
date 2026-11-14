@@ -12,4 +12,6 @@ export type DoctorTypeId = string
 export interface DoctorType {
   id: DoctorTypeId
   name: string
+  /** The clinic's built-in dental specialty: always present, never renamed or deleted (server-enforced). */
+  isDental: boolean
 }

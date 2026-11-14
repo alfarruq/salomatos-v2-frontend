@@ -3,7 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DoctorType } from '@/entities/doctor-type'
-import { doctorTypeQueries, isDentalDoctorType } from '@/entities/doctor-type'
+import { doctorTypeQueries } from '@/entities/doctor-type'
 import { CreateDoctorTypeDialog } from '@/features/doctor-type-create'
 import { DeleteDoctorTypeDialog } from '@/features/doctor-type-delete'
 import { EditDoctorTypeDialog } from '@/features/doctor-type-edit'
@@ -89,8 +89,8 @@ export function DoctorTypeTable({ clinicId }: DoctorTypeTableProps) {
                 <TableRow key={doctorType.id}>
                   <TableCell>{doctorType.name}</TableCell>
                   <TableCell align="right">
-                    {/* The dental type is the clinic default and drives the tooth chart by name, so renaming or deleting it would break treatments. */}
-                    {isDentalDoctorType(doctorType.name) ? null : (
+                    {/* The built-in dental type drives the tooth chart; the server refuses renaming or deleting it. */}
+                    {doctorType.isDental ? null : (
                       <div className="flex justify-end gap-1">
                         <Button
                           aria-label={`${t('common:action.edit')} — ${doctorType.name}`}

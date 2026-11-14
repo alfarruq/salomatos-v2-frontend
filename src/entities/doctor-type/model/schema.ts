@@ -12,10 +12,11 @@ export const doctorTypeSchema = v.object({
   // A type without a name is not renderable; nothing else is on this row.
   id: v.pipe(v.string(), v.uuid()),
   name: v.string(),
+  is_dental: v.optional(v.boolean(), false),
 })
 
 export type DoctorTypeResponse = v.InferOutput<typeof doctorTypeSchema>
 
 export function toDoctorType(response: DoctorTypeResponse): DoctorType {
-  return { id: response.id, name: response.name }
+  return { id: response.id, name: response.name, isDental: response.is_dental }
 }

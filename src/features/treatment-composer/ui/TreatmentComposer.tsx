@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
-import { isDentalDoctorType } from '@/entities/doctor-type'
 import { Can, useActsOnlyAs } from '@/entities/session'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
@@ -163,7 +162,7 @@ function TreatmentComposerForm({
         )
 
   // Only a dentist works tooth by tooth; everyone else picks from their services.
-  const isDental = selectedDoctor !== null && isDentalDoctorType(selectedDoctor.doctorTypeName)
+  const isDental = selectedDoctor?.isDental === true
 
   const canSave = rows.length > 0 && doctorId !== '' && effectivePatientId !== null
 
