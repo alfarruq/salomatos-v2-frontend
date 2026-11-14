@@ -29,6 +29,8 @@ export interface Patient {
    * full patient form is filled at the first procedure, which registers them.
    */
   isLead: boolean
+  /** UTC instant of the latest booking; only filled on a leads-only search. */
+  lastAppointmentAt: string | null
   /** Charged minus paid, in so'm; negative is credit. Null when the caller may not see money. */
   debt: number | null
 }
@@ -50,6 +52,8 @@ export interface PatientFilters {
   archived: boolean
   /** Also find people who only booked a visit — the booking dialog's search, not the patient list. */
   includeLeads?: boolean
+  /** Only people who booked but are not patients yet — the new-patient dialog's suggestions. */
+  onlyLeads?: boolean
   page: number
 }
 

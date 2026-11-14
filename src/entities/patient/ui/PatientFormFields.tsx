@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { DateInput, Field, Input, PhoneInput, Select, type SelectOption } from '@/shared/ui'
@@ -12,6 +13,8 @@ export interface PatientFormFieldsProps {
    * same as `AppointmentFormFields.doctorOptions`.
    */
   doctorOptions: SelectOption[]
+  /** Rendered right under the name and phone, e.g. the new-patient dialog's lead suggestions. */
+  afterContact?: ReactNode
   /** Off for a doctor, who can only take patients for themselves: nothing to choose. */
   showDoctor?: boolean
 }
@@ -32,6 +35,7 @@ export function PatientFormFields({
   form,
   isDisabled = false,
   doctorOptions,
+  afterContact,
   showDoctor = true,
 }: PatientFormFieldsProps) {
   const { t } = useTranslation(['patients', 'validation'])
@@ -72,6 +76,8 @@ export function PatientFormFields({
           )}
         />
       </Field>
+
+      {afterContact}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {showDoctor ? (

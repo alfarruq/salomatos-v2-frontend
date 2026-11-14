@@ -61,6 +61,7 @@ export async function fetchPatients(
               query: search,
               include_archived: filters.archived,
               include_leads: filters.includeLeads ?? false,
+              ...(filters.onlyLeads === true ? { only_leads: true } : {}),
             }),
           },
         )

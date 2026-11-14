@@ -20,7 +20,12 @@
     "submit": "Bemor qo'shish",
     "failed": "Bemorni qo'shib bo'lmadi. Qayta urinib ko'ring.",
     "addTreatment": "Muolaja qo'shish",
-    "submitAndTreat": "Qo'shish va davom etish"
+    "submitAndTreat": "Qo'shish va davom etish",
+    "leadMatches": "Uchrashuvga yozilganlar orasida shunday odam bor. O'sha bo'lsa, tanlang:",
+    "leadLastVisit": "oxirgi uchrashuv: {{date}}",
+    "leadPicked": "Uchrashuvga yozilgan odam tanlandi",
+    "leadPickedBody": "Yangi bemor yaratilmaydi: shu odamning ma'lumotlari yangilanadi va u bemorlar ro'yxatiga o'tadi.",
+    "leadUnpick": "Boshqa odam, yangisini qo'shish"
   },
   "edit": {
     "title": "Bemorni tahrirlash",

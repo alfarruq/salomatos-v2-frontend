@@ -32,6 +32,7 @@ export const patientSchema = v.object({
   archived_at: v.optional(v.nullable(v.string()), null),
   created_at: v.optional(v.nullable(v.string()), null),
   is_lead: v.optional(v.boolean(), false),
+  last_appointment_at: v.optional(v.nullable(v.string()), null),
   debt,
 })
 
@@ -61,6 +62,7 @@ export function toPatient(response: PatientResponse): Patient {
     status: response.archived_at === null ? 'active' : 'archived',
     createdAt: response.created_at,
     isLead: response.is_lead,
+    lastAppointmentAt: response.last_appointment_at,
     debt: response.debt,
   }
 }

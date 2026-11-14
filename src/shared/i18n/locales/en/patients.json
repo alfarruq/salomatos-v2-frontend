@@ -20,7 +20,12 @@
     "submit": "Add patient",
     "failed": "Could not add the patient. Please try again.",
     "addTreatment": "Add a treatment next",
-    "submitAndTreat": "Add and continue"
+    "submitAndTreat": "Add and continue",
+    "leadMatches": "Someone like this has booked a visit. If it is them, pick them:",
+    "leadLastVisit": "last booking: {{date}}",
+    "leadPicked": "Booked person picked",
+    "leadPickedBody": "No new patient is created: this person's details are updated and they join the patient list.",
+    "leadUnpick": "Someone else, add new"
   },
   "edit": {
     "title": "Edit patient",
