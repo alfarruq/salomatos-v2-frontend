@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchSession, useSessionStore } from '@/entities/session'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
@@ -53,7 +53,12 @@ describe('BotAccessPanel', () => {
 
     expect(await screen.findByText('k7m4q9rx')).toBeTruthy()
     expect(screen.getByText('12345678')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Login va parolni nusxalash' })).toBeTruthy()
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    await userEvent.click(screen.getByRole('button', { name: 'Login va parolni nusxalash' }))
+    expect(writeText).toHaveBeenCalledWith('login: 12345678\npassword: k7m4q9rx')
+    // One copy button for both, none per row.
+    expect(screen.getAllByRole('button', { name: /nusxalash/i })).toHaveLength(1)
   })
 
   it('shows the new password after a confirmed reset', async () => {
