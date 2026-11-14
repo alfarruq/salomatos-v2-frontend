@@ -440,7 +440,8 @@ function MedicalHistorySection({ clinicId, patient }: { clinicId: string; patien
   const { t } = useTranslation(['patients', 'common'])
   const [isEditOpen, setEditOpen] = useState(false)
   const query = useQuery(patientQueries.medicalHistory(clinicId, patient.id))
-  const showPregnancy = patient.gender !== 'male'
+  // Gender is no longer recorded, so the question is always offered.
+  const showPregnancy = true
 
   return (
     <QueryBoundary

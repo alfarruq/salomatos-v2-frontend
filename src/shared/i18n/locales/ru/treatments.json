@@ -24,7 +24,6 @@
     "totalCostLabel": "Общая стоимость",
     "notesLabel": "Примечание",
     "priceLabel": "Цена",
-    "discountLabel": "Скидка",
     "voidReasonLabel": "Причина аннулирования"
   },
   "composer": {
@@ -56,7 +55,10 @@
     "patientPlaceholder": "Введите имя пациента",
     "patientClear": "Убрать пациента",
     "patientNoResults": "Пациент не найден",
-    "rowDiscount": "Скидка, %",
+    "rowPaid": "Оплачено, сум",
+    "rowPaidInFull": "Оплачено полностью",
+    "totalPaid": "Оплачено",
+    "totalDebt": "Остаток",
     "rowTotal": "Итого",
     "noServices": "В прайс-листе пока нет услуг для этого врача. Добавьте их в разделе «Управление → Услуги».",
     "rowInProgress": "В процессе",

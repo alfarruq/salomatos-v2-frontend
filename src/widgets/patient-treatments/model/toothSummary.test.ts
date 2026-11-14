@@ -15,7 +15,6 @@ function treatment(overrides: Partial<Treatment>): Treatment {
     surfaces: [],
     quantity: 1,
     unitPrice: 100,
-    discountPercent: 0,
     totalTreatmentCost: 100,
     performedAt: '2026-09-01T06:00:00Z',
     startDate: '2026-09-01',

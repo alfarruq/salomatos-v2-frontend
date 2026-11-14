@@ -24,8 +24,7 @@ export const patientSchema = v.object({
   clinic_name: v.optional(v.string(), ''),
   phone_number: optionalText,
   birth_date: optionalText,
-  // A gender the client does not know is shown as unset rather than refused.
-  gender: v.optional(v.fallback(v.nullable(v.picklist(['male', 'female'])), null), null),
+  workplace: optionalText,
   address: optionalText,
   notes: optionalText,
   primary_doctor: v.optional(v.nullable(v.string()), null),
@@ -54,7 +53,7 @@ export function toPatient(response: PatientResponse): Patient {
     fullName: response.full_name,
     phoneNumber: response.phone_number,
     birthDate: toCalendarDateOrNull(response.birth_date),
-    gender: response.gender,
+    workplace: response.workplace,
     address: response.address,
     notes: response.notes,
     primaryDoctorId: response.primary_doctor,

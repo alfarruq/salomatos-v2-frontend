@@ -80,16 +80,10 @@ export function TreatmentDetailDialog({
           </Card>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Card className="p-3">
             <p className="text-caption text-text-tertiary">{t('treatments:detail.priceLabel')}</p>
             <p className="text-callout text-text tabular-nums">{money(treatment.unitPrice)}</p>
-          </Card>
-          <Card className="p-3">
-            <p className="text-caption text-text-tertiary">
-              {t('treatments:detail.discountLabel')}
-            </p>
-            <p className="text-callout text-text tabular-nums">{treatment.discountPercent}%</p>
           </Card>
           <Card className="p-3">
             <p className="text-caption text-text-tertiary">

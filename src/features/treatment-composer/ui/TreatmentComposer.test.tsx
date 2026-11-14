@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fetchSession, useSessionStore } from '@/entities/session'
 import { MOCK_PATIENTS, MOCK_PROCEDURES, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
@@ -99,7 +100,7 @@ describe('TreatmentComposer', () => {
     expect(screen.queryByRole('button', { name: "O'chirish — Tozalash" })).not.toBeInTheDocument()
   })
 
-  it('records one procedure per row, with the price and discount typed', async () => {
+  it('records one procedure per row, with the price and paid amount', async () => {
     const posted: unknown[] = []
     server.use(
       http.post('/api/v1/procedures/', async ({ request }) => {
@@ -110,7 +111,7 @@ describe('TreatmentComposer', () => {
     renderComposer()
     await chooseDoctor(/Sardor Usmonov/)
     await addService('Tozalash')
-    await userEvent.type(screen.getByLabelText('Chegirma, %'), '10')
+    await userEvent.click(screen.getByRole('checkbox', { name: "To'liq to'landi" }))
 
     await userEvent.click(screen.getByRole('button', { name: 'Saqlash' }))
 
@@ -121,10 +122,20 @@ describe('TreatmentComposer', () => {
       service: mockId(6, 2),
       tooth: null,
       unit_price: '200000',
-      discount_percent: '10',
+      paid_amount: '200000',
       status: 'completed',
       notes: '',
     })
+  })
+
+  it('has no doctor select for a doctor, who can only record their own work', async () => {
+    signInAs('doctor')
+    useSessionStore.getState().setSession(await fetchSession())
+    renderComposer()
+
+    await screen.findByRole('combobox', { name: "Davolash turini qo'shish" }, { timeout: 5000 })
+
+    expect(screen.queryByRole('combobox', { name: 'Shifokor' })).not.toBeInTheDocument()
   })
 
   it('finds the patient by name when opened without one', async () => {
