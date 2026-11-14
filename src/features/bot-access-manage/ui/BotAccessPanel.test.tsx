@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { fetchSession, useSessionStore } from '@/entities/session'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
 import { createI18n } from '@/shared/i18n'
@@ -36,27 +37,23 @@ function renderPanel() {
 }
 
 describe('BotAccessPanel', () => {
-  beforeEach(() => signInAs('owner'))
+  beforeEach(async () => {
+    signInAs('owner')
+    useSessionStore.getState().setSession(await fetchSession())
+  })
 
-  it('asks the server for the password only when staff ask to see it', async () => {
-    let reads = 0
+  it('shows a patient login and password straight away, without a click', async () => {
     server.use(
-      http.get(URL, () => {
-        reads += 1
-        return HttpResponse.json({ login: '12345678', password: 'k7m4q9rx', linked: false })
-      }),
+      http.get(URL, () =>
+        HttpResponse.json({ login: '12345678', password: 'k7m4q9rx', linked: false }),
+      ),
     )
 
     renderPanel()
-    const show = await screen.findByRole('button', { name: "Login va parolni ko'rsatish" })
-    expect(reads).toBe(0)
-    expect(screen.queryByText('k7m4q9rx')).toBeNull()
-
-    await userEvent.click(show)
 
     expect(await screen.findByText('k7m4q9rx')).toBeTruthy()
     expect(screen.getByText('12345678')).toBeTruthy()
-    expect(reads).toBe(1)
+    expect(screen.getByRole('button', { name: 'Login va parolni nusxalash' })).toBeTruthy()
   })
 
   it('shows the new password after a confirmed reset', async () => {

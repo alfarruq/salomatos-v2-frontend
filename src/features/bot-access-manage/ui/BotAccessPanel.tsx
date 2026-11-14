@@ -3,6 +3,7 @@ import { Eye, KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BotAccessDetails, type BotAccessTarget, botAccessQueries } from '@/entities/bot-access'
+import { useCan } from '@/entities/session'
 import { Button, Dialog, ErrorState, QueryBoundary, Skeleton, toast } from '@/shared/ui'
 import { useResetBotAccess } from '../model/useResetBotAccess'
 
@@ -21,7 +22,11 @@ export function BotAccessPanel({ clinicId, target }: BotAccessPanelProps) {
   const [isConfirmOpen, setConfirmOpen] = useState(false)
   // Fetched on request only: every read is audited on the server, and a
   // password should not sit on screen for anyone walking past the desk.
-  const [isRevealed, setRevealed] = useState(false)
+  // A patient's login is shown straight away: anyone who can open the card may read it anyway.
+  const [isClicked, setRevealed] = useState(false)
+  const isRevealed = isClicked || target.kind === 'patient'
+  // Reset is a write, so the all-branches view (read-only) does not offer it.
+  const canReset = useCan(target.kind === 'patient' ? 'patient:manage' : 'staff:manage')
   const query = useQuery({ ...botAccessQueries.detail(clinicId, target), enabled: isRevealed })
   const reset = useResetBotAccess(clinicId)
 
@@ -75,7 +80,7 @@ export function BotAccessPanel({ clinicId, target }: BotAccessPanelProps) {
         </QueryBoundary>
       ) : null}
 
-      {target.kind === 'mine' ? null : (
+      {target.kind === 'mine' || !canReset ? null : (
         <div>
           <Button
             iconLeft={<KeyRound aria-hidden="true" className="size-4" />}
