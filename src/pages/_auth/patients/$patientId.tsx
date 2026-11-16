@@ -33,6 +33,7 @@ import { EditMedicalHistoryDialog } from '@/features/medical-history-edit'
 import { ArchivePatientDialog } from '@/features/patient-archive'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { GalleryDropzone } from '@/features/patient-gallery-upload'
+import { RecordPaymentDialog } from '@/features/payment-create'
 import { DeleteRecipeDialog } from '@/features/recipe-delete'
 import { RecipeEditor } from '@/features/recipe-editor'
 import { usePrintRecipe } from '@/features/recipe-print'
@@ -345,13 +346,16 @@ function PatientSidebar({
   onNewTreatment: () => void
   onWritePrescription: () => void
 }) {
-  const { t, i18n } = useTranslation(['patients', 'common'])
+  const { t, i18n } = useTranslation(['patients', 'finance', 'common'])
   const locale = i18n.language
   const canTreat = useCan('procedure:manage')
   const canPrescribe = useCan('prescription:manage')
   const canBook = useCan('appointment:manage')
   // A doctor the owner hides money from loses the billing card but still sees the debt.
   const seesBilling = useCan('payment:view')
+  // Taking a payment is work, not a view of money: it stays when the billing card is hidden.
+  const canTakePayment = useCan('payment:manage')
+  const [isPaymentOpen, setPaymentOpen] = useState(false)
 
   const birthDate =
     patient.birthDate === null ? null : formatCalendarDate(patient.birthDate, locale)
@@ -429,6 +433,22 @@ function PatientSidebar({
         />
         <SidebarFact icon={<MapPin className="size-4" />} value={patient.address} />
       </div>
+
+      {seesBilling || !canTakePayment ? null : (
+        <div className="border-t border-border pt-4">
+          <Button onClick={() => setPaymentOpen(true)} size="sm" variant="primary">
+            {t('finance:payment.record')}
+          </Button>
+          <RecordPaymentDialog
+            clinicId={patient.clinicId}
+            key={String(isPaymentOpen)}
+            onOpenChange={setPaymentOpen}
+            open={isPaymentOpen}
+            patientId={patient.id}
+            suggestedAmount={patient.debt ?? 0}
+          />
+        </div>
+      )}
 
       {seesBilling || patient.debt === null || patient.debt <= 0 ? null : (
         <p className="border-t border-border pt-4 text-callout font-medium text-warning tabular-nums">

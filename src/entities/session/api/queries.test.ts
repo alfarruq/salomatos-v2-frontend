@@ -38,9 +38,9 @@ describe('fetchSession', () => {
     signInAs('doctor')
     const doctor = await fetchSession()
 
-    expect(admin.permissions.has('payment:manage')).toBe(true)
+    expect(admin.permissions.has('patient:archive')).toBe(true)
     expect(doctor.permissions.has('procedure:manage')).toBe(true)
-    expect(doctor.permissions.has('payment:manage')).toBe(false)
+    expect(doctor.permissions.has('patient:archive')).toBe(false)
   })
 
   it('falls back to the first branch when no scope was chosen', async () => {
