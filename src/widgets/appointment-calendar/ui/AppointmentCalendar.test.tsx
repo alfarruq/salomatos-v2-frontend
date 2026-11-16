@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppointmentFilters } from '@/entities/appointment'
+import { fetchSession, useSessionStore } from '@/entities/session'
 import { mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
@@ -16,6 +17,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
   signOut()
+  useSessionStore.getState().clear()
 })
 afterAll(() => server.close())
 
@@ -96,8 +98,9 @@ function renderCalendar(
 }
 
 describe('AppointmentCalendar', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     signInAs('admin')
+    useSessionStore.getState().setSession(await fetchSession())
     serveRows()
   })
 
@@ -185,6 +188,15 @@ describe('AppointmentCalendar', () => {
       date: '2026-09-27',
       doctorId: SARDOR,
     })
+  })
+
+  it('hides the doctor filter from a doctor', async () => {
+    signInAs('doctor')
+    useSessionStore.getState().setSession(await fetchSession())
+    renderCalendar({ view: 'day', date: '2026-09-27' })
+    await screen.findByText('Vali Aliyev')
+
+    expect(screen.queryByRole('combobox', { name: 'Shifokor' })).not.toBeInTheDocument()
   })
 
   it('keeps the picked doctor when switching view', async () => {

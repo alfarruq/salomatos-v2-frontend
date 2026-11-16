@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
 import { defaultPatientFilters, patientQueries } from '@/entities/patient'
+import { useCan } from '@/entities/session'
 import type { TreatmentListFilters, TreatmentStatus } from '@/entities/treatment'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
 import { PatientSearchInput, usePatientSearch } from '@/features/patient-search'
@@ -26,6 +27,8 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
   const { t } = useTranslation('treatments')
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const typesQuery = useQuery(treatmentTypeQueries.list(clinicId))
+  // A doctor's list holds only their own work, so a doctor filter would offer nothing else.
+  const canFilterByDoctor = useCan('patient:view_all')
 
   const change = (patch: Partial<TreatmentListFilters>) =>
     onFiltersChange({ ...filters, ...patch, page: 1 })
@@ -39,20 +42,22 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         patientId={filters.patientId}
       />
 
-      <Select
-        aria-label={t('filters.doctorLabel')}
-        className="w-auto shrink-0"
-        onValueChange={(value) => change({ doctorId: idOrNull(value) })}
-        options={[
-          { value: FILTER_ALL, label: t('filters.doctorAll') },
-          ...(doctorsQuery.data ?? []).map((doctor) => ({
-            value: doctor.id,
-            label: doctor.fullName,
-          })),
-        ]}
-        size="sm"
-        value={filters.doctorId ?? FILTER_ALL}
-      />
+      {canFilterByDoctor ? (
+        <Select
+          aria-label={t('filters.doctorLabel')}
+          className="w-auto shrink-0"
+          onValueChange={(value) => change({ doctorId: idOrNull(value) })}
+          options={[
+            { value: FILTER_ALL, label: t('filters.doctorAll') },
+            ...(doctorsQuery.data ?? []).map((doctor) => ({
+              value: doctor.id,
+              label: doctor.fullName,
+            })),
+          ]}
+          size="sm"
+          value={filters.doctorId ?? FILTER_ALL}
+        />
+      ) : null}
 
       <Select
         aria-label={t('filters.typeLabel')}
