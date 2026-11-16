@@ -17,6 +17,8 @@ export interface Clinic {
   address: string
   timezone: string
   workingHours: WorkingHours
+  /** Off hides prices and payments from every doctor; debt stays visible. */
+  doctorsSeeMoney: boolean
 }
 
 export const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const

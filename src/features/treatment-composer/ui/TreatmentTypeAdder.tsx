@@ -1,6 +1,7 @@
 import { Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCan } from '@/entities/session'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { formatSom } from '@/shared/lib/money'
 import { Input } from '@/shared/ui'
@@ -23,6 +24,7 @@ const SEARCH_FROM = 7
 export function TreatmentTypeAdder({ treatmentTypes, rows, onAdd }: TreatmentTypeAdderProps) {
   const { t, i18n } = useTranslation(['treatments', 'common'])
   const [query, setQuery] = useState('')
+  const seesMoney = useCan('money:view')
 
   const needle = query.trim().toLocaleLowerCase()
   const shown =
@@ -82,9 +84,11 @@ export function TreatmentTypeAdder({ treatmentTypes, rows, onAdd }: TreatmentTyp
                 >
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-callout text-text">{type.name}</span>
-                    <span className="text-caption text-text-secondary">
-                      {formatSom(type.price, i18n.language, t('common:currency.som'))}
-                    </span>
+                    {seesMoney ? (
+                      <span className="text-caption text-text-secondary">
+                        {formatSom(type.price, i18n.language, t('common:currency.som'))}
+                      </span>
+                    ) : null}
                   </span>
                   {count > 0 ? (
                     <span className="shrink-0 text-caption text-accent-text">×{count}</span>

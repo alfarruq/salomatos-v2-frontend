@@ -34,7 +34,16 @@
     "password": "Password",
     "newPassword": "New password",
     "passwordKeep": "Leave empty to keep the current password.",
-    "pay": "Pay terms"
+    "pay": "Pay terms",
+    "money": {
+      "column": "Finance",
+      "shown": "Visible",
+      "hidden": "Hidden",
+      "allLabel": "Doctors see finance",
+      "allOnHint": "Turn it on or off per doctor in the table below.",
+      "allOffHint": "No doctor sees prices, payments or totals. Patient debt stays visible.",
+      "error": "Could not save. Try again."
+    }
   },
   "service": {
     "name": "Service",

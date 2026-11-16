@@ -17,6 +17,8 @@ export interface Doctor {
   doctorTypeName: string | null
   /** Their specialty is the clinic's built-in dental one: the treatment form shows the tooth chart. */
   isDental: boolean
+  /** The owner lets this doctor see prices, payments and their own pay (the clinic switch also applies). */
+  canSeeMoney: boolean
   experienceYears: number | null
   isActive: boolean
   currentPay: DoctorPay | null

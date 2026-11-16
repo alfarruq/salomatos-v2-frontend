@@ -34,7 +34,16 @@
     "password": "Parol",
     "newPassword": "Yangi parol",
     "passwordKeep": "Bo'sh qoldirilsa, joriy parol o'zgarmaydi.",
-    "pay": "Maosh sharti"
+    "pay": "Maosh sharti",
+    "money": {
+      "column": "Moliya",
+      "shown": "Ko'rinadi",
+      "hidden": "Yashirin",
+      "allLabel": "Shifokorlar moliyani ko'rsin",
+      "allOnHint": "Har bir shifokor uchun quyidagi jadvalda alohida yoqing yoki o'chiring.",
+      "allOffHint": "Hech bir shifokor narx, to'lov va umumiy summalarni ko'rmaydi. Bemor qarzi ko'rinib turadi.",
+      "error": "Saqlab bo'lmadi. Qayta urinib ko'ring."
+    }
   },
   "service": {
     "name": "Xizmat",

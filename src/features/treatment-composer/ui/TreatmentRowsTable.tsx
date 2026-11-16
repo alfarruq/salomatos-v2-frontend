@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCan } from '@/entities/session'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { cn } from '@/shared/lib/cn'
 import { formatSom } from '@/shared/lib/money'
@@ -26,6 +27,9 @@ const withTooth =
   'lg:grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_44px]'
 const withoutTooth =
   'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_44px]'
+// A doctor the owner hides money from gets no price, paid or total columns.
+const withToothNoMoney = 'lg:grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1fr)_44px]'
+const withoutToothNoMoney = 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_44px]'
 
 /** Visible only on a phone, where the column header is gone; the header names it on desktop. */
 function CellLabel({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
@@ -60,7 +64,15 @@ export function TreatmentRowsTable({
   const currencyLabel = t('common:currency.som')
   const som = (amount: number) => formatSom(amount, i18n.language, currencyLabel)
   const typeOptions = treatmentTypes.map((type) => ({ value: type.id, label: type.name }))
-  const columns = showToothColumn ? withTooth : withoutTooth
+  // UX only: the server nulls prices for this doctor and ignores the amounts they send.
+  const seesMoney = useCan('money:view')
+  const columns = seesMoney
+    ? showToothColumn
+      ? withTooth
+      : withoutTooth
+    : showToothColumn
+      ? withToothNoMoney
+      : withoutToothNoMoney
 
   const total = rows.reduce((sum, row) => sum + priceOf(row), 0)
   const paid = rows.reduce((sum, row) => sum + paidOf(row), 0)
@@ -86,10 +98,16 @@ export function TreatmentRowsTable({
           >
             {showToothColumn ? <span>{t('treatments:table.columnTooth')}</span> : null}
             <span>{t('treatments:composer.rowType')}</span>
-            <span className="text-right">{t('treatments:composer.rowCost')}</span>
-            <span className="text-right">{t('treatments:composer.rowPaid')}</span>
+            {seesMoney ? (
+              <>
+                <span className="text-right">{t('treatments:composer.rowCost')}</span>
+                <span className="text-right">{t('treatments:composer.rowPaid')}</span>
+              </>
+            ) : null}
             <span>{t('treatments:composer.rowStage')}</span>
-            <span className="text-right">{t('treatments:composer.rowTotal')}</span>
+            {seesMoney ? (
+              <span className="text-right">{t('treatments:composer.rowTotal')}</span>
+            ) : null}
             <span />
           </div>
 
@@ -158,47 +176,51 @@ export function TreatmentRowsTable({
                     </Button>
                   </div>
 
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <CellLabel htmlFor={`${row.rowId}-cost`}>
-                      {t('treatments:composer.rowCost')}
-                    </CellLabel>
-                    <MoneyInput
-                      id={`${row.rowId}-cost`}
-                      className="h-9 px-3 text-right text-callout pointer-coarse:min-h-11"
-                      onChange={(value) =>
-                        onRowChange(row.rowId, {
-                          unitPrice: value,
-                          // A line ticked "paid in full" stays so when the price changes.
-                          ...(isPaidInFull(row) ? { paidAmount: value } : {}),
-                        })
-                      }
-                      placeholder="0"
-                      value={row.unitPrice}
-                    />
-                  </div>
+                  {seesMoney ? (
+                    <>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <CellLabel htmlFor={`${row.rowId}-cost`}>
+                          {t('treatments:composer.rowCost')}
+                        </CellLabel>
+                        <MoneyInput
+                          id={`${row.rowId}-cost`}
+                          className="h-9 px-3 text-right text-callout pointer-coarse:min-h-11"
+                          onChange={(value) =>
+                            onRowChange(row.rowId, {
+                              unitPrice: value,
+                              // A line ticked "paid in full" stays so when the price changes.
+                              ...(isPaidInFull(row) ? { paidAmount: value } : {}),
+                            })
+                          }
+                          placeholder="0"
+                          value={row.unitPrice}
+                        />
+                      </div>
 
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <CellLabel htmlFor={`${row.rowId}-paid`}>
-                      {t('treatments:composer.rowPaid')}
-                    </CellLabel>
-                    <MoneyInput
-                      id={`${row.rowId}-paid`}
-                      className="h-9 px-3 text-right text-callout pointer-coarse:min-h-11"
-                      onChange={(value) => onRowChange(row.rowId, { paidAmount: value })}
-                      placeholder="0"
-                      value={row.paidAmount}
-                    />
-                    <Checkbox
-                      checked={isPaidInFull(row)}
-                      id={`${row.rowId}-paid-in-full`}
-                      label={t('treatments:composer.rowPaidInFull')}
-                      onCheckedChange={(checked) =>
-                        onRowChange(row.rowId, {
-                          paidAmount: checked === true ? row.unitPrice : '',
-                        })
-                      }
-                    />
-                  </div>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <CellLabel htmlFor={`${row.rowId}-paid`}>
+                          {t('treatments:composer.rowPaid')}
+                        </CellLabel>
+                        <MoneyInput
+                          id={`${row.rowId}-paid`}
+                          className="h-9 px-3 text-right text-callout pointer-coarse:min-h-11"
+                          onChange={(value) => onRowChange(row.rowId, { paidAmount: value })}
+                          placeholder="0"
+                          value={row.paidAmount}
+                        />
+                        <Checkbox
+                          checked={isPaidInFull(row)}
+                          id={`${row.rowId}-paid-in-full`}
+                          label={t('treatments:composer.rowPaidInFull')}
+                          onCheckedChange={(checked) =>
+                            onRowChange(row.rowId, {
+                              paidAmount: checked === true ? row.unitPrice : '',
+                            })
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : null}
 
                   <Checkbox
                     checked={row.inProgress}
@@ -210,43 +232,47 @@ export function TreatmentRowsTable({
                     }
                   />
 
-                  <div className="flex min-w-0 flex-col gap-1 lg:items-end">
-                    <CellLabel>{t('treatments:composer.rowTotal')}</CellLabel>
-                    <span className="flex h-9 items-center text-callout">
-                      <Amount>{som(priceOf(row))}</Amount>
-                    </span>
-                  </div>
+                  {seesMoney ? (
+                    <div className="flex min-w-0 flex-col gap-1 lg:items-end">
+                      <CellLabel>{t('treatments:composer.rowTotal')}</CellLabel>
+                      <span className="flex h-9 items-center text-callout">
+                        <Amount>{som(priceOf(row))}</Amount>
+                      </span>
+                    </div>
+                  ) : null}
                 </li>
               )
             })}
           </ul>
 
-          <dl className="mt-1 grid grid-cols-3 gap-3 rounded-card bg-sunken p-3 text-callout lg:mt-3">
-            <div>
-              <dt className="text-caption text-text-tertiary">
-                {t('treatments:composer.rowTotal')}
-              </dt>
-              <dd className="font-medium">
-                <Amount>{som(total)}</Amount>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-caption text-text-tertiary">
-                {t('treatments:composer.totalPaid')}
-              </dt>
-              <dd className="font-medium">
-                <Amount>{som(paid)}</Amount>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-caption text-text-tertiary">
-                {t('treatments:composer.totalDebt')}
-              </dt>
-              <dd className="font-medium">
-                <Amount>{som(total - paid)}</Amount>
-              </dd>
-            </div>
-          </dl>
+          {seesMoney ? (
+            <dl className="mt-1 grid grid-cols-3 gap-3 rounded-card bg-sunken p-3 text-callout lg:mt-3">
+              <div>
+                <dt className="text-caption text-text-tertiary">
+                  {t('treatments:composer.rowTotal')}
+                </dt>
+                <dd className="font-medium">
+                  <Amount>{som(total)}</Amount>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-caption text-text-tertiary">
+                  {t('treatments:composer.totalPaid')}
+                </dt>
+                <dd className="font-medium">
+                  <Amount>{som(paid)}</Amount>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-caption text-text-tertiary">
+                  {t('treatments:composer.totalDebt')}
+                </dt>
+                <dd className="font-medium">
+                  <Amount>{som(total - paid)}</Amount>
+                </dd>
+              </div>
+            </dl>
+          ) : null}
         </div>
       )}
     </section>

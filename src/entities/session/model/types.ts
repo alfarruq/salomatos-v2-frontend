@@ -36,6 +36,8 @@ export const PERMISSIONS = [
   'procedure:view',
   'procedure:manage',
   'procedure:void',
+  'money:view',
+  'patient:debt',
   'payment:view',
   'payment:manage',
   'payment:void',

@@ -8,10 +8,13 @@ const optionalText = v.pipe(
   v.transform((value) => (value === null || value === '' ? null : value)),
 )
 
-/** DRF sends `DecimalField` as a string; so'm fit a double exactly. */
+/**
+ * DRF sends `DecimalField` as a string; so'm fit a double exactly. Null when
+ * the owner hides money from this doctor: shown as 0, but the UI hides it anyway.
+ */
 const money = v.pipe(
-  v.union([v.string(), v.number()]),
-  v.transform((value) => Number(value)),
+  v.nullable(v.union([v.string(), v.number()])),
+  v.transform((value) => (value === null ? 0 : Number(value))),
   v.check((value: number) => Number.isFinite(value)),
 )
 

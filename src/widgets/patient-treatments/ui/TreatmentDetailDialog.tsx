@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Can } from '@/entities/session'
+import { Can, useCan } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { TreatmentStatusBadge } from '@/entities/treatment'
 import { CompleteTreatmentButton } from '@/features/treatment-complete'
@@ -33,6 +33,7 @@ export function TreatmentDetailDialog({
 }: TreatmentDetailDialogProps) {
   const { t, i18n } = useTranslation(['treatments', 'common'])
   const money = (amount: number) => formatSom(amount, i18n.language, t('common:currency.som'))
+  const seesMoney = useCan('money:view')
 
   return (
     <Dialog
@@ -80,26 +81,28 @@ export function TreatmentDetailDialog({
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="p-3">
-            <p className="text-caption text-text-tertiary">{t('treatments:detail.priceLabel')}</p>
-            <p className="text-callout text-text tabular-nums">{money(treatment.unitPrice)}</p>
-          </Card>
-          <Card className="p-3">
-            <p className="text-caption text-text-tertiary">
-              {t('treatments:detail.totalCostLabel')}
-            </p>
-            <p
-              className={
-                treatment.status === 'voided'
-                  ? 'text-callout text-text-tertiary line-through tabular-nums'
-                  : 'text-callout font-semibold text-text tabular-nums'
-              }
-            >
-              {money(treatment.totalTreatmentCost)}
-            </p>
-          </Card>
-        </div>
+        {seesMoney ? (
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="p-3">
+              <p className="text-caption text-text-tertiary">{t('treatments:detail.priceLabel')}</p>
+              <p className="text-callout text-text tabular-nums">{money(treatment.unitPrice)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-caption text-text-tertiary">
+                {t('treatments:detail.totalCostLabel')}
+              </p>
+              <p
+                className={
+                  treatment.status === 'voided'
+                    ? 'text-callout text-text-tertiary line-through tabular-nums'
+                    : 'text-callout font-semibold text-text tabular-nums'
+                }
+              >
+                {money(treatment.totalTreatmentCost)}
+              </p>
+            </Card>
+          </div>
+        ) : null}
 
         {treatment.voidReason === null ? null : (
           <Card className="p-3">

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { MoreVertical } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Can } from '@/entities/session'
+import { Can, useCan } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import { TreatmentStatusBadge, treatmentQueries } from '@/entities/treatment'
 import { formatFixedDate } from '@/shared/lib/calendarDate'
@@ -53,6 +53,8 @@ export function TreatmentHistoryTable({
   const query = useQuery(treatmentQueries.list(clinicId, patientId))
   const [detailTreatment, setDetailTreatment] = useState<Treatment | null>(null)
   const isPhone = useMediaQuery(PHONE_QUERY)
+  // UX only: for a doctor the owner hides money from, the server sends no prices.
+  const seesMoney = useCan('money:view')
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,7 +82,7 @@ export function TreatmentHistoryTable({
         )}
         loading={
           <Table density="compact">
-            <TableSkeleton columns={7} rows={4} />
+            <TableSkeleton columns={seesMoney ? 7 : 6} rows={4} />
           </Table>
         }
         query={query}
@@ -117,7 +119,9 @@ export function TreatmentHistoryTable({
                   <TableHead>{t('treatments:table.columnDate')}</TableHead>
                   <TableHead>{t('treatments:table.columnDoctor')}</TableHead>
                   <TableHead>{t('treatments:table.columnStatus')}</TableHead>
-                  <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
+                  {seesMoney ? (
+                    <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
+                  ) : null}
                   <TableHead align="right">{t('treatments:table.columnActions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -143,15 +147,19 @@ export function TreatmentHistoryTable({
                       <TableCell>
                         <TreatmentStatusBadge status={treatment.status} />
                       </TableCell>
-                      <TableCell align="right" isNumeric>
-                        <span className={isVoided ? 'text-text-tertiary line-through' : undefined}>
-                          {formatSom(
-                            treatment.totalTreatmentCost,
-                            i18n.language,
-                            t('common:currency.som'),
-                          )}
-                        </span>
-                      </TableCell>
+                      {seesMoney ? (
+                        <TableCell align="right" isNumeric>
+                          <span
+                            className={isVoided ? 'text-text-tertiary line-through' : undefined}
+                          >
+                            {formatSom(
+                              treatment.totalTreatmentCost,
+                              i18n.language,
+                              t('common:currency.som'),
+                            )}
+                          </span>
+                        </TableCell>
+                      ) : null}
                       <TableCell align="right">
                         <DropdownMenu
                           trigger={
@@ -220,6 +228,7 @@ function TreatmentCards({
 }) {
   const { t, i18n } = useTranslation(['treatments', 'common'])
   const currency = t('common:currency.som')
+  const seesMoney = useCan('money:view')
 
   return (
     <ul className="flex flex-col gap-2">
@@ -248,9 +257,11 @@ function TreatmentCards({
               </div>
               <div className="flex w-full items-center justify-between border-t border-border pt-3 text-callout tabular-nums">
                 <span className="text-text-secondary">{treatment.doctorName ?? EMPTY}</span>
-                <span className={isVoided ? 'text-text-tertiary line-through' : 'text-text'}>
-                  {formatSom(treatment.totalTreatmentCost, i18n.language, currency)}
-                </span>
+                {seesMoney ? (
+                  <span className={isVoided ? 'text-text-tertiary line-through' : 'text-text'}>
+                    {formatSom(treatment.totalTreatmentCost, i18n.language, currency)}
+                  </span>
+                ) : null}
               </div>
             </button>
           </li>
