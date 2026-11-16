@@ -16,7 +16,8 @@
     "edit": "Таҳрирлаш",
     "delete": "Ўчириш",
     "showPassword": "Паролни кўрсатиш",
-    "hidePassword": "Паролни яшириш"
+    "hidePassword": "Паролни яшириш",
+    "undo": "Қайтариш"
   },
   "nav": {
     "skipToContent": "Асосий қисмга ўтиш",

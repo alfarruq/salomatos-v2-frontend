@@ -1,8 +1,9 @@
-import { type UseQueryResult, useQueries } from '@tanstack/react-query'
+import { type UseQueryResult, useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Stethoscope } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { paymentQueries } from '@/entities/payment'
 import { useCan } from '@/entities/session'
 import {
   defaultTreatmentListFilters,
@@ -11,6 +12,9 @@ import {
   TreatmentStatusBadge,
   treatmentQueries,
 } from '@/entities/treatment'
+import { RecordPaymentDialog } from '@/features/payment-create'
+import { EditTreatmentDialog } from '@/features/treatment-edit'
+import { useUndoableVoid } from '@/features/treatment-void'
 import { PAGE_SIZE, type Page } from '@/shared/api/pagination'
 import { formatFixedDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
@@ -31,6 +35,7 @@ import {
 } from '@/shared/ui'
 import { PAGES_PER_SCREEN, serverPagesFor } from '../model/screenPages'
 import { TreatmentFilters } from './TreatmentFilters'
+import { TreatmentRowActions } from './TreatmentRowActions'
 
 export interface TreatmentTableProps {
   clinicId: string
@@ -110,6 +115,19 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
   // Without `payment:view` the money column is not theirs.
   const canSeeMoney = useCan('payment:view')
   const navigate = useNavigate()
+  const [editing, setEditing] = useState<Treatment | null>(null)
+  const [paying, setPaying] = useState<Treatment | null>(null)
+  // Rows whose delete countdown is running.
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set())
+  const setPending = useCallback((id: string, on: boolean) => {
+    setPendingIds((current) => {
+      const next = new Set(current)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }, [])
+  const startDelete = useUndoableVoid(clinicId, setPending)
 
   const money = (value: number | null) =>
     value === null ? EMPTY : formatSom(value, i18n.language, t('common:currency.som'))
@@ -174,7 +192,7 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
         isEmpty={(data) => data.results.length === 0}
         loading={
           <Table>
-            <TableSkeleton columns={canSeeMoney ? 10 : 7} rows={PAGE_SIZE} />
+            <TableSkeleton columns={canSeeMoney ? 8 : 7} rows={PAGE_SIZE} />
           </Table>
         }
         query={query}
@@ -193,11 +211,19 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                     <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
                   ) : null}
                   <TableHead>{t('treatments:table.columnStatus')}</TableHead>
+                  <TableHead align="right">
+                    <span className="sr-only">{t('treatments:table.columnActions')}</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.results.map((treatment) => (
-                  <TableRow isInteractive key={treatment.id} onClick={() => openPatient(treatment)}>
+                  <TableRow
+                    className={pendingIds.has(treatment.id) ? 'opacity-50' : undefined}
+                    isInteractive
+                    key={treatment.id}
+                    onClick={() => openPatient(treatment)}
+                  >
                     <TableCell className="whitespace-nowrap tabular-nums">
                       {formatFixedDate(treatment.startDate)}
                     </TableCell>
@@ -232,6 +258,17 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                     <TableCell>
                       <TreatmentStatusBadge status={treatment.status} />
                     </TableCell>
+                    {/* The menu is portaled but React still bubbles its clicks to the row. */}
+                    <TableCell align="right" onClick={(event) => event.stopPropagation()}>
+                      <TreatmentRowActions
+                        clinicId={clinicId}
+                        isPending={pendingIds.has(treatment.id)}
+                        onDelete={(row) => startDelete(row.id)}
+                        onEdit={setEditing}
+                        onPay={setPaying}
+                        treatment={treatment}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -254,6 +291,51 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
           </div>
         )}
       </QueryBoundary>
+
+      {editing === null ? null : (
+        <EditTreatmentDialog
+          clinicId={clinicId}
+          key={editing.id}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null)
+          }}
+          open
+          treatment={editing}
+        />
+      )}
+      {paying === null ? null : (
+        <PayForTreatment clinicId={clinicId} onClose={() => setPaying(null)} treatment={paying} />
+      )}
     </div>
+  )
+}
+
+/**
+ * Payments belong to the patient, not to one line, so the amount offered is
+ * the patient's whole debt. The dialog opens once the figure is known: it
+ * reads its suggestion only when it mounts.
+ */
+function PayForTreatment({
+  clinicId,
+  treatment,
+  onClose,
+}: {
+  clinicId: string
+  treatment: Treatment
+  onClose: () => void
+}) {
+  const balance = useQuery(paymentQueries.balance(clinicId, treatment.patientId))
+  if (balance.isPending) return null
+
+  return (
+    <RecordPaymentDialog
+      clinicId={clinicId}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+      open
+      patientId={treatment.patientId}
+      suggestedAmount={balance.data?.debt ?? 0}
+    />
   )
 }

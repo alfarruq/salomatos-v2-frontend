@@ -311,4 +311,37 @@ describe('TreatmentTable', () => {
 
     expect(onFiltersChange).toHaveBeenCalledWith(defaultTreatmentListFilters)
   })
+
+  it('offers edit, complete, payment and delete from the row menu, without opening the patient', async () => {
+    server.use(
+      http.get(PROCEDURES, () =>
+        HttpResponse.json(
+          page([{ ...ROW, status: 'in_progress', completed_at: null, voided_at: null }]),
+        ),
+      ),
+    )
+    const { router } = renderTable()
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Amallar/ }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Tahrirlash' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Muolajani yakunlash' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: "To'lov qabul qilish" })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: "O'chirish" })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('offers no actions on a voided procedure', async () => {
+    server.use(
+      http.get(PROCEDURES, () =>
+        HttpResponse.json(
+          page([{ ...ROW, voided_at: '2026-08-11T06:00:00Z', void_reason: 'Xato' }]),
+        ),
+      ),
+    )
+    renderTable()
+
+    await screen.findByRole('link', { name: 'Aziza Karimova' })
+    expect(screen.queryByRole('button', { name: /^Amallar/ })).not.toBeInTheDocument()
+  })
 })

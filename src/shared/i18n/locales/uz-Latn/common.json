@@ -16,7 +16,8 @@
     "edit": "Tahrirlash",
     "delete": "O'chirish",
     "showPassword": "Parolni ko'rsatish",
-    "hidePassword": "Parolni yashirish"
+    "hidePassword": "Parolni yashirish",
+    "undo": "Qaytarish"
   },
   "nav": {
     "skipToContent": "Asosiy qismga o'tish",
