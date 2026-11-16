@@ -14,7 +14,11 @@
     "emptyDescription": "Nothing has been added for this patient yet.",
     "emptyAction": "Add the first treatment",
     "voidedLabel": "Voided",
-    "columnDoctor": "Doctor"
+    "columnDoctor": "Doctor",
+    "actionEdit": "Edit",
+    "actionDelete": "Delete",
+    "actionComplete": "Complete procedure",
+    "actionPay": "Accept payment"
   },
   "detail": {
     "title": "Treatment details",
@@ -120,12 +124,23 @@
     "reason": "Reason",
     "confirm": "Void",
     "failed": "Could not void the procedure. Please try again.",
-    "forbidden": "You don't have permission to void procedures."
+    "forbidden": "You don't have permission to void procedures.",
+    "countdown": "Procedure will be deleted in {{seconds}}s",
+    "quickReason": "Deleted from the procedures list",
+    "done": "Procedure deleted"
   },
   "complete": {
     "confirm": "Complete",
     "done": "Treatment completed",
     "failed": "Could not complete the treatment. Try again.",
     "forbidden": "You can only complete your own treatments."
+  },
+  "edit": {
+    "title": "Edit procedure",
+    "description": "“{{type}}”, tooth {{tooth}}. Only the note can change: price and date are fixed once recorded.",
+    "notes": "Note",
+    "done": "Saved",
+    "failed": "Could not save the procedure. Try again.",
+    "forbidden": "You can only edit your own procedures."
   }
 }

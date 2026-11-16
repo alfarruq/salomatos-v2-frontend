@@ -16,7 +16,8 @@
     "edit": "Изменить",
     "delete": "Удалить",
     "showPassword": "Показать пароль",
-    "hidePassword": "Скрыть пароль"
+    "hidePassword": "Скрыть пароль",
+    "undo": "Отменить"
   },
   "nav": {
     "skipToContent": "Перейти к содержимому",

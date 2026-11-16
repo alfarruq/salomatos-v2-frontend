@@ -16,7 +16,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "undo": "Undo"
   },
   "nav": {
     "skipToContent": "Skip to content",

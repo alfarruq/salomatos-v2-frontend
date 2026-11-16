@@ -14,7 +14,11 @@
     "emptyDescription": "Bu bemor uchun hali hech narsa qo'shilmagan.",
     "emptyAction": "Birinchi muolajani qo'shing",
     "voidedLabel": "Yaroqsiz",
-    "columnDoctor": "Shifokor"
+    "columnDoctor": "Shifokor",
+    "actionEdit": "Tahrirlash",
+    "actionDelete": "O'chirish",
+    "actionComplete": "Muolajani yakunlash",
+    "actionPay": "To'lov qabul qilish"
   },
   "detail": {
     "title": "Muolaja ma'lumotlari",
@@ -120,12 +124,23 @@
     "reason": "Sabab",
     "confirm": "Yaroqsiz deb belgilash",
     "failed": "Muolajani yaroqsiz deb belgilab bo'lmadi. Qayta urinib ko'ring.",
-    "forbidden": "Muolajani yaroqsiz deb belgilashga ruxsatingiz yo'q."
+    "forbidden": "Muolajani yaroqsiz deb belgilashga ruxsatingiz yo'q.",
+    "countdown": "Muolaja {{seconds}} soniyadan keyin o'chiriladi",
+    "quickReason": "Muolajalar ro'yxatidan o'chirildi",
+    "done": "Muolaja o'chirildi"
   },
   "complete": {
     "confirm": "Tugallash",
     "done": "Muolaja tugallandi",
     "failed": "Muolajani tugallab bo'lmadi. Qayta urinib ko'ring.",
     "forbidden": "Faqat o'zingiz kiritgan muolajani tugallay olasiz."
+  },
+  "edit": {
+    "title": "Muolajani tahrirlash",
+    "description": "«{{type}}», {{tooth}}-tish. Faqat izohni o'zgartirish mumkin: narx va sana yozilgandan keyin o'zgarmaydi.",
+    "notes": "Izoh",
+    "done": "Saqlandi",
+    "failed": "Muolajani saqlab bo'lmadi. Qayta urinib ko'ring.",
+    "forbidden": "Faqat o'zingiz kiritgan muolajani tahrirlay olasiz."
   }
 }
