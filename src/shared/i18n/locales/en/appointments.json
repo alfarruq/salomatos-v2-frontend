@@ -23,6 +23,7 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "time": "Time",
+    "timeManual": "Exact time (HH:MM)",
     "status": "Status",
     "notes": "Notes",
     "duration": "Length, minutes",

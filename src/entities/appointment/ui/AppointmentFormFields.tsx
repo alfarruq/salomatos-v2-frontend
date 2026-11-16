@@ -27,6 +27,14 @@ const APPOINTMENT_TIME_OPTIONS: SelectOption[] = (() => {
   return options
 })()
 
+/** "1710" or "910" -> "17:10" / "09:10"; anything else is left for the schema to reject. */
+function normalizeTimeInput(value: string): string {
+  const digits = /^\d{3,4}$/.exec(value)
+  if (digits === null) return value
+  const padded = value.padStart(4, '0')
+  return `${padded.slice(0, 2)}:${padded.slice(2)}`
+}
+
 const DURATION_OPTIONS: SelectOption[] = [15, 30, 45, 60, 90, 120, 180].map((minutes) => ({
   value: String(minutes),
   label: String(minutes),
@@ -266,20 +274,43 @@ export function AppointmentFormFields({
         </Field>
 
         <Field error={message(errors.time?.message)} isRequired label={t('appointments:form.time')}>
-          <Controller
-            control={form.control}
-            name="time"
-            render={({ field }) => (
-              <Select
-                disabled={isDisabled}
-                name={field.name}
-                onValueChange={field.onChange}
-                options={APPOINTMENT_TIME_OPTIONS}
-                placeholder={t('appointments:form.time')}
-                value={field.value}
-              />
-            )}
-          />
+          <div className="flex flex-col gap-2">
+            <Controller
+              control={form.control}
+              name="time"
+              render={({ field }) => (
+                <>
+                  <Select
+                    disabled={isDisabled}
+                    name={field.name}
+                    onValueChange={field.onChange}
+                    options={APPOINTMENT_TIME_OPTIONS}
+                    placeholder={t('appointments:form.time')}
+                    value={
+                      APPOINTMENT_TIME_OPTIONS.some((o) => o.value === field.value)
+                        ? field.value
+                        : ''
+                    }
+                  />
+                  {/* The select only offers half hours; this lets the exact minute be typed. */}
+                  <Input
+                    aria-label={t('appointments:form.timeManual')}
+                    autoComplete="off"
+                    disabled={isDisabled}
+                    inputMode="numeric"
+                    maxLength={5}
+                    onBlur={() => {
+                      field.onChange(normalizeTimeInput(field.value))
+                      field.onBlur()
+                    }}
+                    onChange={(event) => field.onChange(event.target.value.replace(/[^\d:]/g, ''))}
+                    placeholder="HH:MM"
+                    value={field.value}
+                  />
+                </>
+              )}
+            />
+          </div>
         </Field>
       </div>
 

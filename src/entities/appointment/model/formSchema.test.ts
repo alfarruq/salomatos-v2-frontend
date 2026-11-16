@@ -27,6 +27,21 @@ describe('toAppointmentPayload', () => {
     expect(payload.start_at).toBe('2026-10-07T21:00:00.000Z')
   })
 
+  it('keeps a minute that is not on the half hour', () => {
+    // 17:10 Tashkent is 12:10 UTC.
+    expect(toAppointmentPayload({ ...BASE, time: '17:10' }).start_at).toBe(
+      '2026-10-08T12:10:00.000Z',
+    )
+  })
+
+  it('accepts HH:MM only, in 24 hours', () => {
+    const ok = (time: string) => v.safeParse(appointmentFormSchema, { ...BASE, time }).success
+    expect(ok('17:15')).toBe(true)
+    expect(ok('24:00')).toBe(false)
+    expect(ok('17:60')).toBe(false)
+    expect(ok('9:30')).toBe(false)
+  })
+
   it('sends ids, and no service as null', () => {
     expect(toAppointmentPayload(BASE)).toMatchObject({
       patient: mockId(7, 1),
