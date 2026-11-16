@@ -13,4 +13,8 @@ export interface Administrator {
   phoneNumber: string | null
   email: string | null
   isActive: boolean
+  /** Switch 1: off hides every money figure, debts included. */
+  canSeeMoney: boolean
+  /** Switch 2: with money on, show only what each patient owes. */
+  debtsOnly: boolean
 }

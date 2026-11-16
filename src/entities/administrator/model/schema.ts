@@ -20,6 +20,8 @@ export const administratorSchema = v.object({
   phone_number: optionalString,
   email: optionalString,
   is_active: v.optional(v.boolean(), true),
+  can_see_money: v.optional(v.boolean(), true),
+  debts_only: v.optional(v.boolean(), false),
 })
 
 export const administratorPageSchema = pageSchema(administratorSchema)
@@ -34,5 +36,7 @@ export function toAdministrator(response: AdministratorResponse): Administrator 
     phoneNumber: response.phone_number,
     email: response.email,
     isActive: response.is_active,
+    canSeeMoney: response.can_see_money,
+    debtsOnly: response.debts_only,
   }
 }

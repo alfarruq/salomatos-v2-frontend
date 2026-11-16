@@ -1419,7 +1419,7 @@ export const handlers = [
   ),
 
   http.get('/api/v1/balances/', ({ request }) => {
-    const scope = guard(request, 'payment:view', true)
+    const scope = guard(request, 'finance:view', true)
     if (scope instanceof Response) return scope
     const params = new URL(request.url).searchParams
     const rows = balanceRows(scope)

@@ -17,7 +17,7 @@ import { Card, Skeleton } from '@/shared/ui'
  */
 export function PatientSummary({ clinicId }: { clinicId: string }) {
   const { t } = useTranslation('patients')
-  const canSeeMoney = useCan('payment:view')
+  const canSeeMoney = useCan('finance:view')
 
   const total = useQuery(patientQueries.list(clinicId, defaultPatientFilters))
   const archived = useQuery(

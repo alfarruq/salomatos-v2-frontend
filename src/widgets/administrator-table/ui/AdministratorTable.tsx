@@ -3,9 +3,15 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type Administrator, administratorQueries } from '@/entities/administrator'
+import { clinicQueries } from '@/entities/clinic'
+import { useCan } from '@/entities/session'
 import { CreateAdministratorDialog } from '@/features/administrator-create'
 import { DeleteAdministratorDialog } from '@/features/administrator-delete'
 import { EditAdministratorDialog } from '@/features/administrator-edit'
+import {
+  AdministratorMoneySwitches,
+  AdministratorsMoneySwitch,
+} from '@/features/administrator-money-access'
 import { InactiveStaffList } from '@/features/staff-reactivate'
 import {
   Button,
@@ -42,6 +48,9 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
 
   const query = useQuery(administratorQueries.list(clinicId))
   const inactiveQuery = useQuery(administratorQueries.inactive(clinicId))
+  const managesMoney = useCan('clinic:manage')
+  const clinicQuery = useQuery({ ...clinicQueries.mine(clinicId), enabled: managesMoney })
+  const adminsSeeMoney = clinicQuery.data?.adminsSeeMoney ?? true
 
   return (
     <div className="flex flex-col gap-4">
@@ -51,6 +60,8 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
           {t('admin:administrator.create')}
         </Button>
       </div>
+
+      {managesMoney ? <AdministratorsMoneySwitch clinicId={clinicId} /> : null}
 
       <QueryBoundary
         empty={
@@ -74,7 +85,7 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
         )}
         loading={
           <Table density="compact">
-            <TableSkeleton columns={4} rows={3} />
+            <TableSkeleton columns={4 + (managesMoney ? 1 : 0)} rows={3} />
           </Table>
         }
         query={query}
@@ -87,6 +98,9 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
                 <TableHead>{t('admin:administrator.username')}</TableHead>
                 <TableHead>{t('admin:administrator.phoneNumber')}</TableHead>
                 <TableHead>{t('admin:administrator.email')}</TableHead>
+                {managesMoney ? (
+                  <TableHead>{t('admin:administrator.money.column')}</TableHead>
+                ) : null}
                 <TableHead align="right">{t('common:action.edit')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -102,6 +116,15 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
                       : `+998-${formatSubscriber(subscriberDigitsOf(administrator.phoneNumber))}`}
                   </TableCell>
                   <TableCell>{administrator.email ?? EMPTY}</TableCell>
+                  {managesMoney ? (
+                    <TableCell>
+                      <AdministratorMoneySwitches
+                        administrator={administrator}
+                        clinicId={clinicId}
+                        disabled={!adminsSeeMoney}
+                      />
+                    </TableCell>
+                  ) : null}
                   <TableCell align="right">
                     <div className="flex justify-end gap-1">
                       <Button
