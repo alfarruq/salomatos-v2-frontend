@@ -1,10 +1,6 @@
 import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import {
-  type Appointment,
-  AppointmentStatusBadge,
-  isClosedAppointmentStatus,
-} from '@/entities/appointment'
+import { type Appointment, isClosedAppointmentStatus } from '@/entities/appointment'
 import { doctorColorOf } from '@/entities/doctor'
 import { type CalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
@@ -95,9 +91,6 @@ export function AppointmentWeekBoard({
                           </DropdownMenuItem>
                         )}
                       </DropdownMenu>
-                    </div>
-                    <div className="flex">
-                      <AppointmentStatusBadge status={appointment.status} />
                     </div>
                     <button
                       className="flex min-w-0 flex-col gap-1 rounded-control text-left hover:underline focus-visible:ring-2 focus-visible:ring-accent"
