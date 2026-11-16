@@ -88,6 +88,8 @@ export function PatientTable({
   // features meet here, not inside each other).
   const [treatmentFor, setTreatmentFor] = useState<NewPatientTreatment | null>(null)
   const canAddTreatment = useCan('procedure:manage')
+  // A doctor is already limited to their own patients, so the filter would only ever offer themselves.
+  const canFilterByDoctor = useCan('patient:view_all')
 
   const search = usePatientSearch()
   const query = useQuery(
@@ -177,13 +179,15 @@ export function PatientTable({
               rest wait behind "Filter" in a sheet rather than three selects
               stacked above the list. */}
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-            <FilterChip onClick={() => setFiltersOpen(true)}>
-              <SlidersHorizontal aria-hidden="true" className="size-4" />
-              {t('patients:filters.title')}
-              {extraFilterCount > 0 ? (
-                <span className="tabular-nums">· {extraFilterCount}</span>
-              ) : null}
-            </FilterChip>
+            {canFilterByDoctor ? (
+              <FilterChip onClick={() => setFiltersOpen(true)}>
+                <SlidersHorizontal aria-hidden="true" className="size-4" />
+                {t('patients:filters.title')}
+                {extraFilterCount > 0 ? (
+                  <span className="tabular-nums">· {extraFilterCount}</span>
+                ) : null}
+              </FilterChip>
+            ) : null}
             {statusOptions.map((option) => (
               <FilterChip
                 isActive={(filters.archived ? ARCHIVED : ACTIVE) === option.value}
@@ -205,20 +209,24 @@ export function PatientTable({
             title={t('patients:filters.title')}
           >
             <div className="flex flex-col gap-4">
-              {/* Not shown — the select's own visible options already say what it
-              filters. Kept for assistive tech, which still needs a name for it. */}
-              <label className="sr-only" htmlFor="patient-doctor-filter">
-                {t('patients:filters.doctorLabel')}
-              </label>
-              <Select
-                className="w-full"
-                icon={<UserRound className="size-4" />}
-                id="patient-doctor-filter"
-                onValueChange={handleDoctorChange}
-                options={doctorOptions}
-                size="sm"
-                value={filters.doctorId ?? FILTER_ALL}
-              />
+              {canFilterByDoctor ? (
+                <>
+                  {/* Not shown — the select's own visible options already say what it
+                filters. Kept for assistive tech, which still needs a name for it. */}
+                  <label className="sr-only" htmlFor="patient-doctor-filter">
+                    {t('patients:filters.doctorLabel')}
+                  </label>
+                  <Select
+                    className="w-full"
+                    icon={<UserRound className="size-4" />}
+                    id="patient-doctor-filter"
+                    onValueChange={handleDoctorChange}
+                    options={doctorOptions}
+                    size="sm"
+                    value={filters.doctorId ?? FILTER_ALL}
+                  />
+                </>
+              ) : null}
             </div>
           </Dialog>
         </div>

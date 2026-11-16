@@ -10,6 +10,7 @@ import {
   isClosedAppointmentStatus,
 } from '@/entities/appointment'
 import { doctorQueries } from '@/entities/doctor'
+import { useCan } from '@/entities/session'
 import { CancelAppointmentDialog } from '@/features/appointment-cancel'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
 import { EditAppointmentDialog } from '@/features/appointment-edit'
@@ -129,7 +130,9 @@ export function AppointmentCalendar({
 
   // A failed doctor list leaves only "all doctors": the schedule itself still works.
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const doctorSelect = (
+  // A doctor only ever sees their own schedule, so the filter would offer nothing else.
+  const canFilterByDoctor = useCan('appointment:view_all')
+  const doctorSelect = !canFilterByDoctor ? null : (
     <Select
       aria-label={t('appointments:filter.doctor')}
       className={cn(!isPhone && 'w-48')}
@@ -287,7 +290,7 @@ export function AppointmentCalendar({
       ) : null}
 
       {isPhone ? (
-        <div className="grid grid-cols-2 gap-2">
+        <div className={cn('grid gap-2', doctorSelect === null ? 'grid-cols-1' : 'grid-cols-2')}>
           {searchInput}
           {doctorSelect}
         </div>
