@@ -47,6 +47,7 @@ export const clinicSchema = v.object({
   address: v.optional(v.string(), ''),
   timezone: v.optional(v.string(), 'Asia/Tashkent'),
   working_hours: v.optional(v.unknown(), null),
+  doctors_see_money: v.optional(v.boolean(), true),
 })
 
 export type ClinicResponse = v.InferOutput<typeof clinicSchema>
@@ -59,6 +60,7 @@ export function toClinic(response: ClinicResponse): Clinic {
     address: response.address,
     timezone: response.timezone,
     workingHours: toWorkingHours(response.working_hours),
+    doctorsSeeMoney: response.doctors_see_money,
   }
 }
 

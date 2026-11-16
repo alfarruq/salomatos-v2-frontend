@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { KeyRound, Pencil, Trash2, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { clinicQueries } from '@/entities/clinic'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
 import { CompensationTerms } from '@/entities/expense'
@@ -11,6 +12,7 @@ import { CompensationDialog } from '@/features/doctor-compensation-set'
 import { CreateDoctorDialog } from '@/features/doctor-create'
 import { DeleteDoctorDialog } from '@/features/doctor-delete'
 import { EditDoctorDialog } from '@/features/doctor-edit'
+import { DoctorMoneySwitch, DoctorsMoneySwitch } from '@/features/doctor-money-access'
 import { InactiveStaffList } from '@/features/staff-reactivate'
 import { currentMonth } from '@/shared/lib/calendarMonth'
 import {
@@ -51,6 +53,10 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
   // UX only: the server leaves terms out of the rows and refuses changes without these.
   const seesPay = useCan('payroll:view')
   const managesPay = useCan('payroll:manage')
+  // Owner-only on the server (`clinic:manage`); admins never see the switches.
+  const managesMoney = useCan('clinic:manage')
+  const clinicQuery = useQuery({ ...clinicQueries.mine(clinicId), enabled: managesMoney })
+  const doctorsSeeMoney = clinicQuery.data?.doctorsSeeMoney ?? true
   const [deleting, setDeleting] = useState<Doctor | null>(null)
   const [showingBot, setShowingBot] = useState<Doctor | null>(null)
 
@@ -65,6 +71,8 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
           {t('admin:doctor.create')}
         </Button>
       </div>
+
+      {managesMoney ? <DoctorsMoneySwitch clinicId={clinicId} /> : null}
 
       <QueryBoundary
         empty={
@@ -88,7 +96,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
         )}
         loading={
           <Table density="compact">
-            <TableSkeleton columns={seesPay ? 6 : 5} rows={4} />
+            <TableSkeleton columns={5 + (seesPay ? 1 : 0) + (managesMoney ? 1 : 0)} rows={4} />
           </Table>
         }
         query={query}
@@ -103,6 +111,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
                 <TableHead>{t('admin:doctor.phoneNumber')}</TableHead>
                 <TableHead>{t('admin:doctor.email')}</TableHead>
                 {seesPay ? <TableHead>{t('admin:doctor.pay')}</TableHead> : null}
+                {managesMoney ? <TableHead>{t('admin:doctor.money.column')}</TableHead> : null}
                 <TableHead align="right">{t('common:action.edit')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -122,6 +131,15 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
                   {seesPay ? (
                     <TableCell className="whitespace-normal">
                       <CompensationTerms compensation={doctor.currentPay} />
+                    </TableCell>
+                  ) : null}
+                  {managesMoney ? (
+                    <TableCell>
+                      <DoctorMoneySwitch
+                        clinicId={clinicId}
+                        disabled={!doctorsSeeMoney}
+                        doctor={doctor}
+                      />
                     </TableCell>
                   ) : null}
                   <TableCell align="right">

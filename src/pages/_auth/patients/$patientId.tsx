@@ -40,6 +40,7 @@ import { TreatmentComposer } from '@/features/treatment-composer'
 import { VoidTreatmentDialog } from '@/features/treatment-void'
 import { ageOn, formatCalendarDate, todayCalendarDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
+import { formatSom } from '@/shared/lib/money'
 import {
   Alert,
   Button,
@@ -349,6 +350,8 @@ function PatientSidebar({
   const canTreat = useCan('procedure:manage')
   const canPrescribe = useCan('prescription:manage')
   const canBook = useCan('appointment:manage')
+  // A doctor the owner hides money from loses the billing card but still sees the debt.
+  const seesBilling = useCan('payment:view')
 
   const birthDate =
     patient.birthDate === null ? null : formatCalendarDate(patient.birthDate, locale)
@@ -426,6 +429,12 @@ function PatientSidebar({
         />
         <SidebarFact icon={<MapPin className="size-4" />} value={patient.address} />
       </div>
+
+      {seesBilling || patient.debt === null || patient.debt <= 0 ? null : (
+        <p className="border-t border-border pt-4 text-callout font-medium text-warning tabular-nums">
+          {t('patients:column.debt')}: {formatSom(patient.debt, locale, t('common:currency.som'))}
+        </p>
+      )}
 
       {patient.notes === null ? null : (
         <p className="border-t border-border pt-4 text-callout whitespace-pre-line text-text-secondary">

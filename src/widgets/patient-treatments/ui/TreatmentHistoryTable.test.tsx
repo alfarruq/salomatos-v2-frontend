@@ -121,4 +121,16 @@ describe('TreatmentHistoryTable', () => {
       screen.queryByRole('menuitem', { name: 'Yaroqsiz deb belgilash' }),
     ).not.toBeInTheDocument()
   })
+
+  it('hides the cost column from a doctor the owner hides money from', async () => {
+    const session = await fetchSession()
+    const permissions = new Set(session.permissions)
+    permissions.delete('money:view')
+    useSessionStore.getState().setSession({ ...session, permissions })
+
+    renderTable()
+
+    expect(await screen.findByText('Plomba')).toBeInTheDocument()
+    expect(screen.queryByText('Davolash qiymati')).not.toBeInTheDocument()
+  })
 })

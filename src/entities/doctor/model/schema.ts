@@ -35,6 +35,7 @@ export const staffSchema = v.object({
   specialty: v.optional(v.nullable(v.string()), null),
   specialty_name: optionalText,
   specialty_is_dental: v.optional(v.boolean(), false),
+  can_see_money: v.optional(v.boolean(), true),
   experience_years: v.optional(v.nullable(v.number()), null),
   current_compensation: v.optional(v.nullable(payTermsSchema), null),
 })
@@ -57,6 +58,7 @@ export function toDoctor(response: DoctorResponse): Doctor {
     doctorTypeId: response.specialty,
     doctorTypeName: response.specialty_name,
     isDental: response.specialty_is_dental,
+    canSeeMoney: response.can_see_money,
     experienceYears: response.experience_years,
     isActive: response.is_active,
     currentPay:

@@ -58,7 +58,11 @@ async function addService(name: string) {
 }
 
 describe('TreatmentComposer', () => {
-  beforeEach(() => signInAs('owner'))
+  beforeEach(async () => {
+    signInAs('owner')
+    // The price and paid columns follow the session's `money:view`.
+    useSessionStore.getState().setSession(await fetchSession())
+  })
 
   it('waits for a doctor before offering any service', async () => {
     renderComposer()
@@ -101,6 +105,21 @@ describe('TreatmentComposer', () => {
 
     expect(screen.getByRole('button', { name: "O'chirish — Tozalash" })).toBeInTheDocument()
     expect(screen.getByLabelText('Narx')).toHaveValue('200,000')
+  })
+
+  it('shows no price or paid field when money is hidden from the viewer', async () => {
+    const session = await fetchSession()
+    const permissions = new Set(session.permissions)
+    permissions.delete('money:view')
+    useSessionStore.getState().setSession({ ...session, permissions })
+
+    renderComposer()
+    await chooseDoctor(/Nodira Karimova/)
+    await addService('Tozalash')
+
+    expect(screen.getByRole('button', { name: "O'chirish — Tozalash" })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Narx')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: "To'liq to'landi" })).not.toBeInTheDocument()
   })
 
   it('clears unsaved rows when the doctor switches to another specialty', async () => {
