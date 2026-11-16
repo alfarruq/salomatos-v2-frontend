@@ -103,15 +103,15 @@ describe('expenses', () => {
     expect(page.results.map((row) => row.category)).toEqual(['materials'])
   })
 
-  it("keeps pay rows from a branch admin's journal", async () => {
+  it("refuses the journal to a branch admin: Moliya is the owner's", async () => {
     const range = rangeOf('week', today())
-    await expense({ category: 'doctor_share', amount: 400_000, doctor: DOCTOR })
     await expense({ category: 'materials', amount: 50_000 })
 
     signInAs('admin')
-    const page = await fetchExpenses({ from: range.from, to: range.to, category: null, page: 1 })
-    expect(page.results.map((row) => row.category)).toEqual(['materials'])
-    expect((await fetchExpenseSummary(range)).totals.payroll).toBe(0)
+    await expect(
+      fetchExpenses({ from: range.from, to: range.to, category: null, page: 1 }),
+    ).rejects.toMatchObject({ kind: 'forbidden' })
+    await expect(fetchExpenseSummary(range)).rejects.toMatchObject({ kind: 'forbidden' })
   })
 })
 

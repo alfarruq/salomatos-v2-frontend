@@ -76,6 +76,7 @@ const OWNER_PERMISSIONS = [
   'money:view',
   'patient:debt',
   'payment:view',
+  'finance:view',
   'payment:manage',
   'payment:void',
   'report:view',
@@ -110,6 +111,7 @@ const DOCTOR_PERMISSIONS = [
   'money:view',
   'patient:debt',
   'payment:view',
+  'finance:view',
   'patient:bot_access',
   // Their own figures only: the server narrows both to the caller.
   'statistics:view',
@@ -129,6 +131,11 @@ const ADMIN_PERMISSIONS = OWNER_PERMISSIONS.filter(
       'statistics:view_all',
       'staff:manage_owners',
       'audit:view',
+      // Moliya is the owner's: admins reach no report, expense or payments journal.
+      'finance:view',
+      'report:view',
+      'expense:view',
+      'expense:manage',
       'payment:void',
       'expense:void',
       'payroll:view',

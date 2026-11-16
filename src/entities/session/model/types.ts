@@ -39,6 +39,7 @@ export const PERMISSIONS = [
   'money:view',
   'patient:debt',
   'payment:view',
+  'finance:view',
   'payment:manage',
   'payment:void',
   'report:view',

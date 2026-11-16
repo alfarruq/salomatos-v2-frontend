@@ -120,7 +120,16 @@
     "deleteFailed": "Adminni o'chirib bo'lmadi. Qayta urinib ko'ring.",
     "editTitle": "Adminni tahrirlash",
     "editDescription": "Admin ma'lumotlarini o'zgartiring yoki yangi parol bering. Yangi parol uni barcha qurilmalardan chiqaradi.",
-    "editFailed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring."
+    "editFailed": "O'zgarishlarni saqlab bo'lmadi. Qayta urinib ko'ring.",
+    "money": {
+      "column": "Moliya",
+      "seesLabel": "Moliyani ko'rsin",
+      "debtsOnlyLabel": "Faqat qarzlar",
+      "allLabel": "Administratorlar moliyani ko'rsin",
+      "allOnHint": "Har bir administrator uchun quyidagi jadvalda alohida sozlang. Moliya bo'limi administratorga hech qachon ochilmaydi.",
+      "allOffHint": "Hech bir administrator pul ma'lumotini, hatto qarzni ham ko'rmaydi.",
+      "error": "Saqlab bo'lmadi. Qayta urinib ko'ring."
+    }
   },
   "staff": {
     "reactivate": "Qayta faollashtirish",

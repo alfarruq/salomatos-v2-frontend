@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type { Permission } from '@/entities/session'
 import { useCan } from '@/entities/session'
@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn'
 /** The finance tabs in one list; each one shows only to a role its server endpoints accept. */
 const TABS = [
   { to: '/finance', labelKey: 'tabs.overview', exact: true, permission: 'report:view' },
-  { to: '/finance/debtors', labelKey: 'tabs.debtors', exact: false, permission: 'payment:view' },
+  { to: '/finance/debtors', labelKey: 'tabs.debtors', exact: false, permission: 'finance:view' },
   { to: '/finance/expenses', labelKey: 'tabs.expenses', exact: false, permission: 'expense:view' },
   {
     to: '/finance/recurring',
@@ -24,6 +24,12 @@ const TABS = [
 }[]
 
 export const Route = createFileRoute('/_auth/finance')({
+  // UX only: an administrator never has Moliya, and the server refuses it too.
+  beforeLoad: ({ context }) => {
+    if (!context.session.permissions.has('finance:view')) {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
   component: FinanceLayout,
 })
 
@@ -31,7 +37,7 @@ function FinanceLayout() {
   const { t } = useTranslation('finance')
   const allowed = {
     'report:view': useCan('report:view'),
-    'payment:view': useCan('payment:view'),
+    'finance:view': useCan('finance:view'),
     'expense:view': useCan('expense:view'),
     'payroll:view': useCan('payroll:view'),
   }

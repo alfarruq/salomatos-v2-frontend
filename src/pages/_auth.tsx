@@ -211,7 +211,7 @@ function AuthenticatedLayout() {
               <SidebarLink icon={HandCoins} label={t('nav.earnings')} to="/earnings" />
             </li>
           </Can>
-          <Can permission="payment:view">
+          <Can permission="finance:view">
             <li>
               <SidebarLink icon={Wallet} label={t('nav.billing')} to="/finance" />
             </li>

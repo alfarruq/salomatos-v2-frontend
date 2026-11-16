@@ -61,12 +61,9 @@ describe('fetchFinanceOverview', () => {
     expect(overview.paymentMethods).toEqual([{ method: 'cash', amount: 150_000 }])
   })
 
-  it('leaves profit out for a viewer who may not see pay', async () => {
+  it("is refused to a branch administrator: Moliya is the owner's", async () => {
     signInAs('admin')
-    const overview = await fetchFinanceOverview(august)
-
-    expect(overview.includesPayroll).toBe(false)
-    expect(overview.totals.profit).toBeNull()
+    await expect(fetchFinanceOverview(august)).rejects.toMatchObject({ kind: 'forbidden' })
   })
 
   it('is refused to a doctor', async () => {

@@ -120,7 +120,16 @@
     "deleteFailed": "Could not delete the admin. Please try again.",
     "editTitle": "Edit admin",
     "editDescription": "Change the admin's details or set a new password. A new password signs them out everywhere.",
-    "editFailed": "Could not save the changes. Try again."
+    "editFailed": "Could not save the changes. Try again.",
+    "money": {
+      "column": "Finance",
+      "seesLabel": "Sees finance",
+      "debtsOnlyLabel": "Debts only",
+      "allLabel": "Administrators see finance",
+      "allOnHint": "Set each administrator separately in the table below. The Finance section is never open to an administrator.",
+      "allOffHint": "No administrator sees any money figure, not even debts.",
+      "error": "Could not save. Try again."
+    }
   },
   "staff": {
     "reactivate": "Reactivate",
