@@ -111,6 +111,7 @@ const DOCTOR_PERMISSIONS = [
   'money:view',
   'patient:debt',
   'payment:view',
+  'payment:manage',
   'finance:view',
   'patient:bot_access',
   // Their own figures only: the server narrows both to the caller.
