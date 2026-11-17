@@ -111,7 +111,8 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
     filters.treatmentTypeId !== null ||
     filters.status !== null ||
     filters.dateFrom !== null ||
-    filters.dateTo !== null
+    filters.dateTo !== null ||
+    filters.hasDebt
   // Without `money:view` the money column is not theirs.
   const canSeeMoney = useCan('money:view')
   // Debt is a separate right: someone kept away from prices still sees who owes.

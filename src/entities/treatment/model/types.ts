@@ -21,6 +21,8 @@ export interface TreatmentListFilters {
   /** Clinic-calendar days, both inclusive. */
   dateFrom: CalendarDate | null
   dateTo: CalendarDate | null
+  /** Only lines of patients who owe; the server ignores it without `patient:debt`. */
+  hasDebt: boolean
 }
 
 export const defaultTreatmentListFilters: TreatmentListFilters = {
@@ -31,6 +33,7 @@ export const defaultTreatmentListFilters: TreatmentListFilters = {
   status: null,
   dateFrom: null,
   dateTo: null,
+  hasDebt: false,
 }
 
 /** One performed procedure (`ProcedureSerializer`) — the slice keeps its old name. */

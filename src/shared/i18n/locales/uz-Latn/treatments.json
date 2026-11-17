@@ -112,7 +112,10 @@
     "clear": "Filtrlarni tozalash",
     "patientLoading": "Bemor",
     "dateFrom": "Sanadan",
-    "dateTo": "Sanagacha"
+    "dateTo": "Sanagacha",
+    "debtLabel": "Qarz bo'yicha filtr",
+    "debtAll": "Hammasi",
+    "debtOnly": "Faqat qarzdorlar"
   },
   "status": {
     "done": "Bajarildi",

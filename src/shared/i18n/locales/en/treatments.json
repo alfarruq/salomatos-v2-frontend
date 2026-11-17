@@ -112,7 +112,10 @@
     "clear": "Clear filters",
     "patientLoading": "Patient",
     "dateFrom": "From date",
-    "dateTo": "To date"
+    "dateTo": "To date",
+    "debtLabel": "Debt filter",
+    "debtAll": "Everyone",
+    "debtOnly": "Debtors only"
   },
   "status": {
     "done": "Done",

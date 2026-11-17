@@ -29,6 +29,8 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
   const typesQuery = useQuery(treatmentTypeQueries.list(clinicId))
   // A doctor's list holds only their own work, so a doctor filter would offer nothing else.
   const canFilterByDoctor = useCan('patient:view_all')
+  // The server ignores the debt filter without this right, so the control is offered only with it.
+  const canFilterByDebt = useCan('patient:debt')
 
   const change = (patch: Partial<TreatmentListFilters>) =>
     onFiltersChange({ ...filters, ...patch, page: 1 })
@@ -86,6 +88,20 @@ export function TreatmentFilters({ clinicId, filters, onFiltersChange }: Treatme
         size="sm"
         value={filters.status ?? FILTER_ALL}
       />
+
+      {canFilterByDebt ? (
+        <Select
+          aria-label={t('filters.debtLabel')}
+          className="w-auto shrink-0"
+          onValueChange={(value) => change({ hasDebt: value === 'debtors' })}
+          options={[
+            { value: FILTER_ALL, label: t('filters.debtAll') },
+            { value: 'debtors', label: t('filters.debtOnly') },
+          ]}
+          size="sm"
+          value={filters.hasDebt ? 'debtors' : FILTER_ALL}
+        />
+      ) : null}
 
       {/* One range: the two days wrap together on a narrow screen. */}
       <div className="flex items-center gap-2">
