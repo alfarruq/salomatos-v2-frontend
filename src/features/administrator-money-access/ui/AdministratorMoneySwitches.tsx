@@ -26,7 +26,8 @@ export function AdministratorMoneySwitches({
   const debtsOnly = pending?.debtsOnly ?? administrator.debtsOnly
 
   return (
-    <div className="flex flex-col gap-2">
+    // Side by side, so the two switches do not make the row twice as tall as its neighbours.
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <Switch
         aria-label={`${t('administrator.money.seesLabel')} — ${administrator.fullName}`}
         checked={canSeeMoney}
@@ -46,7 +47,7 @@ export function AdministratorMoneySwitches({
         }
       />
       {mutation.isError ? (
-        <p className="text-caption text-danger" role="alert">
+        <p className="w-full text-caption text-danger" role="alert">
           {t('administrator.money.error')}
         </p>
       ) : null}

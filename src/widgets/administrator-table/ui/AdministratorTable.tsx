@@ -14,6 +14,7 @@ import {
 } from '@/features/administrator-money-access'
 import { InactiveStaffList } from '@/features/staff-reactivate'
 import {
+  Avatar,
   Button,
   EmptyState,
   ErrorState,
@@ -84,20 +85,18 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
           />
         )}
         loading={
-          <Table density="compact">
-            <TableSkeleton columns={4 + (managesMoney ? 1 : 0)} rows={3} />
+          <Table density="comfortable">
+            <TableSkeleton columns={3 + (managesMoney ? 1 : 0)} rows={3} />
           </Table>
         }
         query={query}
       >
         {(administrators) => (
-          <Table density="compact">
+          <Table density="comfortable">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('admin:administrator.fullName')}</TableHead>
-                <TableHead>{t('admin:administrator.username')}</TableHead>
-                <TableHead>{t('admin:administrator.phoneNumber')}</TableHead>
-                <TableHead>{t('admin:administrator.email')}</TableHead>
+                <TableHead>{t('admin:administrator.contact')}</TableHead>
                 {managesMoney ? (
                   <TableHead>{t('admin:administrator.money.column')}</TableHead>
                 ) : null}
@@ -108,14 +107,34 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
             <TableBody>
               {administrators.map((administrator) => (
                 <TableRow key={administrator.id}>
-                  <TableCell>{administrator.fullName}</TableCell>
-                  <TableCell>{administrator.username ?? EMPTY}</TableCell>
                   <TableCell>
-                    {administrator.phoneNumber === null
-                      ? EMPTY
-                      : `+998-${formatSubscriber(subscriberDigitsOf(administrator.phoneNumber))}`}
+                    <div className="flex items-center gap-3">
+                      {/* One fixed colour for every admin: unlike doctors they have no specialty to tell apart. */}
+                      <Avatar className="size-10" name={administrator.fullName} tone={6} />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="font-semibold text-text">{administrator.fullName}</span>
+                        {administrator.username === null ? null : (
+                          <span className="text-callout text-text-secondary">
+                            @{administrator.username}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>{administrator.email ?? EMPTY}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span>
+                        {administrator.phoneNumber === null
+                          ? EMPTY
+                          : `+998-${formatSubscriber(subscriberDigitsOf(administrator.phoneNumber))}`}
+                      </span>
+                      {administrator.email === null ? null : (
+                        <span className="text-callout text-text-secondary">
+                          {administrator.email}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   {managesMoney ? (
                     <TableCell>
                       <AdministratorMoneySwitches

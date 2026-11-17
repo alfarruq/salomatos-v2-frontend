@@ -129,7 +129,8 @@
       "allOnHint": "Set each administrator separately in the table below. The Finance section is never open to an administrator.",
       "allOffHint": "No administrator sees any money figure, not even debts.",
       "error": "Could not save. Try again."
-    }
+    },
+    "contact": "Contact"
   },
   "staff": {
     "reactivate": "Reactivate",
