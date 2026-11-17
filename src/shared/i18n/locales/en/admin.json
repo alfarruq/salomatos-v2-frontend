@@ -43,7 +43,8 @@
       "allOnHint": "Turn it on or off per doctor in the table below.",
       "allOffHint": "No doctor sees prices, payments or totals. Patient debt stays visible.",
       "error": "Could not save. Try again."
-    }
+    },
+    "contact": "Contact"
   },
   "service": {
     "name": "Service",

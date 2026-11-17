@@ -83,6 +83,7 @@ export {
   type RecurringCategory,
   type RecurringExpense,
 } from './model/types'
+export { CompensationBadge } from './ui/CompensationBadge'
 export { CompensationTerms } from './ui/CompensationTerms'
 export { ExpenseFormFields, type ExpenseFormFieldsProps } from './ui/ExpenseFormFields'
 export { PayTermsFields, type PayTermsFieldsProps } from './ui/PayTermsFields'

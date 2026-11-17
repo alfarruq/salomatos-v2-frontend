@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { clinicQueries } from '@/entities/clinic'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
-import { CompensationTerms } from '@/entities/expense'
+import { DoctorTypeBadge, doctorTypeToneOf } from '@/entities/doctor-type'
+import { CompensationBadge } from '@/entities/expense'
 import { useCan } from '@/entities/session'
 import { BotAccessDialog } from '@/features/bot-access-manage'
 import { CompensationDialog } from '@/features/doctor-compensation-set'
@@ -16,6 +17,7 @@ import { DoctorMoneySwitch, DoctorsMoneySwitch } from '@/features/doctor-money-a
 import { InactiveStaffList } from '@/features/staff-reactivate'
 import { currentMonth } from '@/shared/lib/calendarMonth'
 import {
+  Avatar,
   Button,
   EmptyState,
   ErrorState,
@@ -95,21 +97,19 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
           />
         )}
         loading={
-          <Table density="compact">
-            <TableSkeleton columns={5 + (seesPay ? 1 : 0) + (managesMoney ? 1 : 0)} rows={4} />
+          <Table density="comfortable">
+            <TableSkeleton columns={4 + (seesPay ? 1 : 0) + (managesMoney ? 1 : 0)} rows={4} />
           </Table>
         }
         query={query}
       >
         {(doctors) => (
-          <Table density="compact">
+          <Table density="comfortable">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('admin:doctor.fullName')}</TableHead>
-                <TableHead>{t('admin:doctor.username')}</TableHead>
                 <TableHead>{t('admin:doctor.type')}</TableHead>
-                <TableHead>{t('admin:doctor.phoneNumber')}</TableHead>
-                <TableHead>{t('admin:doctor.email')}</TableHead>
+                <TableHead>{t('admin:doctor.contact')}</TableHead>
                 {seesPay ? <TableHead>{t('admin:doctor.pay')}</TableHead> : null}
                 {managesMoney ? <TableHead>{t('admin:doctor.money.column')}</TableHead> : null}
                 <TableHead align="right">{t('common:action.edit')}</TableHead>
@@ -117,71 +117,114 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
             </TableHeader>
 
             <TableBody>
-              {doctors.map((doctor) => (
-                <TableRow key={doctor.id}>
-                  <TableCell>{doctor.fullName}</TableCell>
-                  <TableCell>{doctor.username ?? EMPTY}</TableCell>
-                  <TableCell>{doctor.doctorTypeName ?? EMPTY}</TableCell>
-                  <TableCell>
-                    {doctor.phoneNumber === null
-                      ? EMPTY
-                      : `+998-${formatSubscriber(subscriberDigitsOf(doctor.phoneNumber))}`}
-                  </TableCell>
-                  <TableCell>{doctor.email ?? EMPTY}</TableCell>
-                  {seesPay ? (
-                    <TableCell className="whitespace-normal">
-                      <CompensationTerms compensation={doctor.currentPay} />
-                    </TableCell>
-                  ) : null}
-                  {managesMoney ? (
+              {doctors.map((doctor) => {
+                const typeTone = doctorTypeToneOf(doctor.doctorTypeId, doctor.isDental)
+                return (
+                  <TableRow key={doctor.id}>
                     <TableCell>
-                      <DoctorMoneySwitch
-                        clinicId={clinicId}
-                        disabled={!doctorsSeeMoney}
-                        doctor={doctor}
-                      />
+                      <div className="flex items-center gap-3">
+                        {/* Same colour as the type badge, so a specialty is recognisable down the list. */}
+                        <Avatar
+                          className="size-10"
+                          name={doctor.fullName}
+                          {...(typeTone === undefined ? {} : { tone: typeTone })}
+                        />
+                        <div className="flex min-w-0 flex-col">
+                          <span className="font-semibold text-text">{doctor.fullName}</span>
+                          {doctor.username === null ? null : (
+                            <span className="text-callout text-text-secondary">
+                              @{doctor.username}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
-                  ) : null}
-                  <TableCell align="right">
-                    <div className="flex justify-end gap-1">
-                      {managesPay ? (
+                    <TableCell>
+                      {doctor.doctorTypeName === null ? (
+                        EMPTY
+                      ) : (
+                        <DoctorTypeBadge name={doctor.doctorTypeName} tone={typeTone} />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>
+                          {doctor.phoneNumber === null
+                            ? EMPTY
+                            : `+998-${formatSubscriber(subscriberDigitsOf(doctor.phoneNumber))}`}
+                        </span>
+                        {doctor.email === null ? null : (
+                          <span className="text-callout text-text-secondary">{doctor.email}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    {seesPay ? (
+                      <TableCell>
+                        {doctor.currentPay === null && managesPay ? (
+                          // Missing terms are the one thing to act on here, so the label opens the form.
+                          <button
+                            aria-label={`${t('expenses:payroll.terms.open')} — ${doctor.fullName}`}
+                            className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                            onClick={() => setSettingPay(doctor)}
+                            type="button"
+                          >
+                            <CompensationBadge compensation={null} />
+                          </button>
+                        ) : (
+                          <CompensationBadge compensation={doctor.currentPay} />
+                        )}
+                      </TableCell>
+                    ) : null}
+                    {managesMoney ? (
+                      <TableCell>
+                        <DoctorMoneySwitch
+                          clinicId={clinicId}
+                          disabled={!doctorsSeeMoney}
+                          doctor={doctor}
+                        />
+                      </TableCell>
+                    ) : null}
+                    <TableCell align="right">
+                      <div className="flex justify-end gap-1">
+                        {managesPay ? (
+                          <Button
+                            aria-label={`${t('expenses:payroll.terms.open')} — ${doctor.fullName}`}
+                            onClick={() => setSettingPay(doctor)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <Wallet aria-hidden="true" className="size-4" />
+                          </Button>
+                        ) : null}
                         <Button
-                          aria-label={`${t('expenses:payroll.terms.open')} — ${doctor.fullName}`}
-                          onClick={() => setSettingPay(doctor)}
+                          aria-label={`${t('bot:open')} — ${doctor.fullName}`}
+                          onClick={() => setShowingBot(doctor)}
                           size="sm"
                           variant="ghost"
                         >
-                          <Wallet aria-hidden="true" className="size-4" />
+                          <KeyRound aria-hidden="true" className="size-4" />
                         </Button>
-                      ) : null}
-                      <Button
-                        aria-label={`${t('bot:open')} — ${doctor.fullName}`}
-                        onClick={() => setShowingBot(doctor)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <KeyRound aria-hidden="true" className="size-4" />
-                      </Button>
-                      <Button
-                        aria-label={`${t('common:action.edit')} — ${doctor.fullName}`}
-                        onClick={() => setEditing(doctor)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Pencil aria-hidden="true" className="size-4" />
-                      </Button>
-                      <Button
-                        aria-label={`${t('common:action.delete')} — ${doctor.fullName}`}
-                        onClick={() => setDeleting(doctor)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Trash2 aria-hidden="true" className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <Button
+                          aria-label={`${t('common:action.edit')} — ${doctor.fullName}`}
+                          onClick={() => setEditing(doctor)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <Pencil aria-hidden="true" className="size-4" />
+                        </Button>
+                        <Button
+                          aria-label={`${t('common:action.delete')} — ${doctor.fullName}`}
+                          onClick={() => setDeleting(doctor)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <Trash2 aria-hidden="true" className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         )}

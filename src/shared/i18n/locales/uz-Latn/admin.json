@@ -43,7 +43,8 @@
       "allOnHint": "Har bir shifokor uchun quyidagi jadvalda alohida yoqing yoki o'chiring.",
       "allOffHint": "Hech bir shifokor narx, to'lov va umumiy summalarni ko'rmaydi. Bemor qarzi ko'rinib turadi.",
       "error": "Saqlab bo'lmadi. Qayta urinib ko'ring."
-    }
+    },
+    "contact": "Aloqa"
   },
   "service": {
     "name": "Xizmat",
