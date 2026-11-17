@@ -129,7 +129,8 @@
       "allOnHint": "Har bir administrator uchun quyidagi jadvalda alohida sozlang. Moliya bo'limi administratorga hech qachon ochilmaydi.",
       "allOffHint": "Hech bir administrator pul ma'lumotini, hatto qarzni ham ko'rmaydi.",
       "error": "Saqlab bo'lmadi. Qayta urinib ko'ring."
-    }
+    },
+    "contact": "Aloqa"
   },
   "staff": {
     "reactivate": "Qayta faollashtirish",
