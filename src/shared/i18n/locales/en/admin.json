@@ -162,7 +162,6 @@
     "closeFailed": "Could not close the branch. Please try again.",
     "lastBranch": "The last open branch cannot be closed.",
     "reopen": "Reopen",
-    "workingIn": "You are working in the “{{name}}” branch. Switch branch at the top to manage another one.",
     "move": {
       "action": "Move patients",
       "title": "Move patients to “{{name}}”",
