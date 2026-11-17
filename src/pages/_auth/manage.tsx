@@ -54,15 +54,6 @@ function AdminLayout() {
       <div className="flex flex-col gap-2">
         <h1 className="text-title1 text-text">{t('admin:title')}</h1>
         <p className="text-callout text-text-secondary">{t('admin:subtitle')}</p>
-        {/*
-         * Staff, prices and the profile below belong to one branch. Said only when
-         * there is more than one, so a single-branch clinic never meets the word.
-         */}
-        {session.memberships.length > 1 ? (
-          <p className="text-callout text-text-secondary">
-            {t('admin:branch.workingIn', { name: session.scopeName })}
-          </p>
-        ) : null}
       </div>
 
       {/*
