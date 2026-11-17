@@ -18,6 +18,13 @@ const money = v.pipe(
   v.check((value: number) => Number.isFinite(value)),
 )
 
+/** The patient's whole debt (not this line's share); null without `patient:debt`. */
+const patientDebt = v.pipe(
+  v.optional(v.nullable(v.union([v.string(), v.number()])), null),
+  v.transform((value) => (value === null ? null : Number(value))),
+  v.check((value) => value === null || Number.isFinite(value)),
+)
+
 const SURFACES: readonly ToothSurface[] = ['M', 'O', 'D', 'B', 'L', 'I']
 
 /** `ProcedureSerializer`, validated at runtime (ADR-006). */
@@ -39,6 +46,7 @@ export const treatmentSchema = v.object({
   quantity: v.optional(v.number(), 1),
   unit_price: money,
   total: money,
+  patient_debt: patientDebt,
   performed_at: v.pipe(v.string(), v.isoTimestamp()),
   status: v.optional(v.picklist(['in_progress', 'completed']), 'completed'),
   completed_at: v.optional(v.nullable(v.string()), null),
@@ -71,6 +79,7 @@ export function toTreatment(response: TreatmentResponse): Treatment {
     quantity: response.quantity,
     unitPrice: response.unit_price,
     totalTreatmentCost: response.total,
+    patientDebt: response.patient_debt,
     performedAt: response.performed_at,
     startDate: clinicDayOf(response.performed_at),
     notes: response.notes,

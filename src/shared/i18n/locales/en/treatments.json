@@ -18,7 +18,8 @@
     "actionEdit": "Edit",
     "actionDelete": "Delete",
     "actionComplete": "Complete procedure",
-    "actionPay": "Accept payment"
+    "actionPay": "Accept payment",
+    "columnPatientDebt": "Patient debt"
   },
   "detail": {
     "title": "Treatment details",

@@ -18,7 +18,8 @@
     "actionEdit": "Таҳрирлаш",
     "actionDelete": "Ўчириш",
     "actionComplete": "Муолажани якунлаш",
-    "actionPay": "Тўлов қабул қилиш"
+    "actionPay": "Тўлов қабул қилиш",
+    "columnPatientDebt": "Бемор қарзи"
   },
   "detail": {
     "title": "Муолажа маълумотлари",

@@ -18,7 +18,8 @@
     "actionEdit": "Редактировать",
     "actionDelete": "Удалить",
     "actionComplete": "Завершить процедуру",
-    "actionPay": "Принять оплату"
+    "actionPay": "Принять оплату",
+    "columnPatientDebt": "Долг пациента"
   },
   "detail": {
     "title": "Сведения о лечении",

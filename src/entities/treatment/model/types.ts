@@ -50,6 +50,8 @@ export interface Treatment {
   unitPrice: number
   /** `quantity × unitPrice`, as the server computed it. */
   totalTreatmentCost: number
+  /** What the line's patient owes in total; null when the caller may not see debt. */
+  patientDebt: number | null
   /** UTC ISO-8601 instant. */
   performedAt: string
   /** `performedAt` on the clinic's calendar. */

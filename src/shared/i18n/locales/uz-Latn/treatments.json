@@ -18,7 +18,8 @@
     "actionEdit": "Tahrirlash",
     "actionDelete": "O'chirish",
     "actionComplete": "Muolajani yakunlash",
-    "actionPay": "To'lov qabul qilish"
+    "actionPay": "To'lov qabul qilish",
+    "columnPatientDebt": "Bemor qarzi"
   },
   "detail": {
     "title": "Muolaja ma'lumotlari",
