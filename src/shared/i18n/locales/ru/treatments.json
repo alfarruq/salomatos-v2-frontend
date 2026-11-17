@@ -18,7 +18,8 @@
     "actionEdit": "Редактировать",
     "actionDelete": "Удалить",
     "actionComplete": "Завершить процедуру",
-    "actionPay": "Принять оплату"
+    "actionPay": "Принять оплату",
+    "columnPatientDebt": "Долг пациента"
   },
   "detail": {
     "title": "Сведения о лечении",
@@ -111,7 +112,10 @@
     "clear": "Сбросить фильтры",
     "patientLoading": "Пациент",
     "dateFrom": "С даты",
-    "dateTo": "По дату"
+    "dateTo": "По дату",
+    "debtLabel": "Фильтр по долгу",
+    "debtAll": "Все",
+    "debtOnly": "Только должники"
   },
   "status": {
     "done": "Выполнено",

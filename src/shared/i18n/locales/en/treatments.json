@@ -18,7 +18,8 @@
     "actionEdit": "Edit",
     "actionDelete": "Delete",
     "actionComplete": "Complete procedure",
-    "actionPay": "Accept payment"
+    "actionPay": "Accept payment",
+    "columnPatientDebt": "Patient debt"
   },
   "detail": {
     "title": "Treatment details",
@@ -111,7 +112,10 @@
     "clear": "Clear filters",
     "patientLoading": "Patient",
     "dateFrom": "From date",
-    "dateTo": "To date"
+    "dateTo": "To date",
+    "debtLabel": "Debt filter",
+    "debtAll": "Everyone",
+    "debtOnly": "Debtors only"
   },
   "status": {
     "done": "Done",

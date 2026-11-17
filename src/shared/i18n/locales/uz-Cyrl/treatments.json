@@ -18,7 +18,8 @@
     "actionEdit": "Таҳрирлаш",
     "actionDelete": "Ўчириш",
     "actionComplete": "Муолажани якунлаш",
-    "actionPay": "Тўлов қабул қилиш"
+    "actionPay": "Тўлов қабул қилиш",
+    "columnPatientDebt": "Бемор қарзи"
   },
   "detail": {
     "title": "Муолажа маълумотлари",
@@ -111,7 +112,10 @@
     "clear": "Фильтрларни тозалаш",
     "patientLoading": "Бемор",
     "dateFrom": "Санадан",
-    "dateTo": "Санагача"
+    "dateTo": "Санагача",
+    "debtLabel": "Қарз бўйича фильтр",
+    "debtAll": "Ҳаммаси",
+    "debtOnly": "Фақат қарздорлар"
   },
   "status": {
     "done": "Бажарилди",

@@ -50,6 +50,7 @@ function toPageQuery(filters: TreatmentListFilters): string {
       params.set('status', filters.status === 'inProgress' ? 'in_progress' : 'completed')
     }
   }
+  if (filters.hasDebt) params.set('has_debt', 'true')
   // Days are the clinic's (§14): midnight in Tashkent, sent as UTC instants; "to" is inclusive.
   if (filters.dateFrom !== null)
     params.set('performed_from', clinicInstantOf(filters.dateFrom, '00:00'))

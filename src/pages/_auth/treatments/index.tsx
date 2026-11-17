@@ -24,6 +24,7 @@ const treatmentsSearchSchema = v.object({
   status: v.optional(v.picklist(['done', 'inProgress', 'voided'])),
   from: day,
   to: day,
+  debt: v.optional(v.literal(true)),
 })
 
 type TreatmentsSearch = v.InferOutput<typeof treatmentsSearchSchema>
@@ -54,6 +55,7 @@ function TreatmentsPage() {
     status: search.status ?? null,
     dateFrom: search.from ?? null,
     dateTo: search.to ?? null,
+    hasDebt: search.debt === true,
   }
 
   return (
@@ -97,6 +99,7 @@ function TreatmentsPage() {
               ...(next.status === null ? {} : { status: next.status }),
               ...(next.dateFrom === null ? {} : { from: next.dateFrom }),
               ...(next.dateTo === null ? {} : { to: next.dateTo }),
+              ...(next.hasDebt ? { debt: true as const } : {}),
             }),
             to: '/treatments',
           })

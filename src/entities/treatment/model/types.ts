@@ -21,6 +21,8 @@ export interface TreatmentListFilters {
   /** Clinic-calendar days, both inclusive. */
   dateFrom: CalendarDate | null
   dateTo: CalendarDate | null
+  /** Only lines of patients who owe; the server ignores it without `patient:debt`. */
+  hasDebt: boolean
 }
 
 export const defaultTreatmentListFilters: TreatmentListFilters = {
@@ -31,6 +33,7 @@ export const defaultTreatmentListFilters: TreatmentListFilters = {
   status: null,
   dateFrom: null,
   dateTo: null,
+  hasDebt: false,
 }
 
 /** One performed procedure (`ProcedureSerializer`) — the slice keeps its old name. */
@@ -50,6 +53,8 @@ export interface Treatment {
   unitPrice: number
   /** `quantity × unitPrice`, as the server computed it. */
   totalTreatmentCost: number
+  /** What the line's patient owes in total; null when the caller may not see debt. */
+  patientDebt: number | null
   /** UTC ISO-8601 instant. */
   performedAt: string
   /** `performedAt` on the clinic's calendar. */

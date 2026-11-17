@@ -111,9 +111,12 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
     filters.treatmentTypeId !== null ||
     filters.status !== null ||
     filters.dateFrom !== null ||
-    filters.dateTo !== null
+    filters.dateTo !== null ||
+    filters.hasDebt
   // Without `money:view` the money column is not theirs.
   const canSeeMoney = useCan('money:view')
+  // Debt is a separate right: someone kept away from prices still sees who owes.
+  const canSeeDebt = useCan('patient:debt')
   const navigate = useNavigate()
   const [editing, setEditing] = useState<Treatment | null>(null)
   const [paying, setPaying] = useState<Treatment | null>(null)
@@ -192,7 +195,10 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
         isEmpty={(data) => data.results.length === 0}
         loading={
           <Table>
-            <TableSkeleton columns={canSeeMoney ? 8 : 7} rows={PAGE_SIZE} />
+            <TableSkeleton
+              columns={7 + (canSeeMoney ? 1 : 0) + (canSeeDebt ? 1 : 0)}
+              rows={PAGE_SIZE}
+            />
           </Table>
         }
         query={query}
@@ -209,6 +215,9 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                   <TableHead align="center">{t('treatments:table.columnTooth')}</TableHead>
                   {canSeeMoney ? (
                     <TableHead align="right">{t('treatments:table.columnCost')}</TableHead>
+                  ) : null}
+                  {canSeeDebt ? (
+                    <TableHead align="right">{t('treatments:table.columnPatientDebt')}</TableHead>
                   ) : null}
                   <TableHead>{t('treatments:table.columnStatus')}</TableHead>
                   <TableHead align="right">
@@ -253,6 +262,21 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                         )}
                       >
                         {money(treatment.totalTreatmentCost)}
+                      </TableCell>
+                    ) : null}
+                    {canSeeDebt ? (
+                      <TableCell
+                        align="right"
+                        className={cn(
+                          'whitespace-nowrap tabular-nums',
+                          treatment.patientDebt !== null && treatment.patientDebt > 0
+                            ? 'font-medium text-warning'
+                            : 'text-text-tertiary',
+                        )}
+                      >
+                        {treatment.patientDebt === null || treatment.patientDebt <= 0
+                          ? EMPTY
+                          : money(treatment.patientDebt)}
                       </TableCell>
                     ) : null}
                     <TableCell>

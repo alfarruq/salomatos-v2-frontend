@@ -16,6 +16,7 @@ function treatment(overrides: Partial<Treatment>): Treatment {
     quantity: 1,
     unitPrice: 100,
     totalTreatmentCost: 100,
+    patientDebt: null,
     performedAt: '2026-09-01T06:00:00Z',
     startDate: '2026-09-01',
     notes: null,
