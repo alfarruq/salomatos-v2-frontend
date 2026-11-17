@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router'
+import { Building2, GitBranch, ListPlus, Send, Shapes, UserCog, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/cn'
 
@@ -10,13 +11,18 @@ import { cn } from '@/shared/lib/cn'
  * that it stays the only place a section is declared.
  */
 const SECTIONS = [
-  { to: '/manage/doctors', labelKey: 'admin:nav.doctors' },
-  { to: '/manage/doctor-types', labelKey: 'admin:nav.doctorTypes' },
-  { to: '/manage/admins', labelKey: 'admin:nav.admins' },
-  { to: '/manage/services', labelKey: 'admin:nav.services' },
-  { to: '/manage/clinic', labelKey: 'admin:nav.clinic' },
-  { to: '/manage/branches', labelKey: 'admin:nav.branches', permission: 'branch:manage' },
-  { to: '/manage/bot', labelKey: 'admin:nav.bot' },
+  { to: '/manage/doctors', icon: Users, labelKey: 'admin:nav.doctors' },
+  { to: '/manage/doctor-types', icon: Shapes, labelKey: 'admin:nav.doctorTypes' },
+  { to: '/manage/admins', icon: UserCog, labelKey: 'admin:nav.admins' },
+  { to: '/manage/services', icon: ListPlus, labelKey: 'admin:nav.services' },
+  { to: '/manage/clinic', icon: Building2, labelKey: 'admin:nav.clinic' },
+  {
+    to: '/manage/branches',
+    icon: GitBranch,
+    labelKey: 'admin:nav.branches',
+    permission: 'branch:manage',
+  },
+  { to: '/manage/bot', icon: Send, labelKey: 'admin:nav.bot' },
 ] as const
 
 /**
@@ -70,12 +76,13 @@ function AdminLayout() {
               <Link
                 activeProps={{ 'data-active': 'true' }}
                 className={cn(
-                  'block rounded-t-control px-4 py-2 text-body whitespace-nowrap text-text-secondary',
+                  'flex items-center gap-2 rounded-t-control px-4 py-2 text-body whitespace-nowrap text-text-secondary',
                   'border-b-2 border-transparent transition-colors duration-150 ease-out-apple',
-                  'hover:text-text data-[active=true]:border-accent data-[active=true]:text-text',
+                  'hover:text-text data-[active=true]:border-accent data-[active=true]:text-accent-text',
                 )}
                 to={section.to}
               >
+                <section.icon aria-hidden className="size-4 shrink-0" />
                 {t(section.labelKey)}
               </Link>
             </li>
