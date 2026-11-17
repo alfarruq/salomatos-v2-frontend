@@ -50,7 +50,8 @@ function AdminLayout() {
   )
 
   return (
-    <div className="flex flex-col gap-6">
+    // Capped so tables and forms do not stretch edge to edge on large monitors.
+    <div className="flex max-w-6xl flex-col gap-6">
       <h1 className="text-title1 text-text">{t('admin:title')}</h1>
 
       {/*
