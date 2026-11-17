@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { doctorTypeQueries } from '@/entities/doctor-type'
+import type { DoctorType } from '@/entities/doctor-type'
+import { DoctorTypeBadge, doctorTypeQueries, doctorTypeToneOf } from '@/entities/doctor-type'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
 import { CreateTreatmentTypeDialog } from '@/features/treatment-type-create'
@@ -61,9 +62,9 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
   const query = useQuery(treatmentTypeQueries.list(clinicId))
 
   const doctorTypesQuery = useQuery(doctorTypeQueries.list(clinicId))
-  // The price list sends only the specialty's id; the name comes from the specialty list.
-  const doctorTypeNames = new Map(
-    (doctorTypesQuery.data ?? []).map((doctorType) => [doctorType.id, doctorType.name]),
+  // The price list sends only the specialty's id; name and colour come from the specialty list.
+  const doctorTypesById = new Map<string, DoctorType>(
+    (doctorTypesQuery.data ?? []).map((doctorType) => [doctorType.id, doctorType]),
   )
   const doctorTypeFilterOptions = [
     { value: FILTER_ALL, label: t('admin:service.filterAll') },
@@ -75,7 +76,8 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
+    // Capped so a price list does not stretch across a 24" monitor, leaving name and price far apart.
+    <div className="flex max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-callout text-text-secondary">{t('admin:service.description')}</p>
         <div className="flex items-center gap-2">
@@ -118,7 +120,7 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
           />
         )}
         loading={
-          <Table density="compact">
+          <Table density="comfortable">
             <TableSkeleton columns={4} rows={5} />
           </Table>
         }
@@ -144,7 +146,7 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
           }
 
           return (
-            <Table density="compact">
+            <Table density="comfortable">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('admin:service.name')}</TableHead>
@@ -155,43 +157,54 @@ export function TreatmentTypeTable({ clinicId }: TreatmentTypeTableProps) {
               </TableHeader>
 
               <TableBody>
-                {services.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell>{service.name}</TableCell>
-                    <TableCell>
-                      {(service.doctorTypeId === null
-                        ? null
-                        : doctorTypeNames.get(service.doctorTypeId)) ?? EMPTY}
-                    </TableCell>
-                    <TableCell align="right">
-                      {/* No price is a real state, not a zero — some work is
+                {services.map((service) => {
+                  const doctorType =
+                    service.doctorTypeId === null
+                      ? undefined
+                      : doctorTypesById.get(service.doctorTypeId)
+                  return (
+                    <TableRow key={service.id}>
+                      <TableCell className="font-medium text-text">{service.name}</TableCell>
+                      <TableCell>
+                        {doctorType === undefined ? (
+                          EMPTY
+                        ) : (
+                          <DoctorTypeBadge
+                            name={doctorType.name}
+                            tone={doctorTypeToneOf(doctorType.id, doctorType.isDental)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell align="right" className="tabular-nums">
+                        {/* No price is a real state, not a zero — some work is
                           quoted per case. */}
-                      {service.price === null
-                        ? t('admin:service.noPrice')
-                        : formatSom(service.price, i18n.language, t('common:currency.som'))}
-                    </TableCell>
-                    <TableCell align="right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          aria-label={`${t('common:action.edit')} — ${service.name}`}
-                          onClick={() => setEditing(service)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Pencil aria-hidden="true" className="size-4" />
-                        </Button>
-                        <Button
-                          aria-label={`${t('common:action.delete')} — ${service.name}`}
-                          onClick={() => setDeleting(service)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Trash2 aria-hidden="true" className="size-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        {service.price === null
+                          ? t('admin:service.noPrice')
+                          : formatSom(service.price, i18n.language, t('common:currency.som'))}
+                      </TableCell>
+                      <TableCell align="right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            aria-label={`${t('common:action.edit')} — ${service.name}`}
+                            onClick={() => setEditing(service)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <Pencil aria-hidden="true" className="size-4" />
+                          </Button>
+                          <Button
+                            aria-label={`${t('common:action.delete')} — ${service.name}`}
+                            onClick={() => setDeleting(service)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <Trash2 aria-hidden="true" className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           )
