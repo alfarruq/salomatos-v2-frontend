@@ -236,7 +236,17 @@
       "salaryOn": "Oylik maosh",
       "percentOn": "Davolash ishlaridan foiz",
       "noneYet": "Maosh sharti hali belgilanmagan. Keyinroq shifokorlar ro'yxatida belgilash mumkin.",
-      "hiringHint": "Oylik, foiz yoki ikkalasi. Shu oydan boshlab amal qiladi."
+      "hiringHint": "Oylik, foiz yoki ikkalasi. Shu oydan boshlab amal qiladi.",
+      "badge": {
+        "percent": "Foiz: {{percent}}%",
+        "mixed": "Oklad + {{percent}}%",
+        "fixed": "Fiks oklad"
+      },
+      "hint": {
+        "collected": "tushumdan",
+        "billed": "bajarilgan ishdan",
+        "fixedAmount": "{{amount}} fiks"
+      }
     },
     "pay": {
       "open": "To'lov",

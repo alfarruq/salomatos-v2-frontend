@@ -236,7 +236,17 @@
       "salaryOn": "Monthly salary",
       "percentOn": "Percent of treatment work",
       "noneYet": "No pay agreed yet. You can set it later in the doctors list.",
-      "hiringHint": "Salary, percent or both. Applies from this month."
+      "hiringHint": "Salary, percent or both. Applies from this month.",
+      "badge": {
+        "percent": "Percent: {{percent}}%",
+        "mixed": "Salary + {{percent}}%",
+        "fixed": "Fixed salary"
+      },
+      "hint": {
+        "collected": "of collected",
+        "billed": "of billed work",
+        "fixedAmount": "{{amount}} fixed"
+      }
     },
     "pay": {
       "open": "Pay",

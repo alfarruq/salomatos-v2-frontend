@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import { cn } from '@/shared/lib/cn'
 
-export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
+export type BadgeTone = 'neutral' | 'accent' | 'violet' | 'success' | 'warning' | 'danger'
 
 export interface BadgeProps extends Omit<ComponentPropsWithoutRef<'span'>, 'className'> {
   tone?: BadgeTone
@@ -15,6 +15,8 @@ export interface BadgeProps extends Omit<ComponentPropsWithoutRef<'span'>, 'clas
 const tones: Record<BadgeTone, string> = {
   neutral: 'bg-sunken text-text-secondary',
   accent: 'bg-accent-soft text-accent-text',
+  // A second hue for categories that sit next to `accent` and must read as different.
+  violet: 'bg-avatar-3 text-avatar-3-ink',
   success: 'bg-success/10 text-success',
   warning: 'bg-warning/10 text-warning',
   danger: 'bg-danger/10 text-danger',
