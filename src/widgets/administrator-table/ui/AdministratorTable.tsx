@@ -54,7 +54,8 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
   const adminsSeeMoney = clinicQuery.data?.adminsSeeMoney ?? true
 
   return (
-    <div className="flex flex-col gap-4">
+    // As wide as its content (never the full width of a large monitor), but never wider than the screen.
+    <div className="flex w-fit max-w-full flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-callout text-text-secondary">{t('admin:administrator.description')}</p>
         <Button onClick={() => setCreateOpen(true)} size="sm" variant="primary">
@@ -123,7 +124,7 @@ export function AdministratorTable({ clinicId }: AdministratorTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span>
+                      <span className="whitespace-nowrap">
                         {administrator.phoneNumber === null
                           ? EMPTY
                           : `+998-${formatSubscriber(subscriberDigitsOf(administrator.phoneNumber))}`}

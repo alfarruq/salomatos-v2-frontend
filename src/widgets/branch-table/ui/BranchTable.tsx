@@ -42,7 +42,8 @@ export function BranchTable({ clinicId, currentBranch }: BranchTableProps) {
   const query = useQuery(branchQueries.list(clinicId))
 
   return (
-    <div className="flex flex-col gap-4">
+    // As wide as its content (never the full width of a large monitor), but never wider than the screen.
+    <div className="flex w-fit max-w-full flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-callout text-text-secondary">{t('admin:branch.description')}</p>
         <Button onClick={() => setCreateOpen(true)} size="sm" variant="primary">

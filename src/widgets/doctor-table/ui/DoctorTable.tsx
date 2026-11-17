@@ -66,7 +66,8 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
   const inactiveQuery = useQuery(doctorQueries.inactive(clinicId))
 
   return (
-    <div className="flex flex-col gap-4">
+    // As wide as its content (never the full width of a large monitor), but never wider than the screen.
+    <div className="flex w-fit max-w-full flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-callout text-text-secondary">{t('admin:doctor.description')}</p>
         <Button onClick={() => setCreateOpen(true)} size="sm" variant="primary">
@@ -148,7 +149,7 @@ export function DoctorTable({ clinicId }: DoctorTableProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span>
+                        <span className="whitespace-nowrap">
                           {doctor.phoneNumber === null
                             ? EMPTY
                             : `+998-${formatSubscriber(subscriberDigitsOf(doctor.phoneNumber))}`}
