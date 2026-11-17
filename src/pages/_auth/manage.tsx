@@ -51,10 +51,7 @@ function AdminLayout() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-title1 text-text">{t('admin:title')}</h1>
-        <p className="text-callout text-text-secondary">{t('admin:subtitle')}</p>
-      </div>
+      <h1 className="text-title1 text-text">{t('admin:title')}</h1>
 
       {/*
        * A nav rather than a tab list: each section is its own route, so the

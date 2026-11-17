@@ -1,6 +1,5 @@
 {
   "title": "Administration",
-  "subtitle": "Clinic data only the clinic account can change.",
   "nav": {
     "doctors": "Doctors",
     "services": "Services",
