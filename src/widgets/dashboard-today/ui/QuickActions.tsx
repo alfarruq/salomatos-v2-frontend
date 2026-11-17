@@ -126,7 +126,12 @@ function PatientQuickSearch({ clinicId }: { clinicId: string }) {
 
   return (
     <div className="relative min-w-0 flex-1">
-      <PatientSearchInput onChange={search.setTerm} onClear={search.clear} value={search.term} />
+      <PatientSearchInput
+        onChange={search.setTerm}
+        onClear={search.clear}
+        size="md"
+        value={search.term}
+      />
 
       {isActive ? (
         <div className="absolute inset-x-0 top-full z-20 mt-2 rounded-card border border-border bg-elevated p-1 shadow-popover">
