@@ -1,11 +1,13 @@
 import { Search, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Input } from '@/shared/ui'
+import { Input, type InputSize } from '@/shared/ui'
 
 export interface PatientSearchInputProps {
   value: string
   onChange: (value: string) => void
   onClear: () => void
+  /** `md` where the box sits beside full-size buttons, so their heights line up. */
+  size?: InputSize
 }
 
 /**
@@ -19,7 +21,12 @@ export interface PatientSearchInputProps {
  * inside a form is offered to the browser's autofill store, which would keep
  * patient names on a shared machine long after the shift ended (§13.4).
  */
-export function PatientSearchInput({ value, onChange, onClear }: PatientSearchInputProps) {
+export function PatientSearchInput({
+  value,
+  onChange,
+  onClear,
+  size = 'sm',
+}: PatientSearchInputProps) {
   const { t } = useTranslation('patients')
 
   return (
@@ -34,7 +41,7 @@ export function PatientSearchInput({ value, onChange, onClear }: PatientSearchIn
         className="pr-9 pl-9"
         onChange={(event) => onChange(event.target.value)}
         placeholder={t('search.placeholder')}
-        size="sm"
+        size={size}
         type="search"
         value={value}
       />
