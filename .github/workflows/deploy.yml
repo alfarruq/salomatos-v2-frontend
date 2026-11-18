@@ -43,4 +43,4 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           host=$(cut -d' ' -f1 ~/.ssh/known_hosts)
-          tar -czf - -C dist . | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "ci@$host" app
+          tar -czf - --exclude='*.map' -C dist . | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "ci@$host" app

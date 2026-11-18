@@ -31,3 +31,8 @@ auditConfig:
     # upgrade to. Reached only through eslint-plugin-boundaries at lint time,
     # never shipped to the browser. Remove once braces 3.0.4 is released.
     - GHSA-vfj7-8cjw-p6xm
+    # picomatch <=4.0.7, ReDoS through repeated extglobs. The fix (4.0.8) is not
+    # published yet (4.0.7 is the latest), so an override cannot help. Build
+    # tooling only (vite, tailwind), never shipped to the browser. Remove once
+    # picomatch 4.0.8 is released.
+    - GHSA-fc5q-39xc-vjpf
