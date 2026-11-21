@@ -42,6 +42,8 @@ export interface VoiceDraft {
   patientName: string
   patientCandidates: VoicePatientRef[]
   patientFields: VoicePatientFields | null
+  /** Patient form: the doctor named in the dictation, one of this branch's active doctors. */
+  doctor: VoicePatientRef | null
   procedures: VoiceProcedure[]
   medicines: VoiceMedicine[]
   notes: string

@@ -14,6 +14,8 @@ export const voiceDraftSchema = v.object({
   patient: v.nullable(patientRefSchema),
   patient_name: v.string(),
   patient_candidates: v.array(patientRefSchema),
+  // Optional so a backend deployed a moment behind the frontend still parses.
+  doctor: v.optional(v.nullable(patientRefSchema), null),
   patient_fields: v.nullable(
     v.object({
       full_name: v.string(),
@@ -62,6 +64,7 @@ export function toVoiceDraft(raw: v.InferOutput<typeof voiceDraftSchema>): Voice
     patient: raw.patient === null ? null : toRef(raw.patient),
     patientName: raw.patient_name,
     patientCandidates: raw.patient_candidates.map(toRef),
+    doctor: raw.doctor === null ? null : toRef(raw.doctor),
     patientFields:
       raw.patient_fields === null
         ? null
