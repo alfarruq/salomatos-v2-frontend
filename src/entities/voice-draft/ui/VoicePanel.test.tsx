@@ -20,7 +20,12 @@ afterAll(() => server.close())
 function enable() {
   server.use(
     http.get('/api/v1/voice/status/', () =>
-      HttpResponse.json({ enabled: true, used_this_month: 3, monthly_limit: 1500 }),
+      HttpResponse.json({
+        enabled: true,
+        subscribed: true,
+        used_this_month: 3,
+        monthly_limit: 1500,
+      }),
     ),
   )
 }
@@ -54,6 +59,23 @@ describe('VoicePanel', () => {
     await userEvent.click(await screen.findByRole('button', { name: "Ovoz bilan to'ldirish" }))
     expect(screen.getByText("Ovozli to'ldirish hali sozlanmagan")).toBeTruthy()
     expect(screen.queryByRole('textbox', { name: 'Diktovka matni' })).toBeNull()
+  })
+
+  it('says the add-on is inactive, not the key, when the clinic has not paid', async () => {
+    server.use(
+      http.get('/api/v1/voice/status/', () =>
+        HttpResponse.json({
+          enabled: false,
+          subscribed: false,
+          used_this_month: 0,
+          monthly_limit: 1500,
+        }),
+      ),
+    )
+    renderPanel()
+    await userEvent.click(await screen.findByRole('button', { name: "Ovoz bilan to'ldirish" }))
+    expect(screen.getByText("Ovozli to'ldirish faol emas")).toBeTruthy()
+    expect(screen.queryByText("Ovozli to'ldirish hali sozlanmagan")).toBeNull()
   })
 
   it('sends the typed dictation and shows the month so far', async () => {

@@ -39,7 +39,14 @@ export interface VoicePanelProps {
 export function VoicePanel(props: VoicePanelProps) {
   const statusQuery = useQuery(voiceQueries.status(props.clinicId))
   if (statusQuery.isPending) return null
-  if (statusQuery.data?.isEnabled !== true) return <VoiceNotConfigured />
+  if (statusQuery.data?.isEnabled !== true) {
+    // Telling a clinic to edit a server file when the add-on is simply unpaid sends them the wrong way.
+    return (
+      <VoiceNotConfigured
+        reason={statusQuery.data?.isSubscribed === false ? 'notSubscribed' : 'notConfigured'}
+      />
+    )
+  }
   return (
     <VoicePanelBody
       {...props}
@@ -49,7 +56,7 @@ export function VoicePanel(props: VoicePanelProps) {
   )
 }
 
-function VoiceNotConfigured() {
+function VoiceNotConfigured({ reason }: { reason: 'notConfigured' | 'notSubscribed' }) {
   const { t } = useTranslation('voice')
   const [isOpen, setIsOpen] = useState(false)
   return (
@@ -64,8 +71,8 @@ function VoiceNotConfigured() {
         {t('open')}
       </Button>
       {isOpen ? (
-        <Alert className="w-full" title={t('notConfigured.title')} tone="info">
-          {t('notConfigured.body')}
+        <Alert className="w-full" title={t(`${reason}.title`)} tone="info">
+          {t(`${reason}.body`)}
         </Alert>
       ) : null}
     </div>
