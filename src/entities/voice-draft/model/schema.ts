@@ -47,6 +47,7 @@ export const voiceDraftSchema = v.object({
 
 export const voiceStatusSchema = v.object({
   enabled: v.boolean(),
+  subscribed: v.boolean(),
   used_this_month: v.number(),
   monthly_limit: v.number(),
 })
@@ -93,6 +94,7 @@ export function toVoiceDraft(raw: v.InferOutput<typeof voiceDraftSchema>): Voice
 export function toVoiceStatus(raw: v.InferOutput<typeof voiceStatusSchema>): VoiceStatus {
   return {
     isEnabled: raw.enabled,
+    isSubscribed: raw.subscribed,
     usedThisMonth: raw.used_this_month,
     monthlyLimit: raw.monthly_limit,
   }

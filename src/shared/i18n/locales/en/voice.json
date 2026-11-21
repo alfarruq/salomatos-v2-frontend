@@ -45,5 +45,9 @@
   "notConfigured": {
     "title": "Voice input is not set up yet",
     "body": "The server has no AI key (ANTHROPIC_API_KEY). The clinic owner needs to add it to the backend .env and restart the server."
+  },
+  "notSubscribed": {
+    "title": "Voice input is not active",
+    "body": "Voice input is not enabled for your clinic, or its paid period has ended. Contact SalomatOS to turn it on."
   }
 }

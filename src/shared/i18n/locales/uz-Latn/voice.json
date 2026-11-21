@@ -45,5 +45,9 @@
   "notConfigured": {
     "title": "Ovozli to'ldirish hali sozlanmagan",
     "body": "Serverda AI kaliti (ANTHROPIC_API_KEY) qo'yilmagan. Klinika egasi kalitni backend .env fayliga qo'shib, serverni qayta ishga tushirishi kerak."
+  },
+  "notSubscribed": {
+    "title": "Ovozli to'ldirish faol emas",
+    "body": "Klinikangiz uchun ovozli kiritish xizmati yoqilmagan yoki to'lov muddati tugagan. Yoqish uchun SalomatOS bilan bog'laning."
   }
 }

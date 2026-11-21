@@ -1673,7 +1673,12 @@ export const handlers = [
   http.get('/api/v1/voice/status/', ({ request }) => {
     const scope = guard(request, 'voice:use')
     if (scope instanceof Response) return scope
-    return HttpResponse.json({ enabled: false, used_this_month: 0, monthly_limit: 1500 })
+    return HttpResponse.json({
+      enabled: false,
+      subscribed: true,
+      used_this_month: 0,
+      monthly_limit: 1500,
+    })
   }),
 
   http.get('/api/v1/me/earnings/', ({ request }) => {

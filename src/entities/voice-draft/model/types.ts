@@ -49,6 +49,8 @@ export interface VoiceDraft {
 
 export interface VoiceStatus {
   isEnabled: boolean
+  /** False while the clinic has not paid for the add-on (or it lapsed); set by the vendor. */
+  isSubscribed: boolean
   usedThisMonth: number
   monthlyLimit: number
 }
