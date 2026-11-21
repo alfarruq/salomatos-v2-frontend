@@ -1,6 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import { Activity, Plus, RotateCcw, SlidersHorizontal, UserPlus, UserRound } from 'lucide-react'
+import {
+  Activity,
+  Plus,
+  RotateCcw,
+  SlidersHorizontal,
+  UserPlus,
+  UserRound,
+  Wallet,
+} from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
@@ -50,6 +58,8 @@ interface NewPatientTreatment {
 const FILTER_ALL = 'all'
 const ACTIVE = 'active'
 const ARCHIVED = 'archived'
+const DEBT_ALL = 'all'
+const DEBT_ONLY = 'debt'
 
 export interface PatientTableProps {
   clinicId: string
@@ -90,6 +100,8 @@ export function PatientTable({
   const canAddTreatment = useCan('procedure:manage')
   // A doctor is already limited to their own patients, so the filter would only ever offer themselves.
   const canFilterByDoctor = useCan('patient:view_all')
+  // UX only: the server refuses `has_debt` to an account the owner hid money from.
+  const canFilterByDebt = useCan('patient:debt')
 
   const search = usePatientSearch()
   const query = useQuery(
@@ -113,7 +125,12 @@ export function PatientTable({
     onFiltersChange({ ...filters, doctorId: value === FILTER_ALL ? null : value, page: 1 })
   }
 
-  const hasActiveFilters = search.term !== '' || filters.archived || filters.doctorId !== null
+  const handleDebtChange = (value: string) => {
+    onFiltersChange({ ...filters, hasDebt: value === DEBT_ONLY, page: 1 })
+  }
+
+  const hasActiveFilters =
+    search.term !== '' || filters.archived || filters.doctorId !== null || filters.hasDebt === true
 
   const handleClearFilters = () => {
     search.clear()
@@ -124,6 +141,12 @@ export function PatientTable({
     { value: ACTIVE, label: t('patients:status.active') },
     { value: ARCHIVED, label: t('patients:status.archived') },
   ]
+
+  const debtOptions = [
+    { value: DEBT_ALL, label: t('patients:filters.debtAll') },
+    { value: DEBT_ONLY, label: t('patients:filters.debtOnly') },
+  ]
+  const debtValue = filters.hasDebt === true ? DEBT_ONLY : DEBT_ALL
 
   const doctorOptions = [
     { value: FILTER_ALL, label: t('patients:filters.doctorAll') },
@@ -197,6 +220,14 @@ export function PatientTable({
                 {option.label}
               </FilterChip>
             ))}
+            {canFilterByDebt ? (
+              <FilterChip
+                isActive={filters.hasDebt === true}
+                onClick={() => handleDebtChange(filters.hasDebt === true ? DEBT_ALL : DEBT_ONLY)}
+              >
+                {t('patients:filters.debtOnly')}
+              </FilterChip>
+            ) : null}
           </div>
           <Dialog
             footer={
@@ -253,6 +284,23 @@ export function PatientTable({
               size="sm"
               value={filters.archived ? ARCHIVED : ACTIVE}
             />
+
+            {canFilterByDebt ? (
+              <>
+                <label className="sr-only" htmlFor="patient-debt-filter">
+                  {t('patients:filters.debtLabel')}
+                </label>
+                <Select
+                  className="w-auto shrink-0"
+                  icon={<Wallet className="size-4" />}
+                  id="patient-debt-filter"
+                  onValueChange={handleDebtChange}
+                  options={debtOptions}
+                  size="sm"
+                  value={debtValue}
+                />
+              </>
+            ) : null}
 
             {/* Not shown — the select's own visible options already say what it
               filters. Kept for assistive tech, which still needs a name for it. */}

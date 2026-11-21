@@ -16,6 +16,8 @@ import { PatientTable } from '@/widgets/patient-table'
  */
 const patientsSearchSchema = v.object({
   archived: v.optional(v.boolean()),
+  // A yes/no filter, not patient data: safe in a shareable link.
+  debt: v.optional(v.boolean()),
   doctor: v.optional(v.pipe(v.string(), v.uuid())),
   page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
 })
@@ -44,6 +46,7 @@ function PatientsPage() {
 
   const filters: Omit<PatientFilters, 'search'> = {
     archived: search.archived ?? false,
+    hasDebt: search.debt ?? false,
     doctorId: search.doctor ?? null,
     page: search.page ?? 1,
   }
@@ -63,6 +66,7 @@ function PatientsPage() {
           void navigate({
             search: (): PatientsSearch => ({
               ...(next.archived ? { archived: true } : {}),
+              ...(next.hasDebt === true ? { debt: true } : {}),
               ...(next.doctorId === null ? {} : { doctor: next.doctorId }),
               ...(next.page === 1 ? {} : { page: next.page }),
             }),
