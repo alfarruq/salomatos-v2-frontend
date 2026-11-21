@@ -56,7 +56,10 @@
     "doctorAll": "All doctors",
     "title": "Filters",
     "apply": "Show results",
-    "clear": "Clear filters"
+    "clear": "Clear filters",
+    "debtLabel": "Filter by debt",
+    "debtAll": "All",
+    "debtOnly": "Owes money"
   },
   "title": "Patients",
   "summary": {

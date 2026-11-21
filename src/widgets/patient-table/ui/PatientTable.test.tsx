@@ -108,6 +108,17 @@ describe('PatientTable', () => {
     expect(onFiltersChange).toHaveBeenCalledWith(filters)
   })
 
+  it('lists only debtors when the debt filter is on, and clears it with the rest', async () => {
+    await signIn()
+    const user = userEvent.setup()
+    const { onFiltersChange } = renderTable({ hasDebt: true })
+
+    expect(await screen.findByLabelText("Qarz bo'yicha filtr")).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Filtrlarni tozalash' }))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(filters)
+  })
+
   it('shows a card list instead of a table on a phone', async () => {
     await signIn()
     const original = window.matchMedia

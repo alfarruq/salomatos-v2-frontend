@@ -1166,6 +1166,7 @@ export const handlers = [
         (body.only_leads === true
           ? row.is_lead === true
           : body.include_leads === true || row.is_lead !== true) &&
+        (body.has_debt !== true || Number(row.debt ?? 0) > 0) &&
         (String(row.full_name).toLowerCase().includes(query) ||
           String(row.phone_number).includes(query)),
     )
@@ -1226,6 +1227,7 @@ export const handlers = [
       filter: (row, params) =>
         (params.get('archived') === 'true' ? row.archived_at !== null : row.archived_at === null) &&
         (params.get('lead') === 'true' ? row.is_lead === true : row.is_lead !== true) &&
+        (params.get('has_debt') !== 'true' || Number(row.debt ?? 0) > 0) &&
         byParam(row, params, 'primary_doctor'),
       create: (body, scope) =>
         required(body, ['full_name']) ?? {

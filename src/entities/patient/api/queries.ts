@@ -34,6 +34,7 @@ function toQueryString(filters: PatientFilters): string {
   const params = new URLSearchParams()
   if (filters.doctorId !== null) params.set('primary_doctor', filters.doctorId)
   if (filters.archived) params.set('archived', 'true')
+  if (filters.hasDebt === true) params.set('has_debt', 'true')
   if (filters.page > 1) params.set('page', String(filters.page))
   const query = params.toString()
   return query === '' ? '' : `?${query}`
@@ -62,6 +63,7 @@ export async function fetchPatients(
               include_archived: filters.archived,
               include_leads: filters.includeLeads ?? false,
               ...(filters.onlyLeads === true ? { only_leads: true } : {}),
+              ...(filters.hasDebt === true ? { has_debt: true } : {}),
             }),
           },
         )

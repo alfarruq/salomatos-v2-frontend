@@ -50,6 +50,8 @@ export interface PatientFilters {
   /** A doctor's staff id. */
   doctorId: string | null
   archived: boolean
+  /** Only patients who owe money. Sent only by callers with `patient:debt`; the server refuses it otherwise. */
+  hasDebt?: boolean
   /** Also find people who only booked a visit — the booking dialog's search, not the patient list. */
   includeLeads?: boolean
   /** Only people who booked but are not patients yet — the new-patient dialog's suggestions. */

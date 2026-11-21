@@ -56,7 +56,10 @@
     "doctorAll": "Barcha shifokorlar",
     "title": "Filtr",
     "apply": "Natijalarni ko'rsatish",
-    "clear": "Filtrlarni tozalash"
+    "clear": "Filtrlarni tozalash",
+    "debtLabel": "Qarz bo'yicha filtr",
+    "debtAll": "Hammasi",
+    "debtOnly": "Qarzi bor"
   },
   "title": "Bemorlar",
   "summary": {
