@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fetchSession, useSessionStore } from '@/entities/session'
 import { errorEnvelope, mockId } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { signInAs, signOut } from '@/shared/api/mocks/signIn'
@@ -226,5 +227,59 @@ describe('CreatePatientDialog', () => {
 
     expect(await screen.findByText('Juda qisqa')).toBeInTheDocument()
     expect(onCreated).not.toHaveBeenCalled()
+  })
+})
+
+describe('CreatePatientDialog voice input', () => {
+  beforeEach(async () => {
+    signInAs('admin')
+    // The voice panel sits behind <Can>, which reads the session store.
+    useSessionStore.getState().setSession(await fetchSession())
+  })
+
+  it('selects the doctor named in the dictation', async () => {
+    server.use(
+      http.get('/api/v1/voice/status/', () =>
+        HttpResponse.json({
+          enabled: true,
+          subscribed: true,
+          used_this_month: 0,
+          monthly_limit: 1500,
+        }),
+      ),
+      http.post('/api/v1/voice/draft/', () =>
+        HttpResponse.json({
+          form: 'patient',
+          patient: null,
+          patient_name: '',
+          patient_candidates: [],
+          patient_fields: {
+            full_name: 'Yangi Bemor',
+            phone_number: '',
+            birth_date: null,
+            workplace: '',
+            address: '',
+          },
+          doctor: { id: mockId(4, 4), full_name: 'Sardor Usmonov' },
+          procedures: [],
+          medicines: [],
+          notes: '',
+        }),
+      ),
+    )
+    renderDialog()
+
+    await userEvent.click(await screen.findByRole('button', { name: "Ovoz bilan to'ldirish" }))
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Diktovka matni' }),
+      'Yangi Bemor, doktor Sardor',
+    )
+    await userEvent.click(screen.getByRole('button', { name: "Formani to'ldirish" }))
+
+    await vi.waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Shifokor' })).toHaveTextContent(
+        'Sardor Usmonov',
+      ),
+    )
   })
 })

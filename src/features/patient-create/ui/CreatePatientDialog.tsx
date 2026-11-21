@@ -153,6 +153,12 @@ export function CreatePatientDialog({
     text('workplace', fields?.workplace ?? '')
     text('address', fields?.address ?? '')
     text('notes', draft.notes)
+    // A doctor-role user is fixed to themselves, so only an id the select offers is taken.
+    const doctorId = draft.doctor?.id
+    if (doctorId !== undefined && doctorOptions.some((option) => option.value === doctorId)) {
+      form.setValue('doctorId', doctorId, options)
+      filled += 1
+    }
     setVoiceNote(filled > 0 ? t('voice:result.filled') : t('voice:result.empty'))
   }
 
